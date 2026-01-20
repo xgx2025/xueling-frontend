@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist
+dist-ssr
+coverage
+*.local
+
+# Environment variables (CRITICAL!)
+.env
+.env.*
+!.env.example
+
+# Editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json      # 可选：共享格式化规则
+!.vscode/launch.json        # 可选：共享调试配置
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# TypeScript
+*.tsbuildinfo
+.eslintcache
+
+# Test
+/cypress/videos/
+/cypress/screenshots/
+__screenshots__/
