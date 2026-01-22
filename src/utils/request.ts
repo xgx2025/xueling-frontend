@@ -5,7 +5,10 @@ import router from '@/router'
 
 
 const baseURL = '/api'
-const instance = axios.create({baseURL})
+const instance = axios.create({
+    baseURL,
+    withCredentials: true  // 支持HttpOnly Cookie
+})
 let isRefreshing = false // 是否正在刷新Token
 let requestsQueue: Array<() => void> = []  // 明确为函数数组,等待刷新的请求队列
 
@@ -16,7 +19,7 @@ instance.interceptors.request.use(
         const tokenStore = useTokenStore()
        
         const requestPath = config.url
-        if (requestPath?.includes('/auth/login')|| requestPath?.includes('/auth/sendVerificationCode')|| requestPath?.includes('/auth/register')) {
+        if (requestPath?.includes('/login')|| requestPath?.startsWith('/sendVerificationCode/')|| requestPath?.includes('/auth/register')) {
            return config
         }
         // 检查是否有访问令牌
@@ -77,22 +80,23 @@ instance.interceptors.response.use(
             return Promise.reject(err)
         }
 
-         if (!tokenStore.refreshToken) {
-            return Promise.reject(err)
-        }
         // 如果不在刷新中，发起刷新请求
         if (!isRefreshing) {
             isRefreshing = true
             try {
-                // 调用刷新Token接口
+                // 调用刷新Token接口 (refreshToken通过HttpOnly Cookie自动发送)
                 const refreshRes = await instance.post(
-                    '/auth/refreshToken',
-                    { refreshToken: tokenStore.refreshToken },
-                    { skipInterceptors: true }
+                    '/refreshToken',
+                    {},
+                    { 
+                        skipInterceptors: true,
+                        withCredentials: true  // 确保发送Cookie
+                    }
                 )
                 
-                // 更新Token
-                tokenStore.setToken(refreshRes.data.accessToken, refreshRes.data.refreshToken)
+                // 更新accessToken (refreshToken由后端通过Cookie管理)
+                // 响应格式: { code: 0, msg: null, data: "token字符串" }
+                tokenStore.setToken(refreshRes.data)
                 
                 // 重试队列中的所有请求
                 requestsQueue.forEach(cb => cb())
