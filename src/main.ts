@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import Vue3Lottie from 'vue3-lottie'
 
 import App from './App.vue'
 import router from './router'
@@ -13,6 +14,9 @@ app.use(createPinia())
 
 // Configure Element Plus UI library
 app.use(ElementPlus)
+
+// Configure Vue3Lottie
+app.use(Vue3Lottie)
 
 // Configure Vue Router
 app.use(router)

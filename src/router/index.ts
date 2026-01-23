@@ -23,6 +23,36 @@ const router = createRouter({
       name: 'home',
       component: () => import('@/view/HomeView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/english',
+      name: 'english',
+      component: () => import('@/view/english/EnglishDashboard.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/english/vocab',
+      name: 'english-vocab',
+      component: () => import('@/view/english/vocab/VocabList.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/english/vocab/book/:id',
+      name: 'english-vocab-book',
+      component: () => import('@/view/english/vocab/BookDetail.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/english/vocab/review/:id',
+      name: 'english-vocab-review',
+      component: () => import('@/view/english/vocab/CardReview.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/english/articles',
+      name: 'english-articles',
+      component: () => import('@/view/english/article/ArticleList.vue'),
+      meta: { requiresAuth: true }
     }
   ],
 })

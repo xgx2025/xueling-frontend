@@ -1,0 +1,472 @@
+﻿<template>
+  <div class="review-page">
+    <!-- 装饰背景圆 -->
+    <div class="background-shape shape-1"></div>
+    <div class="background-shape shape-2"></div>
+
+    <!-- 顶部导航与进度 -->
+    <div class="review-header glass-panel">
+      <div class="header-top">
+        <el-page-header @back="router.back()">
+          <template #content>
+            <span class="header-title">{{ currentBookName }}</span>
+          </template>
+        </el-page-header>
+        <div class="progress-badge">
+          <span class="current">{{ currentIndex + 1 }}</span>
+          <span class="separator">/</span>
+          <span class="total">{{ cards.length }}</span>
+        </div>
+      </div>
+      <el-progress 
+        :percentage="progressPercentage" 
+        :format="format"
+        :stroke-width="8" 
+        color="#4facfe"
+        track-color="#ffffff"
+        class="review-progress"
+      />
+    </div>
+
+    <!-- 卡片区域 -->
+    <div class="card-container" v-if="currentCard">
+      <div class="card-wrapper">
+        <div 
+          class="flashcard" 
+          :class="{ flipped: isFlipped }" 
+          @click="isFlipped = !isFlipped"
+        >
+          <!-- 正面 -->
+          <div class="card-face card-front">
+            <div class="voice-icon-wrapper" @click.stop="">
+                 <el-icon><Microphone /></el-icon>
+            </div>
+            <div class="card-content-center">
+              <span class="word">{{ currentCard.word }}</span>
+              <span class="phonetic">
+                /{{ currentCard.phonetic }}/
+              </span>
+            </div>
+            <div class="card-hint">
+              <span>点击翻转</span>
+            </div>
+          </div>
+
+          <!-- 背面 -->
+          <div class="card-face card-back">
+            <div class="card-content-scroll">
+              <div class="meaning-wrapper">
+                 <h3 class="meaning">{{ currentCard.meaning }}</h3>
+              </div>
+              <div class="example-box">
+                <div class="example-item">
+                    <p class="example-en">{{ currentCard.exampleEn }}</p>
+                    <p class="example-cn">{{ currentCard.exampleCn }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部操作按钮 -->
+      <div class="actions">
+        <button class="action-btn forget" @click.stop="handleResult('forget')">
+            <div class="btn-content">
+                <el-icon><Close /></el-icon>
+                <span>不认识</span>
+            </div>
+        </button>
+        
+        <button class="action-btn remember" @click.stop="handleResult('remember')">
+            <div class="btn-content">
+                <el-icon><Check /></el-icon>
+                <span>认识</span>
+            </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- 完成状态 -->
+    <div v-else class="empty-state glass-panel">
+      <div class="success-icon-wrapper">
+          <el-icon class="success-icon"><Trophy /></el-icon>
+      </div>
+      <h2>今日复习完成！</h2>
+      <p>坚持就是胜利，明天继续加油</p>
+      <el-button color="#626aef" size="large" round class="back-btn" @click="router.back()">返回列表</el-button>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { Check, Close, Microphone, Trophy } from '@element-plus/icons-vue'
+
+const router = useRouter()
+
+const currentBookName = ref('CET-4 核心词')
+const isFlipped = ref(false)
+const currentIndex = ref(0) // 当前索引，从 0 开始
+
+// 模拟数据
+const cards = ref([
+  { id: 1, word: 'Ambiguous', phonetic: 'æmbɪɡjuəs', meaning: 'adj. 模棱两可的；含糊不清的', exampleEn: 'The instructions were ambiguous.', exampleCn: '说明书写得模棱两可。' },
+  { id: 2, word: 'Benevolent', phonetic: 'bənevələnt', meaning: 'adj. 仁慈的；慈善的', exampleEn: 'A benevolent donor gave us money.', exampleCn: '一位仁慈的捐赠者给了我们钱。' },
+  { id: 3, word: 'Comprehensive', phonetic: 'kɒmprɪhensɪv', meaning: 'adj. 全面的；综合的', exampleEn: 'We offer comprehensive training.', exampleCn: '我们提供全面的培训。' },
+  { id: 4, word: 'Diligence', phonetic: 'dɪlɪdʒəns', meaning: 'n. 勤奋，勤勉', exampleEn: 'Success requires diligence and hard work.', exampleCn: '成功需要勤奋和努力。' },
+  { id: 5, word: 'Eloquent', phonetic: 'eləkwənt', meaning: 'adj. 雄辩的；有口才的', exampleEn: 'He gave an eloquent speech.', exampleCn: '他发表了雄辩的演说。' },
+])
+
+const currentCard = computed(() => {
+    if (currentIndex.value >= cards.value.length) return null;
+    return cards.value[currentIndex.value];
+})
+
+const progressPercentage = computed(() => {
+    if (cards.value.length === 0) return 0;
+    return Math.floor(((currentIndex.value) / cards.value.length) * 100);
+})
+
+const format = (percentage: number) => (percentage === 100 ? 'Finished' : `${percentage}%`)
+
+const handleResult = (result: 'forget' | 'remember') => {
+    // 自动翻回正面
+    if (isFlipped.value) {
+        isFlipped.value = false;
+        // 等待翻转动画一半时间后切换数据，体验更顺滑
+        setTimeout(() => {
+            currentIndex.value++;
+        }, 300)
+    } else {
+        currentIndex.value++;
+    }
+}
+</script>
+
+<style scoped>
+.review-page {
+  width: 100%;
+  height: 100vh;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  box-sizing: border-box;
+}
+
+/* 装饰背景 */
+.background-shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+}
+.shape-1 {
+  width: 60vw;
+  height: 60vw;
+  max-width: 600px;
+  max-height: 600px;
+  background: rgba(79, 172, 254, 0.15);
+  top: -200px;
+  left: -200px;
+}
+.shape-2 {
+  width: 50vw;
+  height: 50vw;
+  max-width: 500px;
+  max-height: 500px;
+  background: rgba(161, 140, 209, 0.15);
+  bottom: -150px;
+  right: -150px;
+}
+
+/* 顶部 Header */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
+  margin-bottom: 30px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 600px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.header-title {
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.progress-badge {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    color: #555;
+    font-family: monospace;
+}
+
+/* 卡片容器 */
+.card-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  perspective: 1200px;
+  z-index: 1;
+  width: 100%;
+  max-width: 600px;
+}
+
+.card-wrapper {
+  width: 100%;
+  height: 400px;
+  margin-bottom: 40px;
+}
+
+.flashcard {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.flashcard.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 30px;
+  box-shadow: 
+    0 10px 30px -10px rgba(50, 50, 93, 0.25),
+    0 5px 15px -10px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 2px white; /* 内发光效果 */
+  box-sizing: border-box;
+  padding: 30px;
+  overflow: hidden;
+}
+
+/* 卡片 - 正面设计 */
+.card-front {
+   background: radial-gradient(circle at 10% 20%, rgb(255, 252, 252) 0%, rgb(250, 250, 255) 90.2%);
+}
+
+.voice-icon-wrapper {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f0f2f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4facfe;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.voice-icon-wrapper:hover {
+    background: #e6eefb;
+    transform: scale(1.1);
+}
+
+.card-content-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.word {
+  font-size: 3.5rem;
+  font-weight: 800;
+  background: -webkit-linear-gradient(315deg, #1e3c72 0%, #2a5298 74%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0px; 
+  letter-spacing: -1.5px;
+}
+
+.phonetic {
+  color: #9aa8b9;
+  font-family: 'Times New Roman', serif;
+  font-size: 1.4rem;
+  margin-top: 10px;
+}
+
+.card-hint {
+   position: absolute;
+   bottom: 30px;
+   font-size: 12px;
+   color: #ccc;
+   text-transform: uppercase;
+   letter-spacing: 2px;
+}
+
+/* 卡片 - 背面设计 */
+.card-back {
+  transform: rotateY(180deg);
+  background: #fff;
+  justify-content: flex-start;
+  padding-top: 50px;
+}
+
+.meaning-wrapper {
+    margin-bottom: 30px;
+    position: relative;
+}
+.meaning-wrapper::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #4facfe;
+    margin: 15px auto 0;
+    border-radius: 2px;
+}
+
+.meaning {
+  font-size: 1.6rem;
+  color: #333;
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+}
+
+.example-box {
+    width: 100%;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 10px;
+}
+.example-en {
+  font-size: 1.15rem;
+  color: #2c3e50;
+  margin: 0 0 10px 0;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.example-cn {
+  color: #7f8c8d;
+  margin: 0;
+}
+
+/* 按钮区域 */
+.actions {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  padding: 0 10px;
+  justify-content: space-between;
+}
+
+.action-btn {
+  flex: 1;
+  height: 60px;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.btn-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-btn.forget {
+    background: #fff0f0;
+    color: #ff5252;
+}
+.action-btn.forget:hover {
+    background: #ffdede;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 82, 82, 0.15);
+}
+
+.action-btn.remember {
+    background: #e8f5e9;
+    color: #4caf50;
+}
+.action-btn.remember:hover {
+    background: #c8e6c9;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(76, 175, 80, 0.15);
+}
+.action-btn:active {
+    transform: scale(0.98);
+}
+
+/* 空状态 */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    flex: 1;
+    width: 100%;
+    max-width: 600px;
+}
+
+.success-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #FFD700 0%, #FDB931 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 20px rgba(253, 185, 49, 0.3);
+}
+
+.success-icon {
+    font-size: 40px;
+    color: white;
+}
+
+.back-btn {
+    width: 200px;
+    margin-top: 30px;
+    box-shadow: 0 10px 20px rgba(98, 106, 239, 0.3);
+}
+</style>
