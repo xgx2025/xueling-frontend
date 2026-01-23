@@ -11,24 +11,34 @@
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
-    "type-check": "vue-tsc --build"
+    "type-check": "vue-tsc --build",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "axios": "^1.13.2",
     "element-plus": "^2.13.1",
+    "lottie-web": "^5.13.0",
     "pinia": "^3.0.4",
     "vue": "^3.5.26",
-    "vue-router": "^4.6.4"
+    "vue-router": "^4.6.4",
+    "vue3-lottie": "^3.3.1"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.3",
-    "@types/node": "^24.10.4",
+    "@types/node": "^24.10.9",
     "@vitejs/plugin-vue": "^6.0.3",
+    "@vitest/ui": "^4.0.17",
+    "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.8.1",
+    "fast-check": "^4.5.3",
+    "jsdom": "^27.4.0",
     "npm-run-all2": "^8.0.4",
     "typescript": "~5.9.3",
     "vite": "^7.3.0",
     "vite-plugin-vue-devtools": "^8.0.5",
+    "vitest": "^4.0.17",
     "vue-tsc": "^3.2.2"
   }
 }

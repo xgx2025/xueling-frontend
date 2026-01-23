@@ -19,17 +19,23 @@ instance.interceptors.request.use(
         const tokenStore = useTokenStore()
        
         const requestPath = config.url
-        if (requestPath?.includes('/login')|| requestPath?.startsWith('/sendVerificationCode/')|| requestPath?.includes('/auth/register')) {
+        // 不需要认证的路径：登录、注册、发送验证码
+        if (requestPath?.includes('/login') || 
+            requestPath?.includes('/sendVerificationCode/') || 
+            requestPath?.includes('/register')) {
            return config
         }
+        
+        // 跳过刷新Token请求的拦截器
+        if (config.skipInterceptors) return config
+        
         // 检查是否有访问令牌
-        if (!tokenStore.accessToken ) {
+        if (!tokenStore.accessToken) {
             ElMessage.warning('请先登录账号！')
             router.push('/login')
-            return  config
+            return Promise.reject(new Error('未登录'))
         }
-         // 跳过刷新Token请求的拦截器
-        if (config.skipInterceptors) return config
+        
         if(tokenStore.accessToken){
             config.headers.Authorization = 'Bearer '+ tokenStore.accessToken
         }
@@ -58,7 +64,8 @@ instance.interceptors.response.use(
         if(result.data.code == 0){
             return result.data
         }else{
-            ElMessage.error(result.data.message?result.data.message:"未知错误")
+            // 不在拦截器中显示错误消息，让组件自己处理
+            // 只是将错误信息传递出去
             return Promise.reject(result.data)
         }
     },
@@ -122,16 +129,8 @@ instance.interceptors.response.use(
         }
         }
         
-        // 处理其他错误
-        if(err.response?.status === 403){
-            ElMessage.error('您没有权限执行此操作！')
-        }
-        if(err.response?.status === 404){
-            ElMessage.error('请求的资源不存在！')
-        }
-        if(err.response?.status === 500){
-            ElMessage.error('服务器异常，请稍后再试！')
-        }
+        // 处理其他HTTP错误，但不显示通用消息，让组件自己处理
+        // 只是将完整的错误信息（包括后端返回的msg）传递出去
         return Promise.reject(err)
     }
 )
