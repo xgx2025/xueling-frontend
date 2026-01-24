@@ -156,7 +156,7 @@
     </div>
 
     <footer class="auth-footer">
-      <p>&copy; 2024 学灵智能学习平台. All rights reserved.</p>
+      <p>&copy; 2026 学灵智能学习平台. All rights reserved.</p>
     </footer>
   </div>
 </template>

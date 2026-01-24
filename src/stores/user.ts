@@ -2,7 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { UserInfo, UserVO } from '@/types/auth'
 import { useTokenStore } from './token'
-import { getUserInfo, logout as logoutApi } from '@/api/auth'
+import { getUserInfo, logout as logoutApi, updateAvatar as updateAvatarApi, updateProfile as updateProfileApi } from '@/api/auth'
+import type { UserDTO } from '@/types/auth'
 
 /**
  * 用户状态管理 Store
@@ -68,8 +69,13 @@ export const useUserStore = defineStore(
           return userVO
         }
         throw new Error(response.msg || '获取用户信息失败')
-      } catch (error) {
+      } catch (error: any) {
         console.error('获取用户信息失败:', error)
+        // 如果 error 是后端返回的响应对象（包含 msg 字段）
+        if (error.msg) {
+          throw new Error(error.msg)
+        }
+        // 如果是其他类型的错误
         throw error
       }
     }
@@ -98,6 +104,78 @@ export const useUserStore = defineStore(
       }
     }
 
+    /**
+     * 更新用户头像
+     * @param file 头像文件
+     * @returns Promise<string> 返回新的头像URL
+     */
+    const updateAvatar = async (file: File): Promise<string> => {
+      try {
+        console.log('updateAvatar: 开始上传头像')
+        const response = await updateAvatarApi(file)
+        console.log('updateAvatar: 收到响应', response)
+        
+        if (response.code === 0 && response.data) {
+          const newAvatarUrl = response.data
+          
+          // 更新本地用户信息中的头像
+          if (userInfo.value) {
+            userInfo.value.avatar = newAvatarUrl
+            localStorage.setItem('user_info', JSON.stringify(userInfo.value))
+          }
+          
+          // 更新 user_vo 中的头像
+          const storedUserVO = localStorage.getItem('user_vo')
+          if (storedUserVO) {
+            const userVO = JSON.parse(storedUserVO)
+            userVO.avatarUrl = newAvatarUrl
+            localStorage.setItem('user_vo', JSON.stringify(userVO))
+          }
+          
+          console.log('updateAvatar: 头像更新成功', newAvatarUrl)
+          return newAvatarUrl
+        }
+        throw new Error(response.msg || '头像上传失败')
+      } catch (error: any) {
+        console.error('头像上传失败:', error)
+        // 如果 error 是后端返回的响应对象（包含 msg 字段）
+        if (error.msg) {
+          throw new Error(error.msg)
+        }
+        // 如果是其他类型的错误
+        throw error
+      }
+    }
+
+    /**
+     * 更新用户个人信息
+     * @param userDTO 用户信息（只需填写要修改的字段）
+     * @returns Promise<void>
+     */
+    const updateProfile = async (userDTO: UserDTO): Promise<void> => {
+      try {
+        console.log('updateProfile: 开始更新用户信息', userDTO)
+        const response = await updateProfileApi(userDTO)
+        console.log('updateProfile: 收到响应', response)
+        
+        if (response.code === 0) {
+          // 更新成功后重新获取用户信息
+          await fetchUserInfo()
+          console.log('updateProfile: 用户信息更新成功')
+        } else {
+          throw new Error(response.msg || '用户信息更新失败')
+        }
+      } catch (error: any) {
+        console.error('用户信息更新失败:', error)
+        // 如果 error 是后端返回的响应对象（包含 msg 字段）
+        if (error.msg) {
+          throw new Error(error.msg)
+        }
+        // 如果是其他类型的错误
+        throw error
+      }
+    }
+
     return {
       userInfo,
       isLoggedIn,
@@ -106,7 +184,9 @@ export const useUserStore = defineStore(
       setUserInfo,
       clearUserInfo,
       fetchUserInfo,
-      logout
+      logout,
+      updateAvatar,
+      updateProfile
     }
   }
 )

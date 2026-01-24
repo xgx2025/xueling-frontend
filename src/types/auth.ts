@@ -77,3 +77,15 @@ export interface PasswordValidationResult {
   strength: PasswordStrength
   message: string
 }
+
+// 用户信息更新 DTO
+export interface UserDTO {
+  id?: number           // 用户ID（由后端从token获取，前端不需要传）
+  username?: string     // 用户名
+  email?: string        // 邮箱
+  phone?: string        // 手机号
+  avatarUrl?: string    // 头像URL
+  gender?: number       // 性别（0-未知，1-男，2-女）
+  birthday?: string     // 生日
+  bio?: string          // 个人简介
+}

@@ -4,7 +4,7 @@
  */
 
 import request from '@/utils/request'
-import type { LoginDTO, RegisterDTO, AuthResponse, ApiResponse, UserVO } from '@/types/auth'
+import type { LoginDTO, RegisterDTO, AuthResponse, ApiResponse, UserVO, UserDTO } from '@/types/auth'
 
 /**
  * 用户登录
@@ -56,4 +56,29 @@ export const getUserInfo = (): Promise<ApiResponse<UserVO>> => {
  */
 export const logout = (): Promise<ApiResponse> => {
   return request.post('/auth/logout')
+}
+
+/**
+ * 更新用户头像
+ * @param file 头像文件
+ * @returns Promise<ApiResponse<string>> 返回头像URL
+ */
+export const updateAvatar = (file: File): Promise<ApiResponse<string>> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  return request.put('/users/avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
+/**
+ * 更新用户个人信息
+ * @param userDTO 用户信息（只需填写要修改的字段）
+ * @returns Promise<ApiResponse<string>> 返回更新结果
+ */
+export const updateProfile = (userDTO: UserDTO): Promise<ApiResponse<string>> => {
+  return request.post('/users/profile', userDTO)
 }

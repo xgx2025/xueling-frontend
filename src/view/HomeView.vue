@@ -132,7 +132,7 @@ const handleCommand = async (command: string) => {
   if (command === 'logout') {
     await handleLogout()
   } else if (command === 'profile') {
-    ElMessage.info('个人中心开发中...')
+    router.push('/user/profile')
   }
 }
 

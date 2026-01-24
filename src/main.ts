@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
 import Vue3Lottie from 'vue3-lottie'
 
@@ -12,8 +13,10 @@ const app = createApp(App)
 // Configure Pinia state management
 app.use(createPinia())
 
-// Configure Element Plus UI library
-app.use(ElementPlus)
+// Configure Element Plus UI library with Chinese locale
+app.use(ElementPlus, {
+  locale: zhCn,
+})
 
 // Configure Vue3Lottie
 app.use(Vue3Lottie)
