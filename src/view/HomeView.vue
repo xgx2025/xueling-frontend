@@ -8,7 +8,13 @@
       <div class="user-info">
         <el-dropdown trigger="click" @command="handleCommand">
           <div class="avatar-wrapper">
-            <el-avatar :size="40" class="user-avatar">User</el-avatar>
+            <el-avatar 
+              :size="40" 
+              :src="userStore.avatar" 
+              class="user-avatar"
+            >
+              {{ userStore.username?.charAt(0)?.toUpperCase() || 'U' }}
+            </el-avatar>
             <span class="username">{{ userStore.username || '学员' }}</span>
             <el-icon class="el-icon--right"><arrow-down /></el-icon>
           </div>

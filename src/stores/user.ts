@@ -23,6 +23,9 @@ export const useUserStore = defineStore(
     // 计算属性：获取用户名
     const username = computed(() => userInfo.value?.username || '')
 
+    // 计算属性：获取头像URL
+    const avatar = computed(() => userInfo.value?.avatar || '')
+
     /**
      * 设置用户信息
      * @param info 用户信息对象
@@ -99,6 +102,7 @@ export const useUserStore = defineStore(
       userInfo,
       isLoggedIn,
       username,
+      avatar,
       setUserInfo,
       clearUserInfo,
       fetchUserInfo,
