@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useTokenStore } from '@/stores/token'
+import { useUserStore } from '@/stores/user'
 import LoginView from '@/view/auth/LoginView.vue'
 import RegisterView from '@/view/auth/RegisterView.vue'
 
@@ -58,16 +59,40 @@ const router = createRouter({
 })
 
 // 路由守卫：未登录用户访问受保护路由时跳转到登录页
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const tokenStore = useTokenStore()
-  const isLoggedIn = !!tokenStore.accessToken
+  const userStore = useUserStore()
+  
+  // 检查是否有有效的 token
+  const hasToken = tokenStore.accessToken && tokenStore.accessToken.trim() !== ''
 
   // 如果路由需要认证且用户未登录，跳转到登录页
-  if (to.meta.requiresAuth && !isLoggedIn) {
+  if (to.meta.requiresAuth && !hasToken) {
     next({ name: 'login' })
-  } else {
-    next()
+    return
   }
+
+  // 如果已登录但没有用户信息，尝试获取
+  // 只在访问需要认证的页面时获取
+  if (hasToken && !userStore.userInfo && to.meta.requiresAuth) {
+    try {
+      console.log('正在获取用户信息...')
+      await userStore.fetchUserInfo()
+      console.log('用户信息获取成功')
+    } catch (error: any) {
+      console.error('获取用户信息失败:', error)
+      // 如果是 401 或 403，说明 token 无效，清除并跳转登录
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        tokenStore.removeToken()
+        userStore.clearUserInfo()
+        next({ name: 'login' })
+        return
+      }
+      // 其他错误不阻止路由跳转
+    }
+  }
+
+  next()
 })
 
 export default router

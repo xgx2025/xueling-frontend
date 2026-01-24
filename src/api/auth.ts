@@ -4,7 +4,7 @@
  */
 
 import request from '@/utils/request'
-import type { LoginDTO, RegisterDTO, AuthResponse, ApiResponse } from '@/types/auth'
+import type { LoginDTO, RegisterDTO, AuthResponse, ApiResponse, UserVO } from '@/types/auth'
 
 /**
  * 用户登录
@@ -39,4 +39,21 @@ export const sendVerificationCode = (email: string): Promise<ApiResponse> => {
   return request.get('/auth/sendVerificationCode/email', {
     params: { email }
   })
+}
+
+/**
+ * 获取当前登录用户信息
+ * @returns Promise<ApiResponse<UserVO>> 返回用户详细信息
+ */
+export const getUserInfo = (): Promise<ApiResponse<UserVO>> => {
+  console.log('API: 调用 getUserInfo 接口')
+  return request.get('/users/info')
+}
+
+/**
+ * 用户登出
+ * @returns Promise<ApiResponse> 返回登出结果
+ */
+export const logout = (): Promise<ApiResponse> => {
+  return request.post('/auth/logout')
 }

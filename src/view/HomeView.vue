@@ -122,18 +122,23 @@ import { ArrowDown, Right } from '@element-plus/icons-vue'
 const router = useRouter()
 const userStore = useUserStore()
 
-const handleCommand = (command: string) => {
+const handleCommand = async (command: string) => {
   if (command === 'logout') {
-    handleLogout()
+    await handleLogout()
   } else if (command === 'profile') {
     ElMessage.info('个人中心开发中...')
   }
 }
 
-const handleLogout = () => {
-  userStore.logout()
-  ElMessage.success('已退出登录')
-  router.push('/login')
+const handleLogout = async () => {
+  try {
+    await userStore.logout()
+    ElMessage.success('已退出登录')
+    router.push('/login')
+  } catch (error) {
+    console.error('退出登录失败:', error)
+    ElMessage.error('退出登录失败，请重试')
+  }
 }
 </script>
 

@@ -1,5 +1,17 @@
 <template>
   <div class="login-container">
+    <!-- 背景装饰元素 -->
+    <div class="background-decorations">
+      <div class="decor-circle decor-1"></div>
+      <div class="decor-circle decor-2"></div>
+      <div class="decor-icon decor-3">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="decor-icon decor-4">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+
     <div class="login-content">
       <!-- 左侧动画区域 -->
       <div class="animation-section">
@@ -204,6 +216,14 @@ const handleLogin = async () => {
       // 存储 token
       tokenStore.setToken(response.data)
 
+      // 获取用户信息
+      try {
+        await userStore.fetchUserInfo()
+      } catch (error) {
+        console.error('获取用户信息失败:', error)
+        // 即使获取用户信息失败，也继续登录流程
+      }
+
       // 显示成功消息
       ElMessage.success(response.msg || '登录成功！')
 
@@ -286,6 +306,70 @@ const handleQQLogin = () => {
   background: radial-gradient(circle, rgba(0, 242, 254, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
   border-radius: 50%;
   filter: blur(40px);
+}
+
+.background-decorations {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.decor-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+  backdrop-filter: blur(5px);
+  animation: float 8s infinite ease-in-out;
+}
+
+.decor-icon {
+  position: absolute;
+  color: rgba(79, 172, 254, 0.15);
+  animation: float 10s infinite ease-in-out;
+}
+
+.decor-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.decor-1 {
+  width: 120px;
+  height: 120px;
+  top: 10%;
+  left: 5%;
+  animation-delay: 0s;
+}
+
+.decor-2 {
+  width: 80px;
+  height: 80px;
+  bottom: 15%;
+  right: 5%;
+  animation-delay: 2s;
+}
+
+.decor-3 {
+  width: 100px;
+  height: 100px;
+  top: 20%;
+  right: 8%;
+  transform: rotate(15deg);
+  animation-delay: 1s;
+}
+
+.decor-4 {
+  width: 80px;
+  height: 80px;
+  bottom: 10%;
+  left: 8%;
+  transform: rotate(-15deg);
+  animation-delay: 3s;
 }
 
 .login-content {

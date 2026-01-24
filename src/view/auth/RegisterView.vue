@@ -1,5 +1,17 @@
 <template>
   <div class="register-container">
+    <!-- 背景装饰元素 -->
+    <div class="background-decorations">
+      <div class="decor-circle decor-1"></div>
+      <div class="decor-circle decor-2"></div>
+      <div class="decor-icon decor-3">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5 13.5L12 21l-7.5-7.5M12 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3l4 4-8 8 4 4" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="decor-icon decor-4">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+      </div>
+    </div>
+
     <div class="register-content">
       <!-- 左侧动画区域 -->
       <div class="animation-section">
@@ -437,6 +449,70 @@ onUnmounted(() => {
   background: radial-gradient(circle, rgba(0, 242, 254, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
   border-radius: 50%;
   filter: blur(40px);
+}
+
+.background-decorations {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.decor-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+  backdrop-filter: blur(5px);
+  animation: float 8s infinite ease-in-out;
+}
+
+.decor-icon {
+  position: absolute;
+  color: rgba(79, 172, 254, 0.15);
+  animation: float 10s infinite ease-in-out;
+}
+
+.decor-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.decor-1 {
+  width: 120px;
+  height: 120px;
+  top: 10%;
+  left: 5%;
+  animation-delay: 0s;
+}
+
+.decor-2 {
+  width: 80px;
+  height: 80px;
+  bottom: 15%;
+  right: 5%;
+  animation-delay: 2s;
+}
+
+.decor-3 {
+  width: 100px;
+  height: 100px;
+  top: 20%;
+  right: 8%;
+  transform: rotate(15deg);
+  animation-delay: 1s;
+}
+
+.decor-4 {
+  width: 80px;
+  height: 80px;
+  bottom: 10%;
+  left: 8%;
+  transform: rotate(-15deg);
+  animation-delay: 3s;
 }
 
 .register-content {

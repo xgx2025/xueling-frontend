@@ -30,15 +30,17 @@ instance.interceptors.request.use(
         if (config.skipInterceptors) return config
         
         // 检查是否有访问令牌
-        if (!tokenStore.accessToken) {
+        const token = tokenStore.accessToken?.trim()
+        if (!token) {
+            console.error('请求拦截器：未找到有效的 token')
             ElMessage.warning('请先登录账号！')
             router.push('/login')
             return Promise.reject(new Error('未登录'))
         }
         
-        if(tokenStore.accessToken){
-            config.headers.Authorization = 'Bearer '+ tokenStore.accessToken
-        }
+        // 添加 Authorization 头
+        config.headers.Authorization = 'Bearer ' + token
+        console.log('请求拦截器：已添加 Authorization 头', config.url)
         return config
     },
     err => {

@@ -20,8 +20,23 @@ export interface RegisterFormData {
 export interface UserInfo {
   id: string           // 用户ID
   email: string        // 邮箱
-  nickname?: string    // 昵称（可选）
+  username?: string    // 昵称（可选）
   avatar?: string      // 头像URL（可选）
+}
+
+// 用户详细信息 VO（对应后端 UserVO）
+export interface UserVO {
+  id: number              // 用户ID
+  username: string        // 用户名
+  email: string           // 邮箱
+  phone?: string          // 手机号
+  avatarUrl?: string      // 头像URL
+  gender?: number         // 性别
+  birthday?: string       // 生日
+  bio?: string            // 个人简介
+  vipLevel?: number       // VIP等级
+  vipStartTime?: string   // VIP开始时间
+  vipExpireTime?: string  // VIP到期时间
 }
 
 // API 响应通用格式
