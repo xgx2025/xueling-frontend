@@ -80,7 +80,7 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="createBook">创建</el-button>
+          <el-button type="primary" @click="createBook" :loading="loading">创建</el-button>
         </span>
       </template>
     </el-dialog>
@@ -92,10 +92,13 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
+import { ElMessage } from 'element-plus'
+import { createWordBook } from '@/api/wordbook'
 
 const router = useRouter()
 const dialogVisible = ref(false)
 const newBookName = ref('')
+const loading = ref(false)
 // 这是一个学习场景的 Lottie 动画链接
 const animationLink = 'https://assets5.lottiefiles.com/packages/lf20_1a8sx7oe.json' 
 
@@ -110,20 +113,50 @@ const handleBookClick = (id: number) => {
   router.push(`/english/vocab/book/${id}`)
 }
 
-const createBook = () => {
-    // 模拟创建
-    if(!newBookName.value) return;
-    wordBooks.value.push({
+const createBook = async () => {
+  if (!newBookName.value.trim()) {
+    ElMessage.warning('请输入单词本名称')
+    return
+  }
+  
+  try {
+    loading.value = true
+    const response = await createWordBook(newBookName.value)
+    
+    if (response.code === 0) {
+      ElMessage.success(response.msg || '单词本创建成功')
+      
+      // 添加到本地列表（使用随机颜色和图标）
+      const colors = [
+        'linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%)',
+        'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+        'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+        'linear-gradient(120deg, #f6d365 0%, #fda085 100%)',
+        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      ]
+      const icons = ['📘', '📖', '📚', '📕', '📗', '📙']
+      
+      wordBooks.value.push({
         id: Date.now(),
         name: newBookName.value,
         count: 0,
         progress: 0,
         mastered: 0,
-        color: 'linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%)',
-        icon: '📘'
-    })
-    dialogVisible.value = false;
-    newBookName.value = '';
+        color: colors[Math.floor(Math.random() * colors.length)],
+        icon: icons[Math.floor(Math.random() * icons.length)]
+      })
+      
+      dialogVisible.value = false
+      newBookName.value = ''
+    } else {
+      ElMessage.error(response.msg || '创建失败')
+    }
+  } catch (error: any) {
+    console.error('创建单词本失败:', error)
+    ElMessage.error(error.message || '创建失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

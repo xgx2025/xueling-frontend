@@ -75,11 +75,9 @@
                 </template>
               </el-table-column>
               
-              <el-table-column label="操作" width="140" fixed="right">
+              <el-table-column label="操作" width="80" fixed="right">
                 <template #default="scope">
-                  <el-tooltip content="编辑" placement="top">
-                    <el-button circle size="small" type="primary" plain :icon="Edit" @click="editWord(scope.row)" />
-                  </el-tooltip>
+                  
                   <el-tooltip content="删除" placement="top">
                     <el-button circle size="small" type="danger" plain :icon="Delete" @click="deleteWord(scope.$index)" />
                   </el-tooltip>
@@ -152,40 +150,73 @@
       </el-col>
     </el-row>
 
-    <!-- 添加/编辑单词弹窗 -->
+    <!-- 批量添加单词弹窗 -->
     <el-dialog 
       v-model="dialogVisible" 
-      :title="isEditing ? '编辑单词' : '添加新单词'" 
-      width="500px"
+      title="批量添加单词" 
+      width="600px"
       align-center
+      :close-on-click-modal="false"
     >
-      <el-form label-width="80px" class="custom-form">
-        <el-form-item label="单词">
-          <el-input v-model="newWord.word" placeholder="例如: Apple" />
-        </el-form-item>
-        <el-form-item label="音标">
-          <el-input v-model="newWord.phonetic" placeholder="例如: ˈæpl" />
-        </el-form-item>
-        <el-form-item label="释义">
-          <el-input 
-            v-model="newWord.meaning" 
-            type="textarea" 
-            :rows="2"
-            placeholder="例如: n. 苹果" 
-          />
-        </el-form-item>
-        <el-divider content-position="left">扩展信息 (选填)</el-divider>
-        <el-form-item label="例句(英)">
-          <el-input v-model="newWord.exampleEn" type="textarea" :rows="2" />
-        </el-form-item>
-        <el-form-item label="例句(中)">
-          <el-input v-model="newWord.exampleCn" type="textarea" :rows="2" />
-        </el-form-item>
-      </el-form>
+      <div class="batch-add-container">
+          <!-- 阶段1: 输入 -->
+          <div v-if="!isAnalyzed" class="batch-input-step">
+              <el-alert title="一次最多添加20个单词，请用英文逗号分隔" type="info" show-icon :closable="false" class="mb-3" />
+              <el-input 
+                v-model="batchInput"
+                type="textarea"
+                :rows="8"
+                placeholder="例如: apple, banana, orange, grape..."
+                resize="none"
+              />
+              <div class="word-count-tip">
+                 当前已输入: {{ batchInput ? batchInput.split(/[,，]/).filter(w=>w.trim()).length : 0 }} / 20
+              </div>
+          </div>
+
+          <!-- 阶段2: 确认 -->
+          <div v-else class="batch-confirm-step">
+             <div class="result-header">
+                <span class="confirm-title">匹配结果 ({{ batchList.length }})</span>
+                <el-button link type="primary" @click="isAnalyzed = false">
+                   <el-icon class="mr-1"><RefreshLeft /></el-icon> 重新输入
+                </el-button>
+             </div>
+             
+             <!-- 有匹配结果 -->
+             <el-scrollbar v-if="batchList.length > 0" max-height="350px" class="result-list">
+                <transition-group name="list">
+                  <div v-for="(item, index) in batchList" :key="item.word" class="batch-item-row">
+                      <div class="batch-word-info">
+                          <div class="batch-word-text">{{ item.word }}</div>
+                          <div class="batch-word-detail">{{ item.phonetic }} {{ item.meaning }}</div>
+                      </div>
+                      <el-button circle size="small" type="danger" plain :icon="Delete" @click="removeBatchItem(index)" />
+                  </div>
+                </transition-group>
+             </el-scrollbar>
+             
+             <!-- 无匹配结果 -->
+             <div v-else class="no-match-state">
+                <el-empty description="暂无匹配单词" :image-size="120">
+                  <template #description>
+                    <p class="empty-desc">未找到匹配的单词，请检查输入是否正确</p>
+                  </template>
+                </el-empty>
+             </div>
+          </div>
+      </div>
+
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="resetDialog">取消</el-button>
-          <el-button type="primary" @click="saveWord">保存</el-button>
+          
+          <el-button v-if="!isAnalyzed" type="primary" @click="analyzeWords" :loading="isAnalyzing" :disabled="!batchInput">
+              <el-icon class="mr-1"><MagicStick /></el-icon> 智能匹配
+          </el-button>
+          <el-button v-else type="primary" @click="saveWord" :disabled="batchList.length === 0">
+              确认添加
+          </el-button>
         </span>
       </template>
     </el-dialog>
@@ -195,26 +226,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, VideoPlay, Edit, Delete, Microphone, Search, DataLine, Trophy } from '@element-plus/icons-vue'
+import { Plus, VideoPlay, Edit, Delete, Microphone, Search, DataLine, Trophy, MagicStick, Check, RefreshLeft } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
+import { ElMessage } from 'element-plus'
+import { matchWords } from '@/api/wordbook'
+import type { WordDictionary } from '@/types/wordbook'
 
 const route = useRoute()
 const router = useRouter()
 const bookId = route.params.id
 const bookName = ref('CET-4 核心词') 
 const dialogVisible = ref(false)
-const isEditing = ref(false)
 
 const searchQuery = ref('')
 const filterStatus = ref('all')
-
-const newWord = ref({
-    word: '',
-    phonetic: '',
-    meaning: '',
-    exampleEn: '',
-    exampleCn: ''
-})
 
 const words = ref([
   { word: 'Ambiguous', phonetic: '/æmˈbɪɡjuəs/', meaning: 'adj. 模棱两可的；含糊不清的', exampleEn: '', exampleCn: '' },
@@ -222,29 +247,72 @@ const words = ref([
   { word: 'Comprehensive', phonetic: '/ˌkɒmprɪˈhensɪv/', meaning: 'adj. 全面的；综合的', exampleEn: '', exampleCn: '' },
 ])
 
+// 批量添加相关
+const batchInput = ref('')
+const batchList = ref<WordDictionary[]>([])
+const isAnalyzed = ref(false)
+const isAnalyzing = ref(false)
+
+const analyzeWords = async () => {
+  if (!batchInput.value.trim()) {
+    ElMessage.warning('请输入单词')
+    return
+  }
+  
+  const wordsRaw = batchInput.value.split(/[,，\n]/).map(w => w.trim()).filter(w => w)
+  if (wordsRaw.length === 0) {
+    ElMessage.warning('请输入有效的单词')
+    return
+  }
+  
+  // 限制20个
+  const finalWords = wordsRaw.slice(0, 20)
+  const wordsString = finalWords.join(',')
+
+  isAnalyzing.value = true
+  
+  try {
+    const response = await matchWords(wordsString)
+    
+    if (response.code === 0) {
+      if (response.data && response.data.length > 0) {
+        batchList.value = response.data
+        isAnalyzed.value = true
+        ElMessage.success(`成功匹配 ${response.data.length} 个单词`)
+      } else {
+        ElMessage.warning('暂无匹配单词，请检查输入是否正确')
+        batchList.value = []
+      }
+    } else {
+      ElMessage.error(response.msg || '匹配失败')
+    }
+  } catch (error: any) {
+    console.error('匹配单词失败:', error)
+    ElMessage.error(error.message || '匹配失败，请稍后重试')
+  } finally {
+    isAnalyzing.value = false
+  }
+}
+
+const removeBatchItem = (index: number) => {
+  batchList.value.splice(index, 1)
+  if (batchList.value.length === 0) {
+     ElMessage.info('已清空匹配列表')
+  }
+}
+
 const startReview = () => {
     router.push(`/english/vocab/review/${bookId}`)
 }
 
 const saveWord = () => {
-    if(!newWord.value.word) return;
-    
-    // 模拟保存逻辑
-    if (isEditing.value) {
-       // 更新逻辑...实际应查找ID更新
-       // 这里为了演示简单处理，假装更新了最后一个（实际逻辑需要修改）
-       // 在前端演示中，我们可能只是关闭弹窗
-    } else {
-       words.value.push({...newWord.value});
+    // 批量添加模式
+    if (batchList.value.length > 0) {
+      words.value.push(...batchList.value)
+      ElMessage.success(`成功添加 ${batchList.value.length} 个单词`)
     }
     
     resetDialog();
-}
-
-const editWord = (row: any) => {
-  isEditing.value = true
-  newWord.value = { ...row }
-  dialogVisible.value = true
 }
 
 const deleteWord = (index: number) => {
@@ -253,14 +321,11 @@ const deleteWord = (index: number) => {
 
 const resetDialog = () => {
   dialogVisible.value = false
-  isEditing.value = false
-  newWord.value = {
-        word: '',
-        phonetic: '',
-        meaning: '',
-        exampleEn: '',
-        exampleCn: ''
-  }
+  // 重置批量状态
+  batchInput.value = ''
+  batchList.value = []
+  isAnalyzed.value = false
+  isAnalyzing.value = false
 }
 </script>
 
@@ -528,5 +593,68 @@ const resetDialog = () => {
   .search-input {
     width: 100%;
   }
+}
+
+/* Batch Add Styles */
+.mb-3 { margin-bottom: 12px; }
+.mr-1 { margin-right: 4px; }
+.word-count-tip {
+  text-align: right;
+  margin-top: 8px;
+  color: #909399;
+  font-size: 13px;
+}
+.batch-confirm-step .result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.confirm-title {
+  font-weight: 600;
+  color: #303133;
+}
+.batch-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.3s;
+}
+.batch-item-row:hover {
+  background-color: #ecf5ff;
+}
+.batch-word-text {
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 4px;
+}
+.batch-word-detail {
+  font-size: 12px;
+  color: #909399;
+}
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.4s ease;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* No Match State */
+.no-match-state {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-desc {
+  color: #909399;
+  font-size: 14px;
+  margin: 8px 0 0 0;
 }
 </style>
