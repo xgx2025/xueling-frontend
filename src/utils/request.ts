@@ -7,10 +7,31 @@ import router from '@/router'
 const baseURL = '/api'
 const instance = axios.create({
     baseURL,
-    withCredentials: true  // 支持HttpOnly Cookie
+    withCredentials: true,  // 支持HttpOnly Cookie
+    headers: {
+        'Content-Type': 'application/json'  // 设置默认 Content-Type 为 JSON
+    },
+    // 确保数据被正确序列化为 JSON
+    transformRequest: [
+        (data, headers) => {
+            // 如果数据是对象，序列化为 JSON 字符串
+            if (data && typeof data === 'object' && !(data instanceof FormData)) {
+                headers['Content-Type'] = 'application/json'
+                return JSON.stringify(data)
+            }
+            return data
+        }
+    ]
 })
+// 定义队列项的接口
+interface PendingRequest {
+    resolve: (value: unknown) => void
+    reject: (reason?: any) => void
+    config: any
+}
+
 let isRefreshing = false // 是否正在刷新Token
-let requestsQueue: Array<() => void> = []  // 明确为函数数组,等待刷新的请求队列
+let requestsQueue: Array<PendingRequest> = []  // 等待刷新的请求队列
 
 
 //添加请求拦截器
@@ -31,16 +52,11 @@ instance.interceptors.request.use(
         
         // 检查是否有访问令牌
         const token = tokenStore.accessToken?.trim()
-        if (!token) {
-            console.error('请求拦截器：未找到有效的 token')
-            ElMessage.warning('请先登录账号！')
-            router.push('/login')
-            return Promise.reject(new Error('未登录'))
+        if (token) {
+            // 添加 Authorization 头
+            config.headers.Authorization = 'Bearer ' + token
+            console.log('请求拦截器：已添加 Authorization 头', config.url)
         }
-        
-        // 添加 Authorization 头
-        config.headers.Authorization = 'Bearer ' + token
-        console.log('请求拦截器：已添加 Authorization 头', config.url)
         return config
     },
     err => {
@@ -84,10 +100,6 @@ instance.interceptors.response.use(
     
         // 处理401错误（Token过期）
         if (err.response?.status === 401) {
-            if (!tokenStore.accessToken) {
-            router.push('/login')
-            return Promise.reject(err)
-        }
 
         // 如果不在刷新中，发起刷新请求
         if (!isRefreshing) {
@@ -95,7 +107,7 @@ instance.interceptors.response.use(
             try {
                 // 调用刷新Token接口 (refreshToken通过HttpOnly Cookie自动发送)
                 const refreshRes = await instance.post(
-                    '/refreshToken',
+                    '/auth/refreshToken',
                     {},
                     { 
                         skipInterceptors: true,
@@ -108,12 +120,16 @@ instance.interceptors.response.use(
                 tokenStore.setToken(refreshRes.data)
                 
                 // 重试队列中的所有请求
-                requestsQueue.forEach(cb => cb())
+                requestsQueue.forEach(({ resolve, config }) => resolve(instance(config)))
                 requestsQueue = []
                 
                 // 重试当前请求
                 return instance(originalConfig)
             } catch (refreshErr) {
+                // 刷新失败，清理队列并拒绝所有请求
+                requestsQueue.forEach(({ reject }) => reject(refreshErr))
+                requestsQueue = []
+
                 // 刷新失败，需要重新登录
                 tokenStore.removeToken()
                 router.push('/login')
@@ -123,9 +139,11 @@ instance.interceptors.response.use(
             }
         } else {
             // 如果正在刷新中，将请求加入队列等待
-            return new Promise(resolve => {
-                requestsQueue.push(() => {
-                    resolve(instance(originalConfig))
+            return new Promise((resolve, reject) => {
+                requestsQueue.push({ 
+                    resolve, 
+                    reject, 
+                    config: originalConfig 
                 })
             })
         }

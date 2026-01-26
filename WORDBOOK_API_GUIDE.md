@@ -18,18 +18,26 @@
 /**
  * Controller 路径: @RequestMapping("/wordbooks")
  * 创建一个单词本
- * @param name 单词本名称
+ * @param createWordBookDTO 创建单词本数据（包含 name, color, icon）
  */
 @PostMapping
-public Result<String> createWordBook(@RequestParam("name") String name) {
+public Result<String> createWordBook(@RequestBody CreateWordBookDTO createWordBookDTO) {
     Claims claims = ThreadLocalUtils.get();
     Long userId = claims.get("userId", Long.class);
-    wordBookService.createWordBook(name, userId);
+    wordBookService.createWordBook(createWordBookDTO, userId);
     return Result.success("单词本创建成功");
 }
 ```
 
-**完整路径**: `POST /wordbooks?name=单词本名称`
+**完整路径**: `POST /wordbooks`
+**请求体格式**: JSON
+```json
+{
+  "name": "单词本名称",
+  "color": "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
+  "icon": "📖"
+}
+```
 
 ### 前端调用
 
@@ -42,12 +50,12 @@ import { createWordBook } from '@/api/wordbook'
 #### 2. 调用接口
 
 ```typescript
-// 方式一：直接传入名称
-const response = await createWordBook('我的单词本')
-
-// 方式二：使用 DTO（推荐）
-import { createWordBookWithDTO } from '@/api/wordbook'
-const response = await createWordBookWithDTO({ name: '我的单词本' })
+// 传递完整的 DTO 对象
+const response = await createWordBook({
+  name: '我的单词本',
+  color: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+  icon: '📖'
+})
 ```
 
 #### 3. 处理响应
@@ -68,7 +76,7 @@ if (response.code === 0) {
 ```vue
 <template>
   <div>
-    <el-input v-model="bookName" placeholder="请输入单词本名称" />
+    <el-input v-model="bookForm.name" placeholder="请输入单词本名称" />
     <el-button @click="handleCreate" :loading="loading">创建</el-button>
   </div>
 </template>
@@ -78,22 +86,26 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { createWordBook } from '@/api/wordbook'
 
-const bookName = ref('')
+const bookForm = ref({
+  name: '',
+  color: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+  icon: '📖'
+})
 const loading = ref(false)
 
 const handleCreate = async () => {
-  if (!bookName.value.trim()) {
+  if (!bookForm.value.name.trim()) {
     ElMessage.warning('请输入单词本名称')
     return
   }
   
   try {
     loading.value = true
-    const response = await createWordBook(bookName.value)
+    const response = await createWordBook(bookForm.value)
     
     if (response.code === 0) {
       ElMessage.success('创建成功')
-      bookName.value = ''
+      bookForm.value.name = ''
     } else {
       ElMessage.error(response.msg)
     }
@@ -124,7 +136,9 @@ export interface WordBook {
 
 ```typescript
 export interface CreateWordBookDTO {
-  name: string         // 单词本名称
+  name: string         // 单词本名称（必填）
+  color: string        // 封面背景色（必填）
+  icon: string         // 封面图标（必填）
 }
 ```
 
@@ -132,9 +146,10 @@ export interface CreateWordBookDTO {
 
 1. **请求方式**: POST
 2. **请求路径**: `/wordbooks`（注意：Controller 上有 `@RequestMapping("/wordbooks")`）
-3. **参数格式**: Query 参数 `?name=单词本名称`
-4. **认证要求**: 需要在请求头中携带 `Authorization: Bearer <token>`，后端会从 ThreadLocal 中获取 userId
-5. **响应格式**: 
+3. **参数格式**: JSON 请求体（`@RequestBody`）
+4. **必填字段**: name, color, icon
+5. **认证要求**: 需要在请求头中携带 `Authorization: Bearer <token>`，后端会从 ThreadLocal 中获取 userId
+6. **响应格式**: 
    ```typescript
    {
      code: 0,           // 0 表示成功

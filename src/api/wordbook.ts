@@ -5,28 +5,52 @@
 
 import request from '@/utils/request'
 import type { ApiResponse } from '@/types/auth'
-import type { CreateWordBookDTO, WordDictionary } from '@/types/wordbook'
+import type { CreateWordBookDTO, WordDictionary, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO } from '@/types/wordbook'
 
 /**
  * 创建一个单词本
- * @param name 单词本名称
+ * @param data 创建单词本数据对象 (DTO)
  * @returns Promise<ApiResponse<string>> 返回创建结果
  */
-export const createWordBook = (name: string): Promise<ApiResponse<string>> => {
-  return request.post('/wordbooks', null, {
-    params: { name }
+export const createWordBook = (data: CreateWordBookDTO): Promise<ApiResponse<string>> => {
+  return request.post('/wordbooks', data)
+}
+
+/**
+ * 添加单词到单词本
+ * @param data 添加单词数据对象
+ * @returns Promise<ApiResponse<string>> 返回结果
+ */
+export const addWordsToBook = (data: AddWordsToWordBookDTO): Promise<ApiResponse<string>> => {
+  return request.post('/wordbooks/word', data)
+}
+
+/**
+ * 从单词本中移除单词
+ * @param data 移除单词数据对象
+ * @returns Promise<ApiResponse<string>> 返回结果
+ */
+export const removeWordsFromBook = (data: RemoveWordsFromWordBookDTO): Promise<ApiResponse<string>> => {
+  return request.delete(`/wordbooks/word`, {
+    data: data
   })
 }
 
 /**
- * 创建一个单词本（使用 DTO）
- * @param dto 创建单词本数据
- * @returns Promise<ApiResponse<string>> 返回创建结果
+ * 获取单词本详情
+ * @param id 单词本ID
+ * @returns Promise<ApiResponse<WordBookDetailVO>> 返回单词本详情
  */
-export const createWordBookWithDTO = (dto: CreateWordBookDTO): Promise<ApiResponse<string>> => {
-  return request.post('/wordbooks', null, {
-    params: { name: dto.name }
-  })
+export const getWordBookDetail = (id: string | number): Promise<ApiResponse<WordBookDetailVO>> => {
+  return request.get(`/wordbooks/${id}`)
+}
+
+/**
+ * 获取单词本列表
+ * @returns Promise<ApiResponse<WordBookVo[]>> 返回单词本列表
+ */
+export const getWordBooks = (): Promise<ApiResponse<WordBookVo[]>> => {
+  return request.get('/wordbooks/all')
 }
 
 /**

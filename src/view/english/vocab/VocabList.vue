@@ -15,7 +15,7 @@
           <p>科学记忆曲线，智能复习算法，助你高效攻克词汇难关。</p>
           <div class="stats-row">
             <div class="stat-item">
-                <span class="stat-num">{{ wordBooks.reduce((acc, cur) => acc + cur.count, 0) }}</span>
+                <span class="stat-num">{{ wordBooks.reduce((acc, cur) => acc + cur.wordCount, 0) }}</span>
                 <span class="stat-label">总词汇量</span>
             </div>
             <div class="stat-item">
@@ -38,7 +38,7 @@
           <span class="subtitle">Keep going!</span>
       </div>
 
-      <div class="book-grid">
+      <div class="book-grid" v-loading="loadingBooks">
         <div v-for="book in wordBooks" :key="book.id" class="book-card" @click="handleBookClick(book.id)">
           <div class="book-cover" :style="{ background: book.color }">
             <span class="book-icon">{{ book.icon }}</span>
@@ -49,15 +49,15 @@
           <div class="book-info">
             <div class="info-header">
               <h3>{{ book.name }}</h3>
-              <span class="word-count-badge">{{ book.count }} 词</span>
+              <span class="word-count-badge">{{ book.wordCount }} 词</span>
             </div>
             <div class="progress-container">
               <div class="progress-info">
                   <span>掌握度</span>
-                  <span class="progress-val">{{ book.mastered }}%</span>
+                  <span class="progress-val">{{ book.mastery }}%</span>
               </div>
               <el-progress 
-                  :percentage="book.progress" 
+                  :percentage="book.mastery" 
                   :show-text="false" 
                   :stroke-width="6" 
                   color="#626aef" 
@@ -71,16 +71,45 @@
     </div>
 
     <!-- 新建单词本弹窗 -->
-    <el-dialog v-model="dialogVisible" title="新建单词本" width="30%">
-      <el-form>
+    <el-dialog v-model="dialogVisible" title="新建单词本" width="450px" class="create-book-dialog" align-center>
+      <el-form label-position="top">
         <el-form-item label="名称">
-          <el-input v-model="newBookName" placeholder="例如：四级核心词汇" />
+          <el-input v-model="newBookForm.name" placeholder="例如：四级核心词汇" class="custom-input"/>
+        </el-form-item>
+        
+        <el-form-item label="封面风格">
+          <div class="color-options">
+            <div 
+              v-for="(color, index) in presetColors" 
+              :key="index"
+              class="color-circle"
+              :style="{ background: color }"
+              :class="{ active: newBookForm.color === color }"
+              @click="newBookForm.color = color"
+            >
+               <el-icon v-if="newBookForm.color === color" class="check-icon"><Check /></el-icon>
+            </div>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="图标">
+           <div class="icon-options">
+              <div 
+                v-for="(icon, index) in presetIcons" 
+                :key="index"
+                class="icon-item"
+                :class="{ active: newBookForm.icon === icon }"
+                @click="newBookForm.icon = icon"
+              >
+                {{ icon }}
+              </div>
+           </div>
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="createBook" :loading="loading">创建</el-button>
+          <el-button type="primary" @click="createBook" :loading="loading">立即创建</el-button>
         </span>
       </template>
     </el-dialog>
@@ -88,66 +117,120 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Check } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage } from 'element-plus'
-import { createWordBook } from '@/api/wordbook'
+import { createWordBook, getWordBooks } from '@/api/wordbook'
+import type { WordBookVo } from '@/types/wordbook'
 
 const router = useRouter()
 const dialogVisible = ref(false)
-const newBookName = ref('')
+
+const presetColors = [
+  'linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%)',
+  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+  'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+  'linear-gradient(120deg, #f6d365 0%, #fda085 100%)',
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(120deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)'
+]
+
+const presetIcons = ['📘', '📖', '📚', '📕', '📗', '📙', '🎓', '🗣️', '📝', '🧠', '🌟', '🔥']
+
+const newBookForm = ref({
+  name: '',
+  color: presetColors[0],
+  icon: presetIcons[0]
+})
+
 const loading = ref(false)
+const loadingBooks = ref(false)
 // 这是一个学习场景的 Lottie 动画链接
 const animationLink = 'https://assets5.lottiefiles.com/packages/lf20_1a8sx7oe.json' 
 
-// 模拟数据
-const wordBooks = ref([
-  { id: 1, name: 'CET-4 核心词', count: 120, progress: 45, mastered: 45, color: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', icon: '📖' },
-  { id: 2, name: '考研英语重点', count: 350, progress: 12, mastered: 12, color: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)', icon: '🎓' },
-  { id: 3, name: '日常口语', count: 85, progress: 80, mastered: 80, color: 'linear-gradient(120deg, #f6d365 0%, #fda085 100%)', icon: '🗣️' },
-])
+// 预设颜色和图标（用于前端展示）
+const presetColorsForDisplay = [
+  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+  'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+  'linear-gradient(120deg, #f6d365 0%, #fda085 100%)',
+  'linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%)',
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(120deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)'
+]
+
+const presetIconsForDisplay = ['📘', '📖', '📚', '📕', '📗', '📙', '🎓', '🗣️', '📝', '🧠', '🌟', '🔥']
+
+// 单词本列表（从后端获取）
+const wordBooks = ref<Array<WordBookVo & { color: string; icon: string }>>([])
+
+// 获取单词本列表
+const fetchWordBooks = async () => {
+  try {
+    loadingBooks.value = true
+    const response = await getWordBooks()
+    
+    if (response.code === 0 && response.data) {
+      // 为每个单词本分配颜色和图标（后端没有这些字段）
+      wordBooks.value = response.data.map((book, index) => ({
+        ...book,
+        color: presetColorsForDisplay[index % presetColorsForDisplay.length],
+        icon: presetIconsForDisplay[index % presetIconsForDisplay.length]
+      }))
+    } else {
+      ElMessage.error(response.msg || '获取单词本列表失败')
+    }
+  } catch (error: any) {
+    console.error('获取单词本列表失败:', error)
+    ElMessage.error(error.message || '获取单词本列表失败，请稍后重试')
+  } finally {
+    loadingBooks.value = false
+  }
+}
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchWordBooks()
+})
 
 const handleBookClick = (id: number) => {
   router.push(`/english/vocab/book/${id}`)
 }
 
 const createBook = async () => {
-  if (!newBookName.value.trim()) {
+  if (!newBookForm.value.name.trim()) {
     ElMessage.warning('请输入单词本名称')
     return
   }
   
   try {
     loading.value = true
-    const response = await createWordBook(newBookName.value)
+    
+    // 构建 DTO 对象
+    const dto = {
+      name: newBookForm.value.name,
+      color: newBookForm.value.color,
+      icon: newBookForm.value.icon
+    }
+    
+    console.log('准备创建单词本，数据:', dto)
+    
+    // 传递完整的 DTO 对象（包含 name, color, icon）
+    const response = await createWordBook(dto)
     
     if (response.code === 0) {
       ElMessage.success(response.msg || '单词本创建成功')
       
-      // 添加到本地列表（使用随机颜色和图标）
-      const colors = [
-        'linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%)',
-        'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-        'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
-        'linear-gradient(120deg, #f6d365 0%, #fda085 100%)',
-        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      ]
-      const icons = ['📘', '📖', '📚', '📕', '📗', '📙']
-      
-      wordBooks.value.push({
-        id: Date.now(),
-        name: newBookName.value,
-        count: 0,
-        progress: 0,
-        mastered: 0,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        icon: icons[Math.floor(Math.random() * icons.length)]
-      })
+      // 创建成功后重新获取列表
+      await fetchWordBooks()
       
       dialogVisible.value = false
-      newBookName.value = ''
+      newBookForm.value = {
+        name: '',
+        color: presetColors[0],
+        icon: presetIcons[0]
+      }
     } else {
       ElMessage.error(response.msg || '创建失败')
     }
@@ -389,5 +472,92 @@ const createBook = async () => {
 .progress-val {
     color: #2c3e50;
     font-weight: 700;
+}
+
+/* Create Dialog Styles */
+.create-book-dialog :deep(.el-dialog__title) {
+  font-weight: 600;
+}
+
+.custom-input :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #e4e7ed inset;
+}
+
+.color-options {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.color-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid transparent;
+}
+
+.color-circle:hover {
+  transform: scale(1.1);
+}
+
+.color-circle.active {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-color: #fff;
+}
+
+.color-circle.active::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px solid #409EFF;
+}
+
+.check-icon {
+  color: white;
+  font-size: 18px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
+
+.icon-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 4px;
+}
+
+.icon-item {
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #f5f7fa;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.icon-item:hover {
+  background: #ecf5ff;
+}
+
+.icon-item.active {
+  background: #ecf5ff;
+  border-color: #409EFF;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
 }
 </style>

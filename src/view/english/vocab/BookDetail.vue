@@ -40,14 +40,14 @@
                 </el-radio-group>
              </div>
              <div class="right-tools">
-                <span class="total-count">共 {{ words.length }} 个</span>
+                <span class="total-count">共 {{ filteredWords.length }} 个</span>
              </div>
           </div>
 
           <el-card shadow="never" class="table-card" :body-style="{ padding: '0' }">
             <el-table 
               v-if="words.length > 0"
-              :data="words" 
+              :data="filteredWords" 
               style="width: 100%" 
               :header-cell-style="{ background: '#fff', color: '#909399', fontWeight: '500', borderBottom: '1px solid #f0f2f5' }"
               :row-class-name="'word-row'"
@@ -79,7 +79,7 @@
                 <template #default="scope">
                   
                   <el-tooltip content="删除" placement="top">
-                    <el-button circle size="small" type="danger" plain :icon="Delete" @click="deleteWord(scope.$index)" />
+                    <el-button circle size="small" type="danger" plain :icon="Delete" @click="deleteWord(scope.row)" />
                   </el-tooltip>
                 </template>
               </el-table-column>
@@ -109,7 +109,7 @@
                 </div>
                 <div class="dashboard-area">
                    <div class="chart-container">
-                       <el-progress type="dashboard" :percentage="35" :width="130" :stroke-width="8" color="#409EFF">
+                       <el-progress type="dashboard" :percentage="mastery" :width="130" :stroke-width="8" color="#409EFF">
                           <template #default="{ percentage }">
                              <span class="percentage-value">{{ percentage }}%</span>
                              <span class="percentage-label">掌握率</span>
@@ -224,13 +224,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Plus, VideoPlay, Edit, Delete, Microphone, Search, DataLine, Trophy, MagicStick, Check, RefreshLeft } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
-import { ElMessage } from 'element-plus'
-import { matchWords } from '@/api/wordbook'
-import type { WordDictionary } from '@/types/wordbook'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { matchWords, getWordBookDetail, addWordsToBook, removeWordsFromBook } from '@/api/wordbook'
+import type { WordDictionary, WordVO } from '@/types/wordbook'
 
 const route = useRoute()
 const router = useRouter()
@@ -240,12 +240,54 @@ const dialogVisible = ref(false)
 
 const searchQuery = ref('')
 const filterStatus = ref('all')
+const mastery = ref(0)
+const words = ref<WordVO[]>([])
 
-const words = ref([
-  { word: 'Ambiguous', phonetic: '/æmˈbɪɡjuəs/', meaning: 'adj. 模棱两可的；含糊不清的', exampleEn: '', exampleCn: '' },
-  { word: 'Benevolent', phonetic: '/bəˈnevələnt/', meaning: 'adj. 仁慈的；慈善的', exampleEn: '', exampleCn: '' },
-  { word: 'Comprehensive', phonetic: '/ˌkɒmprɪˈhensɪv/', meaning: 'adj. 全面的；综合的', exampleEn: '', exampleCn: '' },
-])
+const filteredWords = computed(() => {
+  let result = words.value
+
+  // 搜索过滤
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase().trim()
+    result = result.filter(item => 
+      item.word.toLowerCase().includes(query) || 
+      item.meaning.toLowerCase().includes(query)
+    )
+  }
+
+  // 状态过滤 (预留扩展)
+  if (filterStatus.value !== 'all') {
+    // TODO: 后续根据实际字段过滤 learning/mastered
+  }
+
+  return result
+})
+
+const loadData = async () => {
+  if (!bookId) return
+  try {
+    const res = await getWordBookDetail(bookId as string)
+    if (res.code === 0 && res.data) {
+      bookName.value = res.data.name
+      mastery.value = res.data.mastery || 0
+      // 根据create_time降序排序
+      if (res.data.wordList) {
+        words.value = res.data.wordList.sort((a, b) => {
+          const timeA = a.createTime ? new Date(a.createTime).getTime() : 0
+          const timeB = b.createTime ? new Date(b.createTime).getTime() : 0
+          return timeB - timeA
+        })
+      }
+    }
+  } catch (error) {
+    console.error('获取详情失败', error)
+    ElMessage.error('获取单词本详情失败')
+  }
+}
+
+onMounted(() => {
+  loadData()
+})
 
 // 批量添加相关
 const batchInput = ref('')
@@ -305,18 +347,71 @@ const startReview = () => {
     router.push(`/english/vocab/review/${bookId}`)
 }
 
-const saveWord = () => {
+const saveWord = async () => {
     // 批量添加模式
     if (batchList.value.length > 0) {
-      words.value.push(...batchList.value)
-      ElMessage.success(`成功添加 ${batchList.value.length} 个单词`)
+      if (!bookId) return
+      
+      const wordIds = batchList.value.map(item => String(item.id))
+      
+      try {
+        const res = await addWordsToBook({
+          wordBookId: String(bookId),
+          wordIds
+        })
+        
+        if (res.code === 0) {
+           ElMessage.success(`成功添加 ${batchList.value.length} 个单词`)
+           // 重新加载数据以刷新列表
+           loadData()
+           resetDialog()
+        } else {
+           ElMessage.error(res.msg || '添加失败')
+        }
+      } catch (error: any) {
+        console.error('添加单词失败', error)
+        ElMessage.error(error.message || '添加失败，请稍后重试')
+      }
     }
-    
-    resetDialog();
 }
 
-const deleteWord = (index: number) => {
-    words.value.splice(index, 1);
+const deleteWord = (row: WordVO) => {
+    ElMessageBox.confirm(
+      '确定要从单词本中删除该单词吗？',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+        width: 300
+      }
+    ).then(async () => {
+      if (!bookId || !row.id) return
+
+      try {
+        const res = await removeWordsFromBook({
+          wordBookId: String(bookId),
+          wordIds: [String(row.id)]
+        })
+
+        if (res.code === 0) {
+          ElMessage.success('删除成功')
+          // 移除本地数据或重新加载
+          const index = words.value.findIndex(w => w.id === row.id)
+          if (index > -1) {
+            words.value.splice(index, 1)
+          }
+          // 或者调用 loadData()
+        } else {
+          ElMessage.error(res.msg || '删除失败')
+        }
+      } catch (error: any) {
+        console.error('删除单词失败', error)
+        ElMessage.error(error.message || '删除失败，请稍后重试')
+      }
+    }).catch(() => {
+      // 取消删除
+    })
 }
 
 const resetDialog = () => {
