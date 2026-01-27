@@ -172,11 +172,11 @@ const fetchWordBooks = async () => {
     const response = await getWordBooks()
     
     if (response.code === 0 && response.data) {
-      // 为每个单词本分配颜色和图标（后端没有这些字段）
+      // 为每个单词本分配颜色和图标（如果后端未返回）
       wordBooks.value = response.data.map((book, index) => ({
         ...book,
-        color: presetColorsForDisplay[index % presetColorsForDisplay.length],
-        icon: presetIconsForDisplay[index % presetIconsForDisplay.length]
+        color: book.color || presetColorsForDisplay[index % presetColorsForDisplay.length],
+        icon: book.icon || presetIconsForDisplay[index % presetIconsForDisplay.length]
       }))
     } else {
       ElMessage.error(response.msg || '获取单词本列表失败')
@@ -194,7 +194,7 @@ onMounted(() => {
   fetchWordBooks()
 })
 
-const handleBookClick = (id: number) => {
+const handleBookClick = (id: string) => {
   router.push(`/english/vocab/book/${id}`)
 }
 

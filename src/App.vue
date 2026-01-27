@@ -1,7 +1,14 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import AIAssistant from '@/components/AIAssistant.vue'
+import TranslateDrawer from '@/components/TranslateDrawer.vue'
+</script>
 
 <template>
-  <router-view />
+  <div id="app-container">
+    <router-view />
+    <AIAssistant />
+    <TranslateDrawer />
+  </div>
 </template>
 
 <style>

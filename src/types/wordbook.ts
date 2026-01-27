@@ -13,12 +13,12 @@ export interface WordBook {
 
 // 单词本 VO（用于列表展示）
 export interface WordBookVo {
-  id: number           // 单词本ID
+  id: string           // 单词本ID
   name: string         // 单词本名称
   wordCount: number    // 单词总数
   mastery: number      // 掌握度（0-100）
-  color?: string       // 封面背景色（前端使用）
-  icon?: string        // 封面图标（前端使用）
+  color?: string       // 封面背景色
+  icon?: string        // 封面图标
 }
 
 // 创建单词本 DTO
