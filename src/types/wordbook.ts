@@ -34,6 +34,8 @@ export interface WordDictionary {
   word: string         // 单词
   meaning: string      // 释义
   phonetic: string     // 音标
+  inWordBook?: boolean // 是否已在单词本中
+  wordBookId?: string  // 单词本ID
 }
 
 // 单词 VO

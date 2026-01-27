@@ -30,7 +30,9 @@ export const translateText = async (text: string): Promise<ApiResponse<Translate
         word: wordData.word,
         phonetic: wordData.phonetic,
         translations,
-        examples: []
+        examples: [],
+        inWordBook: wordData.inWordBook,
+        wordBookId: wordData.wordBookId
       }
       
       return {
@@ -57,42 +59,88 @@ export const translateText = async (text: string): Promise<ApiResponse<Translate
 
 /**
  * 解析释义字符串，提取词性和含义
- * 支持格式：
- * - "n. 苹果；水果"
- * - "v. 跑步；奔跑"
- * - "adj. 美丽的；漂亮的"
- * - "苹果；水果" (无词性)
+ * 支持复杂格式：
+ * - "n. 旗帜；标记；信号；vt. 标记；标志；vi. 下垂；变弱；疲惫"
  */
 function parseTranslations(meaning: string): Translation[] {
   if (!meaning) {
     return []
   }
 
-  // 词性正则：匹配 n. v. adj. adv. prep. conj. pron. 等
-  const posPattern = /^([a-z]+\.)\s*/i
+  // 1. 尝试直接按分号分割用于简单情况检查 (fallback)
+  // 但主要逻辑是先按词性分割
   
-  // 检查是否包含词性
-  const match = meaning.match(posPattern)
+  // 使用捕获组分割字符串，这样词性也会保留在数组中
+  // 匹配 1-5 个字母加点号的情况，如 n. vt. adj. 
+  const parts = meaning.split(/([a-z]{1,5}\.)/i)
   
-  if (match && match[1]) {
-    // 有词性的情况
-    const pos = match[1]
-    const meaningsText = meaning.substring(match[0].length)
-    const meanings = meaningsText.split(/[；;]/).map(m => m.trim()).filter(m => m)
-    
-    return [{
-      pos,
-      meanings
-    }]
-  } else {
-    // 无词性的情况，默认使用 n.
-    const meanings = meaning.split(/[；;]/).map(m => m.trim()).filter(m => m)
-    
-    return [{
-      pos: 'n.',
-      meanings
-    }]
+  const result: Translation[] = []
+  
+  // 合法的词性白名单（小写），避免将 e.g. 等误判为词性
+  const validPos = new Set([
+      'n.', 'v.', 'vt.', 'vi.', 'adj.', 'adv.', 
+      'prep.', 'conj.', 'pron.', 'int.', 'num.', 
+      'art.', 'aux.', 'pl.', 'abbr.'
+  ])
+  
+  let currentPos = '' 
+  let currentMeaningsStr = ''
+  
+  for (const part of parts) {
+      const trimmedPart = part.trim()
+      if (!trimmedPart) continue
+      
+      // 检查是否是词性标记
+      if (validPos.has(trimmedPart.toLowerCase())) {
+          // 如果遇到了新词性，且之前有缓存的释义，则先保存之前的结果
+          if (currentMeaningsStr.trim()) {
+              const meanings = currentMeaningsStr.split(/[；;]/)
+                  .map(m => m.trim())
+                  .filter(m => m)
+                  
+              if (meanings.length > 0) {
+                  result.push({
+                      pos: currentPos || 'n.', // 如果之前没有词性，默认为 n.
+                      meanings
+                  })
+              }
+          }
+          
+          // 更新当前词性，清空释义缓存
+          currentPos = trimmedPart
+          currentMeaningsStr = ''
+      } else {
+          // 不是词性，则是释义内容
+          currentMeaningsStr += part
+      }
   }
+  
+  // 处理最后剩余的部分
+  if (currentMeaningsStr.trim()) {
+      const meanings = currentMeaningsStr.split(/[；;]/)
+          .map(m => m.trim())
+          .filter(m => m)
+      
+      if (meanings.length > 0) {
+          result.push({
+              pos: currentPos || 'n.', // 默认为 n.
+              meanings
+          })
+      }
+  }
+  
+  // 如果解析结果为空，尝试作为普通字符串处理
+  if (result.length === 0) {
+      const meanings = meaning.split(/[；;]/).map(m => m.trim()).filter(m => m)
+      if (meanings.length > 0) {
+          return [{
+              pos: 'n.',
+              meanings
+          }]
+      }
+  }
+  
+  return result
 }
 
 /**

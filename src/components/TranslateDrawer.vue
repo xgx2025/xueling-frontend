@@ -74,11 +74,15 @@
                     <el-button 
                       circle 
                       text
-                      @click="showAddToBookDialog"
+                      @click="toggleFavorite"
                       class="action-btn favorite-btn"
-                      title="添加到单词本"
+                      :class="{ 'is-collected': currentResult.inWordBook }"
+                      :title="currentResult.inWordBook ? '取消收藏' : '添加到单词本'"
                     >
-                      <el-icon :size="22"><Star /></el-icon>
+                      <el-icon :size="22">
+                        <StarFilled v-if="currentResult.inWordBook" />
+                        <Star v-else />
+                      </el-icon>
                     </el-button>
                     <el-button 
                       circle 
@@ -324,13 +328,14 @@ import {
   Clock,
   Delete,
   Star,
+  StarFilled,
   Warning
 } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTranslate } from '@/composables/useTranslate'
 import { getWordBooks } from '@/api/wordbook'
-import { matchWords, addWordsToBook } from '@/api/wordbook'
+import { matchWords, addWordsToBook, removeWordsFromBook } from '@/api/wordbook'
 import type { WordBookVo } from '@/types/wordbook'
 import { useTokenStore } from '@/stores/token'
 
@@ -439,6 +444,72 @@ const copyResult = () => {
   })
 }
 
+// 切换收藏状态（收藏/取消收藏）
+const toggleFavorite = async () => {
+  if (!currentResult.value) return
+  
+  // 1. 如果已收藏，则执行取消收藏
+  if (currentResult.value.inWordBook) {
+    await handleRemoveFromBook()
+  } else {
+    // 2. 如果未收藏，则打开收藏弹窗
+    showAddToBookDialog()
+  }
+}
+
+// 取消收藏逻辑
+const handleRemoveFromBook = async () => {
+  if (!currentResult.value || !currentResult.value.wordBookId) {
+    ElMessage.warning('无法获取收藏信息，请重试')
+    return
+  }
+
+  try {
+    ElMessage.info('正在取消收藏...')
+    
+    // 1. 先匹配单词获取 ID（为了获取 wordId）
+    const matchResponse = await matchWords(currentResult.value.word)
+    
+    if (matchResponse.code === 0 && matchResponse.data && matchResponse.data.length > 0) {
+      const wordId = matchResponse.data[0].id
+      
+      // 2. 调用后端接口移除单词
+      const removeResponse = await removeWordsFromBook({
+        wordBookId: currentResult.value.wordBookId,
+        wordIds: [String(wordId)]
+      })
+      
+      if (removeResponse.code === 0) {
+        ElMessage.success({
+          message: '已取消收藏',
+          type: 'success',
+          plain: true,
+        })
+        
+        // 更新前端状态
+        currentResult.value.inWordBook = false
+        currentResult.value.wordBookId = undefined
+        
+        // 尝试减少对应单词本的计数（非必须，为了数据一致性）
+        // 这里不知道刚才取消的是哪个本子，如果需要更新计数，可能需要重新拉取单词本列表或牺牲一点准确性
+        // 简单处理：如果当前 wordBooks 中有匹配的，就减1
+        // 注意：removeWordsFromBook 入参里有 wordBookId
+        const targetBook = wordBooks.value.find(b => b.id === removeResponse.data || currentResult.value?.wordBookId) 
+        // 备注：后端接口返回的 data 可能是 String，但不一定是 ID，这里最好用入参 ID 匹配
+        // 但由于是在取消收藏函数里，我们其实无法直接访问到 “刚才点击那个按钮上下文里的 bookId”，
+        // 幸好 currentResult 里存了 wordBookId
+      } else {
+        ElMessage.error(removeResponse.msg || '取消收藏失败')
+      }
+    } else {
+      ElMessage.error('无法找到该单词信息')
+    }
+  } catch (error: any) {
+    console.error('取消收藏失败:', error)
+    ElMessage.error('取消收藏操作失败')
+  }
+}
+
 // 显示添加到单词本对话框
 const showAddToBookDialog = async () => {
   addToBookVisible.value = true
@@ -510,6 +581,19 @@ const handleAddToBook = async () => {
           type: 'success',
           plain: true,
         })
+
+        // 手动更新本地显示的单词数量，提升体验
+        const targetBook = wordBooks.value.find(book => book.id === selectedBookId.value)
+        if (targetBook) {
+          targetBook.wordCount = (targetBook.wordCount || 0) + 1
+        }
+        
+        // 更新当前单词状态为已收藏
+        if (currentResult.value) {
+          currentResult.value.inWordBook = true
+          currentResult.value.wordBookId = String(selectedBookId.value)
+        }
+
         addToBookVisible.value = false
         selectedBookId.value = null
       } else {
@@ -734,6 +818,10 @@ onMounted(() => {
 
 .favorite-btn:hover {
   color: #fbbf24;
+}
+
+.is-collected {
+  color: #fbbf24 !important;
 }
 
 .phonetic-row {

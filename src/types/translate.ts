@@ -9,6 +9,8 @@ export interface TranslateResult {
   translations: Translation[] // 翻译列表
   examples?: Example[]      // 例句
   etymology?: string        // 词源
+  inWordBook?: boolean      // 是否已在单词本中
+  wordBookId?: string       // 所在单词本ID（如果已收藏）
 }
 
 // 单个翻译
