@@ -166,11 +166,13 @@
           </div>
         </div>
 
-        <!-- 翻译历史 -->
+        <!-- 翻译历史 (紧凑版) -->
         <div class="history-section" v-if="recentHistory.length > 0">
-          <div class="section-title">
-            <el-icon><Clock /></el-icon>
-            <span>最近翻译</span>
+          <div class="history-header">
+            <div class="header-left">
+              <el-icon><Clock /></el-icon>
+              <span>最近搜索</span>
+            </div>
             <el-button
               link
               size="small"
@@ -180,24 +182,21 @@
               清空
             </el-button>
           </div>
-          <div class="history-list">
+          <div class="history-list-compact">
             <div
               v-for="item in recentHistory"
               :key="item.id"
-              class="history-item"
+              class="history-tag"
               @click="retranslate(item.word)"
+              :title="`搜索时间: ${formatTime(item.timestamp)}`"
             >
-              <div class="history-word">
-                <span class="word">{{ item.word }}</span>
-                <span class="time">{{ formatTime(item.timestamp) }}</span>
-              </div>
-              <el-button
-                circle
-                size="small"
+              <span class="tag-text">{{ item.word }}</span>
+              <el-icon 
+                class="tag-close"
                 @click.stop="removeFromHistory(item.id)"
-                :icon="Delete"
-                class="delete-btn"
-              />
+              >
+                <Close />
+              </el-icon>
             </div>
           </div>
         </div>
@@ -965,66 +964,97 @@ onMounted(() => {
 /* 历史记录 */
 .history-section {
   border-top: 1px solid #e5e7eb;
-  padding: 16px 20px;
-  background: #f9fafb;
+  padding: 12px 16px;
+  background: #f8fafc;
+  flex-shrink: 0;
 }
 
-.history-section .section-title {
-  border-bottom: none;
-  margin-bottom: 12px;
-  justify-content: space-between;
-}
-
-.clear-btn {
-  color: #ef4444;
-  font-size: 13px;
-}
-
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.history-item {
+.history-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.clear-btn {
+  color: #94a3b8;
+  font-size: 12px;
+  padding: 0;
+  height: auto;
+}
+
+.clear-btn:hover {
+  color: #ef4444;
+}
+
+.history-list-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+  /* 隐藏滚动条但保留功能 */
+  scrollbar-width: thin;
+}
+
+.history-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
   background: white;
-  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #475569;
   cursor: pointer;
   transition: all 0.2s;
-  border: 1px solid #e5e7eb;
+  user-select: none;
 }
 
-.history-item:hover {
-  background: #f0fdf4;
-  border-color: #84fab0;
-  transform: translateX(-2px);
+.history-tag:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+  transform: translateY(-1px);
 }
 
-.history-word {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.tag-text {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.history-word .word {
-  font-weight: 600;
-  color: #1f2937;
-  font-size: 14px;
-}
-
-.history-word .time {
+.tag-close {
+  margin-left: 6px;
   font-size: 12px;
-  color: #9ca3af;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  transition: all 0.2s;
+  opacity: 0.6;
 }
 
-.delete-btn {
-  opacity: 0;
-  transition: opacity 0.2s;
+.history-tag:hover .tag-close {
+  opacity: 1;
+}
+
+.tag-close:hover {
+  background: #fee2e2;
+  color: #ef4444;
 }
 
 

@@ -25,12 +25,21 @@ export const translateText = async (text: string): Promise<ApiResponse<Translate
       // 解析释义，提取词性和含义
       const translations: Translation[] = parseTranslations(wordData.meaning)
       
+      // 处理例句
+      const examples = []
+      if (wordData.example && wordData.exampleTranslation) {
+        examples.push({
+          en: wordData.example,
+          zh: wordData.exampleTranslation
+        })
+      }
+      
       // 将 WordDictionary 转换为 TranslateResult 格式
       const result: TranslateResult = {
         word: wordData.word,
         phonetic: wordData.phonetic,
         translations,
-        examples: [],
+        examples,
         inWordBook: wordData.inWordBook,
         wordBookId: wordData.wordBookId
       }

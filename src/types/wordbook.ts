@@ -34,6 +34,8 @@ export interface WordDictionary {
   word: string         // 单词
   meaning: string      // 释义
   phonetic: string     // 音标
+  example?: string     // 英文例句
+  exampleTranslation?: string // 例句中文翻译
   inWordBook?: boolean // 是否已在单词本中
   wordBookId?: string  // 单词本ID
 }

@@ -1,5 +1,8 @@
 <template>
   <div class="login-container">
+    <!-- 动态交互背景 -->
+    <InteractiveBackground />
+    
     <!-- 背景装饰元素 -->
     <div class="background-decorations">
       <div class="decor-circle decor-1"></div>
@@ -149,6 +152,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Vue3Lottie } from 'vue3-lottie'
+import InteractiveBackground from '@/components/InteractiveBackground.vue'
 import { login } from '@/api/auth'
 import { useTokenStore } from '@/stores/token'
 import { useUserStore } from '@/stores/user'

@@ -4,6 +4,11 @@
     <div class="background-shape shape-1"></div>
     <div class="background-shape shape-2"></div>
 
+    <!-- 左侧脑图区域 -->
+    <div class="mind-map-panel" v-if="currentWordFamily">
+        <WordFamilyTree :data="currentWordFamily" />
+    </div>
+
     <!-- 顶部导航与进度 -->
     <div class="review-header glass-panel">
       <div class="header-top">
@@ -103,6 +108,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Check, Close, Microphone, Trophy } from '@element-plus/icons-vue'
+import WordFamilyTree from '@/components/WordFamilyTree.vue'
 
 const router = useRouter()
 
@@ -119,9 +125,58 @@ const cards = ref([
   { id: 5, word: 'Eloquent', phonetic: 'eləkwənt', meaning: 'adj. 雄辩的；有口才的', exampleEn: 'He gave an eloquent speech.', exampleCn: '他发表了雄辩的演说。' },
 ])
 
+// 1. 模拟一个单词家族数据生成器 (实际应从后端获取)
+const getWordFamilyMock = (word: string) => {
+    // 这里只是为了演示，实际逻辑由后端提供
+    return {
+        name: `${word} 家族`,
+        label: { backgroundColor: '#fff', padding: [3, 5], borderRadius: 4 },
+        itemStyle: { color: '#3a7bd5', borderColor: '#3a7bd5' },
+        children: [
+            {
+                name: 'adj. 形容词',
+                itemStyle: { color: '#ff7043', borderColor: '#ff7043' },
+                lineStyle: { color: '#ff7043' }, // 线条跟颜色走
+                children: [
+                    { name: 'beautiful', children: [{ name: '美丽的' }, { name: '出色的' }] },
+                ]
+            },
+            {
+                name: 'adv. 副词',
+                itemStyle: { color: '#ffca28', borderColor: '#ffca28' },
+                lineStyle: { color: '#ffca28' },
+                children: [
+                    { name: 'beautifully', children: [{ name: '漂亮地' }] }
+                ]
+            },
+             {
+                name: 'n. 名词',
+                itemStyle: { color: '#66bb6a', borderColor: '#66bb6a' },
+                lineStyle: { color: '#66bb6a' },
+                children: [
+                    { name: 'beauty', children: [{ name: '美' }, { name: '美人' }] },
+                    { name: 'beautification', children: [{ name: '美化' }] }
+                ]
+            }
+        ]
+    }
+};
+
 const currentCard = computed(() => {
     if (currentIndex.value >= cards.value.length) return null;
     return cards.value[currentIndex.value];
+})
+
+// 2. 根据当前卡片自动切换数据
+const currentWordFamily = computed(() => {
+    if (!currentCard.value) return null;
+    // 真实场景：这里应该根据 currentCard.value.id 去请求后端接口 /word/family/{id}
+    // 这里先用 mock 数据演示
+    if (currentIndex.value === 0) { // 假设第一个单词是 Ambiguous，这里为了演示效果，显示 beautiful 的家族
+         return getWordFamilyMock('Beautiful'); 
+    }
+    // 为了演示效果，偶数索引显示，奇数不显示，或者全部显示
+    return getWordFamilyMock('Mock'); 
 })
 
 const progressPercentage = computed(() => {
@@ -183,6 +238,28 @@ const handleResult = (result: 'forget' | 'remember') => {
   background: rgba(161, 140, 209, 0.15);
   bottom: -150px;
   right: -150px;
+}
+
+/* 新增样式：左侧脑图定位 */
+.mind-map-panel {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 350px; /* 根据左侧留白宽度调整 */
+  height: 600px;
+  z-index: 2; /* 确保不被背景圆遮挡，但在 header 下面 */
+  /* 可以加个半透明背景方便看清文字 */
+  /* background: rgba(255,255,255,0.3); */
+  /* backdrop-filter: blur(5px); */
+  /* border-radius: 12px; */
+}
+
+/* 如果屏幕太小，隐藏脑图，避免遮挡卡片 */
+@media (max-width: 1200px) {
+  .mind-map-panel {
+    display: none;
+  }
 }
 
 /* 顶部 Header */
