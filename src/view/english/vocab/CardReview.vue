@@ -101,8 +101,15 @@
     <div v-else class="completion-stage">
         <!-- 1. Simple Completion Card -->
         <div v-if="!showConsolidation" class="completion-container glass-panel">
-            <div class="success-icon-wrapper">
-                <el-icon class="success-icon"><Trophy /></el-icon>
+            <div class="success-icon-wrapper lottie-wrapper">
+                 <Vue3Lottie 
+                    v-if="useLottie"
+                    :animationLink="animationTrophy" 
+                    :height="180" 
+                    :width="180"
+                    :loop="false"
+                 />
+                 <el-icon v-else class="success-icon"><Trophy /></el-icon>
             </div>
             <h2>今日复习完成！</h2>
             <p>坚持就是胜利，明天继续加油</p>
@@ -129,7 +136,15 @@
             <!-- Top Bar -->
             <div class="overlay-header">
                 <div class="header-left">
-                    <div class="logo-text">⚡ AI 智能巩固</div>
+                     <div class="logo-wrapper">
+                        <Vue3Lottie 
+                            v-if="useLottie"
+                            :animationLink="animationRobot" 
+                            :height="50" 
+                            :width="50"
+                        />
+                        <div class="logo-text">AI 智能巩固</div>
+                    </div>
                 </div>
                 <div class="header-center">
                     <h2 class="story-title-mini">{{ consolidationData.title }}</h2>
@@ -178,7 +193,11 @@
                                     v-for="card in cards" 
                                     :key="card.id" 
                                     class="check-item glass-effect-sm"
-                                    :class="{ 'is-mastered': wordStatusMap[card.word]?.mastered }"
+                                    :class="{ 
+                                        'is-mastered': wordStatusMap[card.word]?.mastered,
+                                        'is-active': currentSpellingWord === card.word
+                                    }"
+                                    @click="focusWordInStory(card.word)"
                                 >
                                     <div class="status-icon">
                                         <el-icon v-if="wordStatusMap[card.word]?.mastered" color="#67C23A"><Check /></el-icon>
@@ -197,23 +216,48 @@
                             </div>
                             <div v-if="currentSpellingWord" class="spelling-box">
                                 <div class="spelling-hint">
-                                    <span class="hint-label">释义:</span>
+                                    <span class="hint-label">Definition:</span>
                                     {{ currentSpellingMeaning }}
                                 </div>
+                                <transition name="el-zoom-in-center">
+                                    <div class="hint-area" v-if="hintLevel > 0">
+                                         <el-tag type="warning" effect="light" round class="hint-tag">
+                                            {{ currentHintText }}
+                                         </el-tag>
+                                    </div>
+                                </transition>
                                 <el-input 
                                     v-model="spellingInput" 
-                                    placeholder="输入单词..." 
+                                    placeholder="Type word..." 
                                     @keyup.enter="checkSpelling"
                                     size="large"
                                     ref="spellingInputRef"
                                     class="spelling-input"
                                 >
+                                    <template #suffix>
+                                         <div class="hint-trigger" v-if="hintLevel < 3" @click="requestHint">
+                                             <el-icon class="hint-icon"><Key /></el-icon>
+                                             <span class="hint-text">Hint</span>
+                                         </div>
+                                    </template>
                                     <template #append>
-                                        <el-button @click="checkSpelling">确认</el-button>
+                                        <el-button @click="checkSpelling">check</el-button>
                                     </template>
                                 </el-input>
-                                <div class="feedback-msg" :class="feedbackType" v-if="feedbackMsg">
-                                    {{ feedbackMsg }}
+                                
+                                <div class="feedback-container">
+                                    <div v-if="showSuccessAnim" class="success-lottie">
+                                        <Vue3Lottie 
+                                            :animationLink="animationSuccess" 
+                                            :loop="false"
+                                            :speed="1.2"
+                                            :height="120" 
+                                            :width="120"
+                                        />
+                                    </div>
+                                    <div class="feedback-msg" :class="feedbackType" v-if="feedbackMsg && !showSuccessAnim">
+                                        {{ feedbackMsg }}
+                                    </div>
                                 </div>
                             </div>
                             <div v-else class="empty-spelling">
@@ -246,8 +290,14 @@
 
             <div v-else class="loading-overlay">
                  <div class="loading-content">
-                    <div class="loader-animation"></div>
-                    <p>正在生成个性化学习内容...</p>
+                    <div class="lottie-loader">
+                        <Vue3Lottie 
+                            :animationLink="animationAI" 
+                            :height="240" 
+                            :width="240"
+                        />
+                    </div>
+                    <p class="loading-text">⚡ AI 正在为您编织专属记忆故事...</p>
                  </div>
             </div>
 
@@ -270,7 +320,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Check, Close, Microphone, Trophy, MagicStick, Back, RefreshRight, VideoPlay, VideoPause, View, Hide, EditPen, Monitor, Service } from '@element-plus/icons-vue'
+import { Check, Close, Microphone, Trophy, MagicStick, Back, RefreshRight, VideoPlay, VideoPause, View, Hide, EditPen, Monitor, Service, Key } from '@element-plus/icons-vue'
+import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage, ElNotification } from 'element-plus'
 import WordFamilyTree from '@/components/WordFamilyTree.vue'
 import { getWordsByIds, getWordFamily } from '@/api/wordbook'
@@ -304,6 +355,16 @@ const feedbackType = ref('')
 // 记录每个单词的掌握状态 (spelling correct)
 const wordStatusMap = ref<Record<string, { mastered: boolean }>>({})
 
+// Lottie Animation Assets
+const animationTrophy = 'https://assets5.lottiefiles.com/packages/lf20_touohxv0.json'
+const animationAI = 'https://assets10.lottiefiles.com/packages/lf20_p8bfn5to.json' // Magic Brain
+const animationRobot = 'https://assets8.lottiefiles.com/packages/lf20_me7y0g.json' // Small Robot for Header
+const animationSuccess = 'https://assets4.lottiefiles.com/packages/lf20_jbrw3hcz.json' // Success Checkmark
+
+// Fallback for offline or error
+const useLottie = ref(true)
+const showSuccessAnim = ref(false)
+
 const consolidationData = ref({
     title: '',
     content: '',
@@ -322,6 +383,14 @@ const startConsolidation = async () => {
     setTimeout(() => {
         generateMockStory()
         isGenerating.value = false
+        
+        ElNotification({
+            title: '✨ 故事已生成',
+            message: 'AI 为您量身定制的巩固文章已准备就绪。',
+            type: 'success',
+            position: 'bottom-right',
+            duration: 4500
+        })
     }, 2000)
 }
 
@@ -343,8 +412,19 @@ const checkSpelling = () => {
     if (input === target) {
         feedbackMsg.value = '🎉 Correct! You marked it!'
         feedbackType.value = 'success'
+        showSuccessAnim.value = true
         // 记录状态
         wordStatusMap.value[currentSpellingWord.value] = { mastered: true }
+        
+        ElNotification({
+            title: 'Outstanding!',
+            message: `您已成功掌握单词 "${currentSpellingWord.value}"`,
+            type: 'success',
+            icon: Trophy,
+            position: 'top-left',
+            offset: 60
+        })
+
         // 播放提示音或特效（可选）
         
         // 延迟清空并关闭
@@ -352,6 +432,7 @@ const checkSpelling = () => {
             spellingInput.value = ''
             currentSpellingWord.value = ''
             feedbackMsg.value = ''
+            showSuccessAnim.value = false
         }, 1200)
     } else {
         feedbackMsg.value = '❌ Try again...'
@@ -387,10 +468,74 @@ const highlightedContent = computed(() => {
         const matchedCard = cards.value.find(c => c.word.toLowerCase() === cleanWord.toLowerCase())
         const meaning = matchedCard ? matchedCard.meaning : '点击查看释义' // 降级处理
         
-        return `<span class="highlight-word" data-word="${word}" data-meaning="${meaning}">${word}</span>`
+        // 生成唯一 ID 用于定位
+        const safeId = 'word-node-' + cleanWord.replace(/[^a-zA-Z0-9]/g, '')
+
+        return `<span id="${safeId}" class="highlight-word" data-word="${cleanWord}" data-meaning="${meaning}">${word}</span>`
     })
     .replace(/\n/g, '<br/>')
 })
+
+// 专家设计：智能提示系统
+const hintLevel = ref(0)
+const requestHint = () => {
+    if (hintLevel.value < 3) {
+        hintLevel.value++
+        // 播放提示音效
+        playAudio(hintLevel.value === 3 ? currentSpellingWord.value : 'Hint')
+    }
+}
+
+const currentHintText = computed(() => {
+    if (!currentSpellingWord.value) return ''
+    const w = currentSpellingWord.value
+    const card = cards.value.find(c => c.word.toLowerCase() === w.toLowerCase())
+    
+    if (hintLevel.value === 1) return `💡 Word Length: ${w.length} letters`
+    if (hintLevel.value === 2) return `💡 Pattern: ${w[0]}...${w[w.length-1]}`
+    if (hintLevel.value === 3) return `💡 Phonetic: /${card?.phonetic || '...'}/`
+    return ''
+})
+
+// 专家设计：上下文联动定位
+const focusWordInStory = (word: string) => {
+    const safeWord = word.replace(/[.,!?;:]/g, '')
+    const safeId = 'word-node-' + safeWord.replace(/[^a-zA-Z0-9]/g, '')
+    const el = document.getElementById(safeId)
+    
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.classList.add('pulse-highlight')
+        setTimeout(() => el.classList.remove('pulse-highlight'), 1500)
+        
+        const meaning = el.getAttribute('data-meaning') || ''
+
+        if (isMasked.value) {
+            // 挑战模式：激活拼写
+            currentSpellingWord.value = safeWord
+            currentSpellingMeaning.value = meaning
+            spellingInput.value = ''
+            feedbackMsg.value = ''
+            hintLevel.value = 0
+            if (spellingInputRef.value) {
+                nextTick(() => spellingInputRef.value.focus())
+            }
+        } else {
+            // 阅读模式：高亮释义
+            const rect = el.getBoundingClientRect()
+            activeTooltip.value = {
+                visible: true,
+                x: rect.left + rect.width / 2, 
+                y: rect.top, 
+                word: safeWord,
+                meaning: meaning
+            }
+            // 自动朗读该单词
+            playAudio(safeWord)
+            setTimeout(() => { activeTooltip.value.visible = false }, 3000)
+        }
+    }
+}
 
 const getBestVoice = () => {
     const voices = window.speechSynthesis.getVoices()
@@ -504,19 +649,39 @@ interface ReviewCard {
 
 const cards = ref<ReviewCard[]>([])
 const wordFamilies = ref<Record<string, WordFamilyNodeVO>>({})
+const CACHE_KEY_FAMILIES = 'xueling_vocab_families_cache'
+
+// 从本地存储恢复脑图数据缓存
+const restoreWordFamilies = () => {
+    const cachedData = localStorage.getItem(CACHE_KEY_FAMILIES)
+    if (cachedData) {
+        try {
+            const parsed = JSON.parse(cachedData)
+            wordFamilies.value = { ...parsed }
+        } catch (e) {
+            console.error('Failed to parse word families cache', e)
+        }
+    }
+}
 
 const fetchMindMapData = async () => {
     if (cards.value.length === 0) return
     
     // 串行请求所有单词的脑图数据：前一个响应后再请求下一个
     for (const card of cards.value) {
-        // 避免重复请求
+        // 避免重复请求 (如果已从缓存恢复，这里会直接跳过)
         if (wordFamilies.value[card.word]) continue;
 
         try {
             const res = await getWordFamily(card.word)
             if (res.code === 0 && res.data) {
                 wordFamilies.value[card.word] = res.data
+                // 更新本地缓存
+                try {
+                    localStorage.setItem(CACHE_KEY_FAMILIES, JSON.stringify(wordFamilies.value))
+                } catch (e) {
+                    console.warn('Storage quota exceeded', e)
+                }
             }
         } catch (e) {
             console.error(`Failed to fetch family for ${card.word}`, e)
@@ -607,6 +772,7 @@ const loadData = async () => {
 }
 
 onMounted(() => {
+  restoreWordFamilies()
   loadData()
 })
 
@@ -1165,6 +1331,12 @@ const handleResult = (result: 'forget' | 'remember') => {
     border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .logo-text {
     font-weight: 800;
     font-size: 1.2rem;
@@ -1346,12 +1518,27 @@ const handleResult = (result: 'forget' | 'remember') => {
     font-size: 0.9rem;
 }
 
+.feedback-container {
+    height: 40px; /* Reserve space */
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.success-lottie {
+    position: absolute;
+    top: -50px;
+    z-index: 10;
+    pointer-events: none;
+}
+
 .feedback-msg {
     text-align: center;
     font-weight: bold;
     padding: 5px;
     border-radius: 4px;
     animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 100%;
 }
 .feedback-msg.success { color: #67C23A; background: #e1f3d8; }
 .feedback-msg.error { color: #F56C6C; background: #fde2e2; }
@@ -1463,6 +1650,21 @@ const handleResult = (result: 'forget' | 'remember') => {
     color: #606266;
 }
 
+.loading-text {
+    font-size: 1.1rem;
+    color: #626aef;
+    font-weight: 600;
+    margin-top: -20px;
+    letter-spacing: 1px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
 /* Transitions */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
@@ -1509,19 +1711,26 @@ const handleResult = (result: 'forget' | 'remember') => {
 }
 
 .success-icon-wrapper {
-    width: 80px;
+    width: 80px; /* Base size */
     height: 80px;
-    background: linear-gradient(135deg, #FFD700 0%, #FDB931 100%);
+    /* Remove old background if using Lottie to keep it clean, or update */
+    background: transparent; 
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 25px;
-    box-shadow: 0 10px 20px rgba(253, 185, 49, 0.3);
+    box-shadow: none; /* Let Lottie shine */
 }
+.success-icon-wrapper.lottie-wrapper {
+    width: 180px; 
+    height: 180px;
+    overflow: visible;
+}
+
 .success-icon {
     font-size: 40px;
-    color: white;
+    color: #FDB931; /* Golden fallback */
 }
 .back-btn {
     width: 150px;
@@ -1537,5 +1746,56 @@ const handleResult = (result: 'forget' | 'remember') => {
 .consolidate-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(118, 75, 162, 0.4);
+}
+
+/* Expert Design Additions */
+.pulse-highlight {
+    animation: text-pop 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+    background-color: rgba(255, 230, 0, 0.4) !important; 
+    border-bottom: 3px solid #ff9900 !important;
+    color: #000 !important;
+}
+
+@keyframes text-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.check-item {
+    cursor: pointer;
+    user-select: none;
+}
+.check-item:hover {
+    background: #f5f7fa;
+    transform:  translateX(4px);
+}
+.check-item.is-active {
+    background: #ecf5ff;
+    border-left: 4px solid #409eff;
+    padding-left: 6px; /* Adjust for border */
+}
+
+/* Hint Styles */
+.hint-trigger {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: #e6a23c;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+.hint-trigger:hover {
+    background: #fdf6ec;
+}
+.hint-tag {
+    box-shadow: 0 2px 8px rgba(230, 162, 60, 0.2);
+}
+.hint-area {
+    display: flex;
+    justify-content: center; 
+    margin-bottom: 8px;
 }
 </style>

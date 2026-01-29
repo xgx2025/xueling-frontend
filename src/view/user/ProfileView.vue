@@ -1,6 +1,7 @@
 <template>
   <div class="profile-view">
     <div class="profile-header-bg"></div>
+    <InteractiveBackground />
     
     <div class="content-wrapper">
       <el-row :gutter="24">
@@ -243,6 +244,7 @@ import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Camera, Edit, SwitchButton, Timer, Collection, Reading, Top, Minus, Setting } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
+import InteractiveBackground from '@/components/InteractiveBackground.vue'
 
 const router = useRouter()
 const userStore = useUserStore()

@@ -1,5 +1,6 @@
 <template>
   <el-container class="home-container">
+    <InteractiveBackground />
     <el-header class="header">
       <div class="brand">
         <img src="/logo.svg" alt="学灵" class="logo" />
@@ -124,6 +125,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { ArrowDown, Right } from '@element-plus/icons-vue'
+import InteractiveBackground from '@/components/InteractiveBackground.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -152,6 +154,7 @@ const handleLogout = async () => {
 .home-container {
   min-height: 100vh;
   background-color: #f0f2f5;
+  position: relative;
 }
 
 .header {
@@ -162,6 +165,7 @@ const handleLogout = async () => {
   box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
   z-index: 10;
   padding: 0 40px;
+  position: relative;
 }
 
 .brand {
@@ -215,6 +219,8 @@ const handleLogout = async () => {
   margin: 0 auto;
   width: 100%;
   padding: 40px 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .welcome-section {
