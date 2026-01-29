@@ -5,7 +5,7 @@
 
 import request from '@/utils/request'
 import type { ApiResponse } from '@/types/auth'
-import type { CreateWordBookDTO, WordDictionary, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO } from '@/types/wordbook'
+import type { CreateWordBookDTO, WordDictionary, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO, WordFamilyNodeVO } from '@/types/wordbook'
 
 /**
  * 创建一个单词本
@@ -75,4 +75,13 @@ export const getWordsByIds = (ids: string): Promise<ApiResponse<WordDictionary[]
   return request.post('/word-review/word-detail', {
      wordIds
   })
+}
+
+/**
+ * 获取单词的单词族（各种词性）
+ * @param word 单词
+ * @return 单词族
+ */
+export const getWordFamily = (word: string): Promise<ApiResponse<WordFamilyNodeVO>> => {
+    return request.get('/word-review/family', { params: { word } })
 }

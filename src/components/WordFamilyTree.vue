@@ -1,6 +1,6 @@
 <template>
   <div class="chart-container">
-    <v-chart class="chart" :option="option" autoresize />
+    <v-chart class="chart" :option="option" autoresize @click="handleClick" />
   </div>
 </template>
 
@@ -20,10 +20,19 @@ use([
   TooltipComponent
 ])
 
+const emit = defineEmits<{
+  (e: 'node-click', params: any): void
+}>()
+
 // 接收外部传入的单词家族数据
 const props = defineProps<{
   data: any
 }>()
+
+// 处理点击事件
+const handleClick = (params: any) => {
+  emit('node-click', params)
+}
 
 const option = computed(() => ({
   tooltip: {

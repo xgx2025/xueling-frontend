@@ -69,3 +69,11 @@ export interface RemoveWordsFromWordBookDTO {
   wordBookId: string
   wordIds: string[]
 }
+
+// 单词族节点 VO
+export interface WordFamilyNodeVO {
+  name: string
+  type: 'root' | 'pos' | 'word' | 'meaning'
+  posCode?: string | null
+  children?: WordFamilyNodeVO[]
+}

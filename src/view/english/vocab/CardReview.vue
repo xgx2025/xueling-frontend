@@ -6,7 +6,7 @@
 
     <!-- 左侧脑图区域 -->
     <div class="mind-map-panel" v-if="currentWordFamily">
-        <WordFamilyTree :data="currentWordFamily" />
+        <WordFamilyTree :data="currentWordFamily" @node-click="handleMindMapClick" />
     </div>
 
     <!-- 顶部导航与进度 -->
@@ -46,6 +46,11 @@
             <div class="voice-icon-wrapper" @click.stop="playAudio(currentCard.word)">
                  <el-icon><Microphone /></el-icon>
             </div>
+            
+            <div class="card-image-box" v-if="currentCard.imageUrl">
+               <img :src="currentCard.imageUrl" :alt="currentCard.word" />
+            </div>
+
             <div class="card-content-center">
               <span class="word">{{ currentCard.word }}</span>
               <span class="phonetic">
@@ -110,12 +115,15 @@ import { useRouter, useRoute } from 'vue-router'
 import { Check, Close, Microphone, Trophy } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import WordFamilyTree from '@/components/WordFamilyTree.vue'
-import { getWordsByIds } from '@/api/wordbook'
+import { getWordsByIds, getWordFamily } from '@/api/wordbook'
+import type { WordFamilyNodeVO } from '@/types/wordbook'
+import { useReviewStore } from '@/stores/review'
 
 const router = useRouter()
 const route = useRoute()
+const reviewStore = useReviewStore()
 
-const currentBookName = ref((route.query.bookName as string) || 'CET-4 核心词')
+const currentBookName = ref(reviewStore.bookName || 'CET-4 核心词')
 const isFlipped = ref(false)
 const currentIndex = ref(0) // 当前索引，从 0 开始
 const isLoading = ref(false)
@@ -127,12 +135,35 @@ interface ReviewCard {
   meaning: string
   exampleEn: string
   exampleCn: string
+  imageUrl?: string
 }
 
 const cards = ref<ReviewCard[]>([])
+const wordFamilies = ref<Record<string, WordFamilyNodeVO>>({})
+
+const fetchMindMapData = async () => {
+    if (cards.value.length === 0) return
+    
+    // 串行请求所有单词的脑图数据：前一个响应后再请求下一个
+    for (const card of cards.value) {
+        // 避免重复请求
+        if (wordFamilies.value[card.word]) continue;
+
+        try {
+            const res = await getWordFamily(card.word)
+            if (res.code === 0 && res.data) {
+                wordFamilies.value[card.word] = res.data
+            }
+        } catch (e) {
+            console.error(`Failed to fetch family for ${card.word}`, e)
+        }
+    }
+}
 
 const loadData = async () => {
-  const ids = route.query.ids as string
+  // 优先从 store 获取 IDs，兼容旧的 URL query 方式（可选）
+  const ids = reviewStore.reviewIds.length > 0 ? reviewStore.reviewIds.join(',') : (route.query.ids as string)
+  
   if (ids) {
     isLoading.value = true
     try {
@@ -144,8 +175,12 @@ const loadData = async () => {
             phonetic: item.phonetic,
             meaning: item.meaning,
             exampleEn: item.example || 'Example sentences coming soon.',
-            exampleCn: item.exampleTranslation || '暂无例句'
+            exampleCn: item.exampleTranslation || '暂无例句',
+            imageUrl: item.imageUrl || `https://picsum.photos/seed/${item.id}/400/300`
         }))
+        
+        // 自动获取脑图数据
+        fetchMindMapData()
       } else {
         ElMessage.warning(res.msg || '获取数据失败')
       }
@@ -158,11 +193,51 @@ const loadData = async () => {
   } else {
     // 模拟数据 (Fallback)
     cards.value = [
-      { id: 1, word: 'Ambiguous', phonetic: 'æmbɪɡjuəs', meaning: 'adj. 模棱两可的；含糊不清的', exampleEn: 'The instructions were ambiguous.', exampleCn: '说明书写得模棱两可。' },
-      { id: 2, word: 'Benevolent', phonetic: 'bənevələnt', meaning: 'adj. 仁慈的；慈善的', exampleEn: 'A benevolent donor gave us money.', exampleCn: '一位仁慈的捐赠者给了我们钱。' },
-      { id: 3, word: 'Comprehensive', phonetic: 'kɒmprɪhensɪv', meaning: 'adj. 全面的；综合的', exampleEn: 'We offer comprehensive training.', exampleCn: '我们提供全面的培训。' },
-      { id: 4, word: 'Diligence', phonetic: 'dɪlɪdʒəns', meaning: 'n. 勤奋，勤勉', exampleEn: 'Success requires diligence and hard work.', exampleCn: '成功需要勤奋和努力。' },
-      { id: 5, word: 'Eloquent', phonetic: 'eləkwənt', meaning: 'adj. 雄辩的；有口才的', exampleEn: 'He gave an eloquent speech.', exampleCn: '他发表了雄辩的演说。' },
+      { 
+        id: 1, 
+        word: 'Ambiguous', 
+        phonetic: 'æmbɪɡjuəs', 
+        meaning: 'adj. 模棱两可的；含糊不清的', 
+        exampleEn: 'The instructions were ambiguous.', 
+        exampleCn: '说明书写得模棱两可。',
+        imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&auto=format&fit=crop&q=60'
+      },
+      { 
+        id: 2, 
+        word: 'Benevolent', 
+        phonetic: 'bənevələnt', 
+        meaning: 'adj. 仁慈的；慈善的', 
+        exampleEn: 'A benevolent donor gave us money.', 
+        exampleCn: '一位仁慈的捐赠者给了我们钱。',
+        imageUrl: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=500&auto=format&fit=crop&q=60'
+      },
+      { 
+        id: 3, 
+        word: 'Comprehensive', 
+        phonetic: 'kɒmprɪhensɪv', 
+        meaning: 'adj. 全面的；综合的', 
+        exampleEn: 'We offer comprehensive training.', 
+        exampleCn: '我们提供全面的培训。',
+        imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&auto=format&fit=crop&q=60'
+      },
+      { 
+        id: 4, 
+        word: 'Diligence', 
+        phonetic: 'dɪlɪdʒəns', 
+        meaning: 'n. 勤奋，勤勉', 
+        exampleEn: 'Success requires diligence and hard work.', 
+        exampleCn: '成功需要勤奋和努力。',
+        imageUrl: 'https://images.unsplash.com/photo-1503428593586-e225b476b52c?w=500&auto=format&fit=crop&q=60'
+      },
+      { 
+        id: 5, 
+        word: 'Eloquent', 
+        phonetic: 'eləkwənt', 
+        meaning: 'adj. 雄辩的；有口才的', 
+        exampleEn: 'He gave an eloquent speech.', 
+        exampleCn: '他发表了雄辩的演说。',
+        imageUrl: 'https://images.unsplash.com/photo-1475721027785-f7a944c6ddef?w=500&auto=format&fit=crop&q=60'
+      },
     ]
   }
 }
@@ -170,14 +245,6 @@ const loadData = async () => {
 onMounted(() => {
   loadData()
 })
-
-// 1. 定义后端数据接口
-interface WordFamilyNodeVO {
-  name: string
-  type: 'root' | 'pos' | 'word' | 'meaning'
-  posCode?: string | null
-  children?: WordFamilyNodeVO[]
-}
 
 // 2. 样式映射配置
 const posColorMap: Record<string, string> = {
@@ -229,62 +296,6 @@ const transformToChartData = (node: WordFamilyNodeVO, parentColor?: string): any
   return chartNode
 }
 
-// 4. 模拟后端返回的数据
-const getWordFamilyMock = (word: string): WordFamilyNodeVO => {
-    return {
-        name: word,
-        type: 'root',
-        posCode: null,
-        children: [
-            {
-                name: 'n. 名词',
-                type: 'pos',
-                posCode: 'n',
-                children: [
-                    { 
-                        name: 'happiness', 
-                        type: 'word', 
-                        posCode: null, 
-                        children: [
-                            { name: '幸福', type: 'meaning', posCode: null, children: [] }
-                        ] 
-                    }
-                ]
-            },
-            {
-                name: 'adv. 副词',
-                type: 'pos',
-                posCode: 'adv',
-                children: [
-                    { 
-                        name: 'happily', 
-                        type: 'word', 
-                        posCode: null, 
-                        children: [
-                            { name: '快乐地', type: 'meaning', posCode: null, children: [] }
-                        ] 
-                    }
-                ]
-            },
-            {
-                name: 'v. 动词',
-                type: 'pos',
-                posCode: 'v',
-                children: [
-                    { 
-                        name: 'happify', 
-                        type: 'word', 
-                        posCode: null, 
-                        children: [
-                            { name: '使快乐', type: 'meaning', posCode: null, children: [] }
-                        ] 
-                    }
-                ]
-            }
-        ]
-    }
-};
-
 const currentCard = computed(() => {
     if (currentIndex.value >= cards.value.length) return null;
     return cards.value[currentIndex.value];
@@ -294,15 +305,27 @@ const currentCard = computed(() => {
 const currentWordFamily = computed(() => {
     if (!currentCard.value) return null;
     
-    // 1. 获取模拟的后端数据
-    // 假设第一个单词是 Ambiguous，演示 happy 的数据
-    const mockBackendData = currentIndex.value === 0 
-        ? getWordFamilyMock('happy') 
-        : getWordFamilyMock(currentCard.value.word);
+    const familyData = wordFamilies.value[currentCard.value.word]
+    if (!familyData) {
+        // 如果数据未加载完成，显示一个带状态的根节点
+        return {
+             name: currentCard.value.word,
+             itemStyle: { color: '#909399', borderColor: '#909399', opacity: 0.6 },
+             label: { backgroundColor: '#f4f4f5', color: '#909399', borderColor: '#e9e9eb' },
+             children: [],
+             isLoading: true // 自定义标记
+        }
+    }
     
-    // 2. 转换为前端图表数据
-    return transformToChartData(mockBackendData);
+    // 转换为前端图表数据
+    return transformToChartData(familyData);
 })
+
+const handleMindMapClick = (params: any) => {
+    if (params.data && params.data.isLoading) {
+        ElMessage.info('正在深入挖掘单词族谱，请稍候...')
+    }
+}
 
 const progressPercentage = computed(() => {
     if (cards.value.length === 0) return 0;
@@ -456,7 +479,7 @@ const handleResult = (result: 'forget' | 'remember') => {
 
 .card-wrapper {
   width: 100%;
-  height: 400px;
+  height: 520px;
   margin-bottom: 40px;
 }
 
@@ -515,6 +538,27 @@ const handleResult = (result: 'forget' | 'remember') => {
 }
 .voice-icon-wrapper:hover {
     background: #e6eefb;
+    transform: scale(1.1);
+}
+
+.card-image-box {
+  width: 100%;
+  max-width: 340px;
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 25px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+  border: 6px solid #fff;
+  background: #f0f2f5;
+}
+.card-image-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s;
+}
+.card-front:hover .card-image-box img {
     transform: scale(1.1);
 }
 

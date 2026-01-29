@@ -322,9 +322,11 @@ import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { matchWords, getWordBookDetail, addWordsToBook, removeWordsFromBook } from '@/api/wordbook'
 import type { WordDictionary, WordVO } from '@/types/wordbook'
+import { useReviewStore } from '@/stores/review'
 
 const route = useRoute()
 const router = useRouter()
+const reviewStore = useReviewStore()
 const bookId = route.params.id
 const bookName = ref('CET-4 核心词') 
 const dialogVisible = ref(false)
@@ -474,12 +476,12 @@ const reviewGroups = computed(() => {
 
 const startReviewWithWords = (list: WordVO[]) => {
     const ids = list.map(w => w.id).join(',')
+    
+    // 使用 Store 存储复习数据，避免 URL 过长
+    reviewStore.setReviewData(list.map(w => w.id), bookName.value)
+
     router.push({
-      path: `/english/vocab/review/${bookId}`,
-      query: { 
-        ids,
-        bookName: bookName.value
-      }
+      path: `/english/vocab/review/${bookId}`
     })
     reviewDialogVisible.value = false
 }
