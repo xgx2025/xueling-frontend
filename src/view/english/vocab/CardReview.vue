@@ -125,37 +125,114 @@ const cards = ref([
   { id: 5, word: 'Eloquent', phonetic: 'eləkwənt', meaning: 'adj. 雄辩的；有口才的', exampleEn: 'He gave an eloquent speech.', exampleCn: '他发表了雄辩的演说。' },
 ])
 
-// 1. 模拟一个单词家族数据生成器 (实际应从后端获取)
-const getWordFamilyMock = (word: string) => {
-    // 这里只是为了演示，实际逻辑由后端提供
+// 1. 定义后端数据接口
+interface WordFamilyNodeVO {
+  name: string
+  type: 'root' | 'pos' | 'word' | 'meaning'
+  posCode?: string | null
+  children?: WordFamilyNodeVO[]
+}
+
+// 2. 样式映射配置
+const posColorMap: Record<string, string> = {
+  'n': '#67C23A',    // 名词 - 绿色
+  'v': '#F56C6C',    // 动词 - 红色
+  'adj': '#E6A23C',  // 形容词 - 橙色
+  'adv': '#409EFF',  // 副词 - 蓝色
+  'prep': '#909399', // 介词 - 灰色
+  'conj': '#8E44AD'  // 连词 - 紫色
+}
+
+// 3. 数据转换函数：后端 VO -> ECharts Option Data
+const transformToChartData = (node: WordFamilyNodeVO, parentColor?: string): any => {
+  const chartNode: any = { 
+    name: node.name || '',
+    children: []
+  }
+
+  // 根据节点类型配置样式
+  if (node.type === 'root') {
+    chartNode.itemStyle = { color: '#409EFF', borderColor: '#409EFF' }
+    chartNode.label = { backgroundColor: '#ecf5ff', color: '#409EFF', borderColor: '#d9ecff' }
+  } else if (node.type === 'pos') {
+    // 词性节点
+    const color = (node.posCode && posColorMap[node.posCode]) || '#909399'
+    chartNode.itemStyle = { color: color, borderColor: color }
+    chartNode.lineStyle = { color: color }
+    parentColor = color 
+  } else if (node.type === 'word') {
+     // 单词节点
+     const color = parentColor || '#606266'
+     chartNode.itemStyle = { color: '#fff', borderColor: color, borderWidth: 2 }
+     chartNode.label = { color: '#303133', borderColor: '#DCDFE6', backgroundColor: '#fff' }
+     // Pos -> Word 连线：使用词性颜色，强调派生
+     chartNode.lineStyle = { color: color }
+  } else if (node.type === 'meaning') {
+      // 释义节点
+      chartNode.itemStyle = { color: 'transparent', borderColor: 'transparent' } 
+      chartNode.label = { color: '#909399', backgroundColor: 'transparent', borderColor: 'transparent', padding: 0 }
+      // Word -> Meaning 连线：回归浅灰色，弱化辅助信息，构建视觉层级
+      chartNode.lineStyle = { color: '#DCDFE6' }
+  }
+
+  // 递归处理子节点
+  if (node.children && node.children.length > 0) {
+    chartNode.children = node.children.map(child => transformToChartData(child, parentColor))
+  }
+
+  return chartNode
+}
+
+// 4. 模拟后端返回的数据
+const getWordFamilyMock = (word: string): WordFamilyNodeVO => {
     return {
-        name: `${word} 家族`,
-        label: { backgroundColor: '#fff', padding: [3, 5], borderRadius: 4 },
-        itemStyle: { color: '#3a7bd5', borderColor: '#3a7bd5' },
+        name: word,
+        type: 'root',
+        posCode: null,
         children: [
             {
-                name: 'adj. 形容词',
-                itemStyle: { color: '#ff7043', borderColor: '#ff7043' },
-                lineStyle: { color: '#ff7043' }, // 线条跟颜色走
+                name: 'n. 名词',
+                type: 'pos',
+                posCode: 'n',
                 children: [
-                    { name: 'beautiful', children: [{ name: '美丽的' }, { name: '出色的' }] },
+                    { 
+                        name: 'happiness', 
+                        type: 'word', 
+                        posCode: null, 
+                        children: [
+                            { name: '幸福', type: 'meaning', posCode: null, children: [] }
+                        ] 
+                    }
                 ]
             },
             {
                 name: 'adv. 副词',
-                itemStyle: { color: '#ffca28', borderColor: '#ffca28' },
-                lineStyle: { color: '#ffca28' },
+                type: 'pos',
+                posCode: 'adv',
                 children: [
-                    { name: 'beautifully', children: [{ name: '漂亮地' }] }
+                    { 
+                        name: 'happily', 
+                        type: 'word', 
+                        posCode: null, 
+                        children: [
+                            { name: '快乐地', type: 'meaning', posCode: null, children: [] }
+                        ] 
+                    }
                 ]
             },
-             {
-                name: 'n. 名词',
-                itemStyle: { color: '#66bb6a', borderColor: '#66bb6a' },
-                lineStyle: { color: '#66bb6a' },
+            {
+                name: 'v. 动词',
+                type: 'pos',
+                posCode: 'v',
                 children: [
-                    { name: 'beauty', children: [{ name: '美' }, { name: '美人' }] },
-                    { name: 'beautification', children: [{ name: '美化' }] }
+                    { 
+                        name: 'happify', 
+                        type: 'word', 
+                        posCode: null, 
+                        children: [
+                            { name: '使快乐', type: 'meaning', posCode: null, children: [] }
+                        ] 
+                    }
                 ]
             }
         ]
@@ -167,16 +244,18 @@ const currentCard = computed(() => {
     return cards.value[currentIndex.value];
 })
 
-// 2. 根据当前卡片自动切换数据
+// 根据当前卡片自动切换数据
 const currentWordFamily = computed(() => {
     if (!currentCard.value) return null;
-    // 真实场景：这里应该根据 currentCard.value.id 去请求后端接口 /word/family/{id}
-    // 这里先用 mock 数据演示
-    if (currentIndex.value === 0) { // 假设第一个单词是 Ambiguous，这里为了演示效果，显示 beautiful 的家族
-         return getWordFamilyMock('Beautiful'); 
-    }
-    // 为了演示效果，偶数索引显示，奇数不显示，或者全部显示
-    return getWordFamilyMock('Mock'); 
+    
+    // 1. 获取模拟的后端数据
+    // 假设第一个单词是 Ambiguous，演示 happy 的数据
+    const mockBackendData = currentIndex.value === 0 
+        ? getWordFamilyMock('happy') 
+        : getWordFamilyMock(currentCard.value.word);
+    
+    // 2. 转换为前端图表数据
+    return transformToChartData(mockBackendData);
 })
 
 const progressPercentage = computed(() => {
@@ -246,7 +325,7 @@ const handleResult = (result: 'forget' | 'remember') => {
   left: 20px;
   top: 50%;
   transform: translateY(-50%);
-  width: 350px; /* 根据左侧留白宽度调整 */
+  width: 500px; /* 增加宽度，展示更完整的脑图 */
   height: 600px;
   z-index: 2; /* 确保不被背景圆遮挡，但在 header 下面 */
   /* 可以加个半透明背景方便看清文字 */

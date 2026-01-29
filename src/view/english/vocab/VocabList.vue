@@ -175,8 +175,8 @@ const fetchWordBooks = async () => {
       // 为每个单词本分配颜色和图标（如果后端未返回）
       wordBooks.value = response.data.map((book, index) => ({
         ...book,
-        color: book.color || presetColorsForDisplay[index % presetColorsForDisplay.length],
-        icon: book.icon || presetIconsForDisplay[index % presetIconsForDisplay.length]
+        color: book.color || presetColorsForDisplay[index % presetColorsForDisplay.length] || '',
+        icon: book.icon || presetIconsForDisplay[index % presetIconsForDisplay.length] || ''
       }))
     } else {
       ElMessage.error(response.msg || '获取单词本列表失败')
@@ -210,8 +210,8 @@ const createBook = async () => {
     // 构建 DTO 对象
     const dto = {
       name: newBookForm.value.name,
-      color: newBookForm.value.color,
-      icon: newBookForm.value.icon
+      color: newBookForm.value.color || '',
+      icon: newBookForm.value.icon || ''
     }
     
     console.log('准备创建单词本，数据:', dto)

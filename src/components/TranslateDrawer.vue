@@ -470,8 +470,13 @@ const handleRemoveFromBook = async () => {
     const matchResponse = await matchWords(currentResult.value.word)
     
     if (matchResponse.code === 0 && matchResponse.data && matchResponse.data.length > 0) {
-      const wordId = matchResponse.data[0].id
+      const wordId = matchResponse.data[0]?.id
       
+      if (!wordId) {
+         ElMessage.error('获取单词ID失败')
+         return
+      }
+
       // 2. 调用后端接口移除单词
       const removeResponse = await removeWordsFromBook({
         wordBookId: currentResult.value.wordBookId,
@@ -564,7 +569,13 @@ const handleAddToBook = async () => {
     console.log('单词匹配结果:', matchResponse)
     
     if (matchResponse.code === 0 && matchResponse.data && matchResponse.data.length > 0) {
-      const wordId = matchResponse.data[0].id
+      const wordId = matchResponse.data[0]?.id
+      
+      if (!wordId) {
+          console.error('未找到单词ID')
+          return
+      }
+
       console.log('获取到单词ID:', wordId)
       
       // 2. 调用后端接口添加到单词本

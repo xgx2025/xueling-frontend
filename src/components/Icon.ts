@@ -1,4 +1,3 @@
-<script>
 import { h } from 'vue'; // 导入Vue虚拟DOM构建函数
 
 
@@ -53,4 +52,3 @@ export const QQ = () => h('svg',
     })
   ]
 )
-</script>

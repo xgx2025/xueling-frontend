@@ -51,7 +51,9 @@
               style="width: 100%" 
               :header-cell-style="{ background: '#fff', color: '#909399', fontWeight: '500', borderBottom: '1px solid #f0f2f5' }"
               :row-class-name="'word-row'"
+              @selection-change="handleSelectionChange"
             >
+              <el-table-column type="selection" width="55" :selectable="checkSelectable" />
               <el-table-column prop="word" label="单词" width="220">
                 <template #default="scope">
                   <div class="word-cell">
@@ -129,8 +131,40 @@
                 </div>
                 <div class="action-area">
                    <el-button type="primary" class="start-btn" size="large" @click="startReview" round>
-                      <el-icon class="mr-2"><VideoPlay /></el-icon> 开始今日复习
+                      <el-icon class="mr-2"><VideoPlay /></el-icon> 开始复习 / 专项训练
                    </el-button>
+                   <div class="review-tips-wrapper">
+                     <transition name="el-fade-in" mode="out-in">
+                       <!-- 状态 1: 默认提示 -->
+                       <div class="tip-card default-tip" v-if="selectedRows.length === 0">
+                          <div class="tip-icon"><el-icon><InfoFilled /></el-icon></div>
+                          <div class="tip-content">
+                            <span class="tip-title">定制计划</span>
+                            <span class="tip-desc">勾选左侧单词，开启专项训练</span>
+                          </div>
+                       </div>
+                       
+                       <!-- 状态 2: 选中反馈 -->
+                       <div class="tip-card active-tip" :class="{ 'is-valid': selectedRows.length >= 5 && selectedRows.length <= 10 }" v-else>
+                          <div class="selected-count-ring">
+                             <span>{{ selectedRows.length }}</span>
+                          </div>
+                          <div class="tip-content">
+                             <div class="status-header">
+                                <span class="status-text-main" v-if="selectedRows.length < 5">还需 {{ 5 - selectedRows.length }} 个</span>
+                                <span class="status-text-main" v-else-if="selectedRows.length > 10">超出 {{ selectedRows.length - 10 }} 个</span>
+                                <span class="status-text-main success-text" v-else>数量合适</span>
+                             </div>
+                             <div class="status-progress-track">
+                                <div class="status-progress-bar" :style="{ width: `${Math.min(selectedRows.length * 10, 100)}%`, background: selectedRows.length > 10 ? '#F56C6C' : (selectedRows.length >= 5 ? '#67C23A' : '#E6A23C') }"></div>
+                             </div>
+                          </div>
+                          <div class="tip-action-icon" v-if="selectedRows.length >= 5 && selectedRows.length <= 10">
+                              <el-icon><VideoPlay /></el-icon>
+                          </div>
+                       </div>
+                     </transition>
+                   </div>
                 </div>
              </el-card>
 
@@ -220,13 +254,60 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 复习分组选择弹窗 -->
+    <el-dialog
+      v-model="reviewDialogVisible"
+      title="开启复习计划"
+      width="640px"
+      align-center
+      class="review-select-dialog"
+      destroy-on-close
+    >
+      <div class="dialog-body-content">
+        <div class="dialog-header-tip">
+           <el-alert title="系统已根据当前排序为您生成智能分组，请选择要挑战的组别" type="info" :closable="false" show-icon />
+        </div>
+        
+        <el-scrollbar max-height="400px" class="group-scrollbar">
+          <div class="review-group-grid">
+             <div 
+                v-for="group in reviewGroups" 
+                :key="group.index"
+                class="group-card animate__animated animate__fadeIn"
+                :class="{ 'is-disabled': !group.isValid }"
+                :style="{ animationDelay: `${group.index * 0.05}s` }"
+                @click="group.isValid && startReviewWithWords(group.list)"
+             >
+                <div class="card-left">
+                    <div class="status-icon" :class="group.isValid ? 'bg-blue' : 'bg-gray'">
+                        <el-icon v-if="group.isValid" color="#fff"><Collection /></el-icon>
+                        <el-icon v-else color="#fff"><Lock /></el-icon>
+                    </div>
+                </div>
+                <div class="card-main">
+                   <div class="card-title">{{ group.label }}</div>
+                   <div class="card-sub">序列覆盖: {{ group.range }}</div>
+                </div>
+                <div class="card-right">
+                   <el-tag v-if="group.isValid" effect="plain" round type="primary">{{ group.count }} 词</el-tag>
+                   <el-tag v-else effect="plain" type="info" size="small">词数不足</el-tag>
+                </div>
+                
+                <!-- 装饰背景 -->
+                <div class="card-bg-decoration"></div>
+             </div>
+          </div>
+        </el-scrollbar>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, VideoPlay, Edit, Delete, Microphone, Search, DataLine, Trophy, MagicStick, Check, RefreshLeft } from '@element-plus/icons-vue'
+import { Plus, VideoPlay, Edit, Delete, Microphone, Search, DataLine, Trophy, MagicStick, Check, RefreshLeft, ArrowRight, Collection, Lock, InfoFilled } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { matchWords, getWordBookDetail, addWordsToBook, removeWordsFromBook } from '@/api/wordbook'
@@ -242,6 +323,19 @@ const searchQuery = ref('')
 const filterStatus = ref('all')
 const mastery = ref(0)
 const words = ref<WordVO[]>([])
+const selectedRows = ref<WordVO[]>([])
+
+const handleSelectionChange = (val: WordVO[]) => {
+  selectedRows.value = val
+}
+
+const checkSelectable = (row: WordVO) => {
+  if (selectedRows.value.length >= 10) {
+    // 允许取消勾选已选中的，禁止勾选新的
+    return selectedRows.value.some(item => item.id === row.id)
+  }
+  return true
+}
 
 const filteredWords = computed(() => {
   let result = words.value
@@ -343,8 +437,65 @@ const removeBatchItem = (index: number) => {
   }
 }
 
+// 复习分组相关
+const reviewDialogVisible = ref(false)
+
+const reviewGroups = computed(() => {
+  const groups = []
+  const chunkSize = 10
+  const total = words.value.length
+  
+  if (total === 0) return []
+
+  // 假设 words 已经按时间降序排好
+  for (let i = 0; i < total; i += chunkSize) {
+    const chunk = words.value.slice(i, i + chunkSize)
+    groups.push({
+      index: i / chunkSize + 1,
+      label: `第 ${Math.floor(i / chunkSize) + 1} 组`,
+      range: `${i + 1} - ${Math.min(i + chunkSize, total)}`, // 这里的序号是针对当前排序的
+      count: chunk.length,
+      list: chunk,
+      isValid: chunk.length >= 5
+    })
+  }
+  return groups
+})
+
+const startReviewWithWords = (list: WordVO[]) => {
+    const ids = list.map(w => w.id).join(',')
+    router.push({
+      path: `/english/vocab/review/${bookId}`,
+      query: { ids }
+    })
+    reviewDialogVisible.value = false
+}
+
 const startReview = () => {
-    router.push(`/english/vocab/review/${bookId}`)
+    // 1. 优先处理用户手动勾选
+    if (selectedRows.value.length > 0) {
+        const selection = selectedRows.value
+        if (selection.length < 5) {
+             ElMessage.warning('复习单词过少（至少5个），无法生成复习计划')
+             return
+        }
+        if (selection.length > 10) {
+             ElMessage.warning('单次复习最多选择10个单词')
+             return 
+        }
+        // 直接开始
+        startReviewWithWords(selection)
+        return
+    }
+
+    // 2. 默认流程：检查总数
+    if (words.value.length < 5) {
+         ElMessage.warning('单词本词汇太少，无法生成复习计划')
+         return
+    }
+
+    // 3. 打开分组选择弹窗
+    reviewDialogVisible.value = true
 }
 
 const saveWord = async () => {
@@ -382,8 +533,7 @@ const deleteWord = (row: WordVO) => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning',
-        width: 300
+        type: 'warning'
       }
     ).then(async () => {
       if (!bookId || !row.id) return
@@ -599,6 +749,43 @@ const resetDialog = () => {
 .stat-box .label {
   font-size: 12px;
   color: #909399;
+.review-tips-container {
+  height: 24px;
+  margin-top: 12px;
+}
+
+.custom-review-tip {
+  font-size: 12px;
+  color: #909399;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.active-tip {
+  color: #409EFF;
+  font-weight: 500;
+}
+
+.status-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.status-tag.valid {
+  background: #f0f9eb;
+  color: #67c23a;
+}
+
+.status-tag.invalid {
+  background: #fef0f0;
+  color: #f56c6c;
+}
+
 }
 
 .action-area {
@@ -610,6 +797,179 @@ const resetDialog = () => {
   font-weight: 600;
   letter-spacing: 0.5px;
   height: 44px;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+  transition: all 0.3s;
+}
+
+.start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.4);
+}
+
+/* Review Tips Widget - Enhanced UI */
+.review-tips-wrapper {
+  margin-top: 16px;
+  min-height: 60px;
+  position: relative;
+}
+
+.tip-card {
+  background: #f8f9fb;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #ebedf0;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.tip-card.default-tip {
+  color: #606266;
+  background: rgba(244, 244, 245, 0.6);
+  border-style: dashed;
+}
+
+.tip-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #fff;
+  color: #909399;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  flex-shrink: 0;
+}
+
+.default-tip .tip-icon {
+  color: #409EFF;
+  background: #ecf5ff;
+}
+
+.tip-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.tip-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+
+.tip-desc {
+  font-size: 11px;
+  color: #909399;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Active State */
+.tip-card.active-tip {
+  background: #fff;
+  border-color: #dcdfe6;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-left: 4px solid #E6A23C;
+}
+
+.tip-card.is-valid {
+  border-left-color: #67C23A;
+  background: linear-gradient(to right, #f0f9eb, #fff);
+}
+
+.selected-count-ring {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid #E6A23C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  color: #E6A23C;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+
+.is-valid .selected-count-ring {
+  border-color: #67C23A;
+  color: #67C23A;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.status-text-main {
+  font-size: 12px;
+  font-weight: 600;
+  color: #606266;
+}
+
+.success-text {
+  color: #67C23A;
+}
+
+.status-progress-track {
+  height: 6px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 3px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.status-progress-bar {
+  height: 100%;
+  background: #E6A23C;
+  border-radius: 3px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(230, 162, 60, 0.4);
+}
+
+.is-valid .status-progress-bar {
+  background: #67C23A;
+  box-shadow: 0 0 8px rgba(103, 194, 58, 0.4);
+}
+
+.tip-action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #67C23A, #85ce61);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(103, 194, 58, 0.3);
+  animation: pulse 2s infinite;
+  transition: transform 0.2s;
+}
+
+.tip-action-icon:hover {
+  transform: scale(1.1);
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(103, 194, 58, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(103, 194, 58, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(103, 194, 58, 0); }
 }
 
 /* Tip Card */
@@ -721,6 +1081,117 @@ const resetDialog = () => {
 }
 .batch-item-row:hover {
   background-color: #ecf5ff;
+}
+
+/* Review Group Selection Dialog */
+.dialog-header-tip {
+  margin-bottom: 20px;
+}
+
+.review-group-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 4px;
+}
+
+.group-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden;
+}
+
+.group-card:not(.is-disabled):hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(64, 158, 255, 0.15);
+  border-color: #a0cfff;
+}
+
+.group-card:not(.is-disabled):active {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.1);
+}
+
+.group-card.is-disabled {
+  background: #f5f7fa;
+  cursor: not-allowed;
+  opacity: 0.8;
+  border: 1px dashed #dcdfe6;
+}
+
+.card-left {
+  margin-right: 12px;
+  z-index: 2;
+}
+
+.status-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.bg-blue {
+  background: linear-gradient(135deg, #409EFF, #79bbff);
+}
+
+.bg-gray {
+  background: #c8c9cc;
+  box-shadow: none;
+}
+
+.card-main {
+  flex: 1;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.card-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.card-sub {
+  font-size: 12px;
+  color: #909399;
+}
+
+.card-right {
+  z-index: 2;
+}
+
+/* 装饰背景圆 */
+.card-bg-decoration {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.08), rgba(64, 158, 255, 0.02));
+  border-radius: 50%;
+  z-index: 1;
+  transition: transform 0.3s;
+}
+
+.group-card:hover .card-bg-decoration {
+  transform: scale(1.5);
+}
+
+.group-scrollbar {
+  padding-right: 10px; /* 防止滚动条遮挡 */
 }
 .batch-word-text {
   font-weight: bold;

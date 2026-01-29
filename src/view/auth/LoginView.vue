@@ -158,7 +158,7 @@ import { useTokenStore } from '@/stores/token'
 import { useUserStore } from '@/stores/user'
 import { validateEmail } from '@/utils/validators'
 import type { LoginDTO } from '@/types/auth'
-import { QQ } from '@/components/Icon.vue'
+import { QQ } from '@/components/Icon'
 
 const router = useRouter()
 const tokenStore = useTokenStore()

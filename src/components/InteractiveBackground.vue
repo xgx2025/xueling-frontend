@@ -53,14 +53,15 @@ const initParticles = () => {
       vy: (Math.random() - 0.5) * 1.5,
       size: Math.random() * 3 + 1.5, // 稍微变大
       color: `rgba(${colorStr}, ${Math.random() * 0.5 + 0.3})`, // 增加不透明度
-      baseColor: colorStr
+      baseColor: colorStr || '64, 158, 255'
     })
   }
 }
 
 const draw = () => {
   if (!ctx || !canvas.value) return
-  ctx.clearRect(0, 0, width, height)
+  const context = ctx
+  context.clearRect(0, 0, width, height)
 
   // 更新和绘制粒子
   particles.forEach(p => {
@@ -89,43 +90,47 @@ const draw = () => {
     }
 
     // 绘制点
-    ctx.beginPath()
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-    ctx.fillStyle = p.color
-    ctx.fill()
+    context.beginPath()
+    context.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+    context.fillStyle = p.color
+    context.fill()
   })
 
   // 连线
   for (let i = 0; i < particles.length; i++) {
+    const p1 = particles[i]
+    if (!p1) continue
+
     for (let j = i + 1; j < particles.length; j++) {
-      const p1 = particles[i]
       const p2 = particles[j]
+      if (!p2) continue
+
       const dx = p1.x - p2.x
       const dy = p1.y - p2.y
       const dist = Math.sqrt(dx * dx + dy * dy)
 
       if (dist < connectionDistance) {
-        ctx.beginPath()
+        context.beginPath()
         // 使用两个点颜色的混合或者深色，这里使用稍深的颜色增加可见度
-        ctx.strokeStyle = `rgba(100, 100, 120, ${0.25 * (1 - dist / connectionDistance)})` 
-        ctx.lineWidth = 1
-        ctx.moveTo(p1.x, p1.y)
-        ctx.lineTo(p2.x, p2.y)
-        ctx.stroke()
+        context.strokeStyle = `rgba(100, 100, 120, ${0.25 * (1 - dist / connectionDistance)})` 
+        context.lineWidth = 1
+        context.moveTo(p1.x, p1.y)
+        context.lineTo(p2.x, p2.y)
+        context.stroke()
       }
     }
     
     // 鼠标连线
-    const dx = mouse.x - particles[i].x
-    const dy = mouse.y - particles[i].y
+    const dx = mouse.x - p1.x
+    const dy = mouse.y - p1.y
     const dist = Math.sqrt(dx * dx + dy * dy)
      if (dist < mouseDistance) {
-        ctx.beginPath()
-        ctx.strokeStyle = `rgba(64, 158, 255, ${0.5 * (1 - dist / mouseDistance)})`
-        ctx.lineWidth = 1.2
-        ctx.moveTo(mouse.x, mouse.y)
-        ctx.lineTo(particles[i].x, particles[i].y)
-        ctx.stroke()
+        context.beginPath()
+        context.strokeStyle = `rgba(64, 158, 255, ${0.5 * (1 - dist / mouseDistance)})`
+        context.lineWidth = 1.2
+        context.moveTo(mouse.x, mouse.y)
+        context.lineTo(p1.x, p1.y)
+        context.stroke()
      }
   }
 

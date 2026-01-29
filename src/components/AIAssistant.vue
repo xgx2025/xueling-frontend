@@ -33,8 +33,8 @@ const handleMouseDown = (e: MouseEvent | TouchEvent) => {
   isDragging.value = true
   hasMoved.value = false
   
-  const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-  const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+  const clientX = 'touches' in e ? (e.touches[0]?.clientX || 0) : e.clientX
+  const clientY = 'touches' in e ? (e.touches[0]?.clientY || 0) : e.clientY
   
   // 记录初始位置
   const startX = clientX
@@ -43,8 +43,8 @@ const handleMouseDown = (e: MouseEvent | TouchEvent) => {
   const startBottom = position.value.bottom
 
   const moveHandler = (me: MouseEvent | TouchEvent) => {
-    const curX = 'touches' in me ? me.touches[0].clientX : me.clientX
-    const curY = 'touches' in me ? me.touches[0].clientY : me.clientY
+    const curX = 'touches' in me ? (me.touches[0]?.clientX || 0) : me.clientX
+    const curY = 'touches' in me ? (me.touches[0]?.clientY || 0) : me.clientY
     
     // 计算位移
     const deltaX = startX - curX // 向左拖，right 变大
