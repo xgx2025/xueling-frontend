@@ -135,12 +135,22 @@
                    </el-button>
                    <div class="review-tips-wrapper">
                      <transition name="el-fade-in" mode="out-in">
-                       <!-- 状态 1: 默认提示 -->
+                       <!-- 状态 1: 默认提示 (Design Upgrade for Narrow Spaces) -->
                        <div class="tip-card default-tip" v-if="selectedRows.length === 0">
-                          <div class="tip-icon"><el-icon><InfoFilled /></el-icon></div>
-                          <div class="tip-content">
-                            <span class="tip-title">定制计划</span>
-                            <span class="tip-desc">勾选左侧单词，开启专项训练</span>
+                          <div class="decoration-arrow">
+                              <el-icon><ArrowLeft /></el-icon>
+                          </div>
+                          <div class="tip-content-vertical">
+                            <div class="tip-header">
+                                <div class="icon-box">
+                                    <el-icon><EditPen /></el-icon>
+                                </div>
+                                <span class="tip-title">自由选词</span>
+                                <span class="tip-badge">DIY</span>
+                            </div>
+                            <div class="tip-desc-row">
+                                勾选左侧列表 5~10 个单词即可开启专项训练
+                            </div>
                           </div>
                        </div>
                        
@@ -266,7 +276,7 @@
     >
       <div class="dialog-body-content">
         <div class="dialog-header-tip">
-           <el-alert title="系统已根据当前排序为您生成智能分组，请选择要挑战的组别" type="info" :closable="false" show-icon />
+           <el-alert title="系统已根据当前排序为您生成智能分组，请选择要复习的组别" type="info" :closable="false" show-icon />
         </div>
         
         <el-scrollbar max-height="400px" class="group-scrollbar">
@@ -307,7 +317,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, VideoPlay, Edit, Delete, Microphone, Search, DataLine, Trophy, MagicStick, Check, RefreshLeft, ArrowRight, Collection, Lock, InfoFilled } from '@element-plus/icons-vue'
+import { Plus, VideoPlay, Edit, Delete, Microphone, Search, DataLine, Trophy, MagicStick, Check, RefreshLeft, ArrowRight, Collection, Lock, InfoFilled, EditPen, ArrowLeft, Mouse } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { matchWords, getWordBookDetail, addWordsToBook, removeWordsFromBook } from '@/api/wordbook'
@@ -466,7 +476,10 @@ const startReviewWithWords = (list: WordVO[]) => {
     const ids = list.map(w => w.id).join(',')
     router.push({
       path: `/english/vocab/review/${bookId}`,
-      query: { ids }
+      query: { 
+        ids,
+        bookName: bookName.value
+      }
     })
     reviewDialogVisible.value = false
 }
@@ -806,77 +819,179 @@ const resetDialog = () => {
   box-shadow: 0 6px 16px rgba(64, 158, 255, 0.4);
 }
 
-/* Review Tips Widget - Enhanced UI */
+/* Review Tips Widget - Vertical Optimize */
 .review-tips-wrapper {
-  margin-top: 16px;
-  min-height: 60px;
+  margin-top: 20px;
+  /* Min-height allows it to expand without jerkiness */
+  min-height: 80px; 
   position: relative;
+  perspective: 1000px;
 }
 
 .tip-card {
-  background: #f8f9fb;
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 16px; /* Comfortable padding */
   display: flex;
-  align-items: center;
+  flex-direction: column; /* Vertical Layout by default */
   gap: 12px;
-  border: 1px solid #ebedf0;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: visible; /* Allow arrow to poke out if needed */
 }
 
+/* Default Tip Design */
 .tip-card.default-tip {
-  color: #606266;
-  background: rgba(244, 244, 245, 0.6);
-  border-style: dashed;
+  background: #ffffff;
+  border: 1px solid #ebedf0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+  padding-left: 18px; /* Space for the left-side decor */
 }
 
-.tip-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #fff;
-  color: #909399;
+.tip-card.default-tip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(64, 158, 255, 0.1);
+  border-color: #d9ecff;
+}
+
+/* Animated Arrow on the Left */
+.decoration-arrow {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #409EFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  flex-shrink: 0;
+  width: 20px;
+  height: 40px;
+  opacity: 0.6;
+  animation: bounce-left 2s infinite;
 }
 
-.default-tip .tip-icon {
-  color: #409EFF;
-  background: #ecf5ff;
+.tip-card:hover .decoration-arrow {
+    opacity: 1;
 }
 
-.tip-content {
-  flex: 1;
+@keyframes bounce-left {
+  0%, 100% { transform: translate(0, -50%); }
+  50% { transform: translate(-4px, -50%); }
+}
+
+.tip-content-vertical {
+  width: 100%;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.tip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Tighter gap */
+}
+
+.icon-box {
+  width: 32px;
+  height: 32px;
+  background: #ecf5ff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  overflow: hidden;
+  color: #409EFF;
+  font-size: 16px;
 }
 
 .tip-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: #303133;
-  line-height: 1.4;
-  margin-bottom: 2px;
+  white-space: nowrap; /* Prevent wrapping if possible */
+}
+
+.tip-badge {
+  font-size: 10px;
+  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tip-desc-row {
+  font-size: 12px;
+  color: #606266;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.tip-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2c3e50;
+  letter-spacing: 0.5px;
+}
+
+.tip-badge {
+  font-size: 10px;
+  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(79, 172, 254, 0.3);
 }
 
 .tip-desc {
-  font-size: 11px;
-  color: #909399;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 12px;
+  color: #7f8c8d;
+  line-height: 1.4;
 }
 
-/* Active State */
+.tip-arrow-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #409EFF;
+  font-size: 12px;
+  font-weight: 600;
+  padding-left: 10px;
+  border-left: 1px dashed #dcdfe6;
+  opacity: 0.8;
+  transition: all 0.3s;
+}
+
+.tip-card:hover .tip-arrow-hint {
+  opacity: 1;
+  color: #2c3e50;
+}
+
+.tip-arrow-hint .text {
+  display: none;
+}
+@media (min-width: 1400px) {
+    .tip-arrow-hint .text {
+        display: block;
+    }
+}
+
+.tip-arrow-hint .el-icon {
+  animation: slide-left 1.5s infinite;
+}
+
+@keyframes slide-left {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-4px); }
+}
+
+/* Active State (Retained and polished) */
 .tip-card.active-tip {
   background: #fff;
-  border-color: #dcdfe6;
+  border: 1px solid #dcdfe6;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   border-left: 4px solid #E6A23C;
 }

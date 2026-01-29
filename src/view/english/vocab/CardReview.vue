@@ -18,7 +18,7 @@
           </template>
         </el-page-header>
         <div class="progress-badge">
-          <span class="current">{{ currentIndex + 1 }}</span>
+          <span class="current">{{ Math.min(currentIndex + 1, cards.length) }}</span>
           <span class="separator">/</span>
           <span class="total">{{ cards.length }}</span>
         </div>
@@ -43,7 +43,7 @@
         >
           <!-- 正面 -->
           <div class="card-face card-front">
-            <div class="voice-icon-wrapper" @click.stop="">
+            <div class="voice-icon-wrapper" @click.stop="playAudio(currentCard.word)">
                  <el-icon><Microphone /></el-icon>
             </div>
             <div class="card-content-center">
@@ -105,25 +105,71 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { Check, Close, Microphone, Trophy } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import WordFamilyTree from '@/components/WordFamilyTree.vue'
+import { getWordsByIds } from '@/api/wordbook'
 
 const router = useRouter()
+const route = useRoute()
 
-const currentBookName = ref('CET-4 核心词')
+const currentBookName = ref((route.query.bookName as string) || 'CET-4 核心词')
 const isFlipped = ref(false)
 const currentIndex = ref(0) // 当前索引，从 0 开始
+const isLoading = ref(false)
 
-// 模拟数据
-const cards = ref([
-  { id: 1, word: 'Ambiguous', phonetic: 'æmbɪɡjuəs', meaning: 'adj. 模棱两可的；含糊不清的', exampleEn: 'The instructions were ambiguous.', exampleCn: '说明书写得模棱两可。' },
-  { id: 2, word: 'Benevolent', phonetic: 'bənevələnt', meaning: 'adj. 仁慈的；慈善的', exampleEn: 'A benevolent donor gave us money.', exampleCn: '一位仁慈的捐赠者给了我们钱。' },
-  { id: 3, word: 'Comprehensive', phonetic: 'kɒmprɪhensɪv', meaning: 'adj. 全面的；综合的', exampleEn: 'We offer comprehensive training.', exampleCn: '我们提供全面的培训。' },
-  { id: 4, word: 'Diligence', phonetic: 'dɪlɪdʒəns', meaning: 'n. 勤奋，勤勉', exampleEn: 'Success requires diligence and hard work.', exampleCn: '成功需要勤奋和努力。' },
-  { id: 5, word: 'Eloquent', phonetic: 'eləkwənt', meaning: 'adj. 雄辩的；有口才的', exampleEn: 'He gave an eloquent speech.', exampleCn: '他发表了雄辩的演说。' },
-])
+interface ReviewCard {
+  id: number
+  word: string
+  phonetic: string
+  meaning: string
+  exampleEn: string
+  exampleCn: string
+}
+
+const cards = ref<ReviewCard[]>([])
+
+const loadData = async () => {
+  const ids = route.query.ids as string
+  if (ids) {
+    isLoading.value = true
+    try {
+      const res = await getWordsByIds(ids)
+      if (res.code === 0 && res.data) {
+        cards.value = res.data.map(item => ({
+            id: item.id,
+            word: item.word,
+            phonetic: item.phonetic,
+            meaning: item.meaning,
+            exampleEn: item.example || 'Example sentences coming soon.',
+            exampleCn: item.exampleTranslation || '暂无例句'
+        }))
+      } else {
+        ElMessage.warning(res.msg || '获取数据失败')
+      }
+    } catch (error) {
+       console.error(error)
+       ElMessage.error('网络请求失败')
+    } finally {
+       isLoading.value = false
+    }
+  } else {
+    // 模拟数据 (Fallback)
+    cards.value = [
+      { id: 1, word: 'Ambiguous', phonetic: 'æmbɪɡjuəs', meaning: 'adj. 模棱两可的；含糊不清的', exampleEn: 'The instructions were ambiguous.', exampleCn: '说明书写得模棱两可。' },
+      { id: 2, word: 'Benevolent', phonetic: 'bənevələnt', meaning: 'adj. 仁慈的；慈善的', exampleEn: 'A benevolent donor gave us money.', exampleCn: '一位仁慈的捐赠者给了我们钱。' },
+      { id: 3, word: 'Comprehensive', phonetic: 'kɒmprɪhensɪv', meaning: 'adj. 全面的；综合的', exampleEn: 'We offer comprehensive training.', exampleCn: '我们提供全面的培训。' },
+      { id: 4, word: 'Diligence', phonetic: 'dɪlɪdʒəns', meaning: 'n. 勤奋，勤勉', exampleEn: 'Success requires diligence and hard work.', exampleCn: '成功需要勤奋和努力。' },
+      { id: 5, word: 'Eloquent', phonetic: 'eləkwənt', meaning: 'adj. 雄辩的；有口才的', exampleEn: 'He gave an eloquent speech.', exampleCn: '他发表了雄辩的演说。' },
+    ]
+  }
+}
+
+onMounted(() => {
+  loadData()
+})
 
 // 1. 定义后端数据接口
 interface WordFamilyNodeVO {
@@ -265,16 +311,33 @@ const progressPercentage = computed(() => {
 
 const format = (percentage: number) => (percentage === 100 ? 'Finished' : `${percentage}%`)
 
+// 使用浏览器原生 Web Speech API 播放发音
+const playAudio = (text: string) => {
+  if (!window.speechSynthesis) return
+  // 播放前先取消之前的发音
+  window.speechSynthesis.cancel()
+  
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = 'en-US' // 设置为美式英语
+  utterance.rate = 0.8 // 稍慢一点点，更清晰
+  
+  window.speechSynthesis.speak(utterance)
+}
+
 const handleResult = (result: 'forget' | 'remember') => {
     // 自动翻回正面
     if (isFlipped.value) {
         isFlipped.value = false;
         // 等待翻转动画一半时间后切换数据，体验更顺滑
         setTimeout(() => {
-            currentIndex.value++;
+            if (currentIndex.value < cards.value.length) {
+              currentIndex.value++;
+            }
         }, 300)
     } else {
-        currentIndex.value++;
+        if (currentIndex.value < cards.value.length) {
+          currentIndex.value++;
+        }
     }
 }
 </script>

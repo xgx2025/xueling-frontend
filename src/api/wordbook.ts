@@ -63,3 +63,16 @@ export const matchWords = (words: string): Promise<ApiResponse<WordDictionary[]>
     params: { words }
   })
 }
+
+/**
+ * 根据ID列表获取单词详情
+ * @param ids ID列表（逗号分隔）
+ * @returns Promise<ApiResponse<WordDictionary[]>>
+ */
+export const getWordsByIds = (ids: string): Promise<ApiResponse<WordDictionary[]>> => {
+  // 将逗号分隔的字符串转换为数组
+  const wordIds = ids.split(',')
+  return request.post('/word-review/word-detail', {
+     wordIds
+  })
+}
