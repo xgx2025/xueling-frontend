@@ -98,8 +98,7 @@ const getLevelType = (level: string) => {
 }
 
 const readArticle = (id: number) => {
-    // router.push(`/english/article/${id}`)
-    console.log('Read article', id);
+    router.push({ name: 'english-article-detail', params: { id } })
 }
 </script>
 

@@ -22,6 +22,7 @@ export interface UserInfo {
   email: string        // 邮箱
   username?: string    // 昵称（可选）
   avatar?: string      // 头像URL（可选）
+  vipLevel?: number    // VIP等级（可选）
 }
 
 // 用户详细信息 VO（对应后端 UserVO）

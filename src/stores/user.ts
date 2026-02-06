@@ -60,7 +60,8 @@ export const useUserStore = defineStore(
             id: userVO.id.toString(),
             email: userVO.email,
             username: userVO.username,
-            avatar: userVO.avatarUrl
+            avatar: userVO.avatarUrl,
+            vipLevel: userVO.vipLevel,
           }
           setUserInfo(info)
           // 同时存储完整的用户信息
