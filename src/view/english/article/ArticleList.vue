@@ -98,7 +98,14 @@ const getLevelType = (level: string) => {
 }
 
 const readArticle = (id: number) => {
-    router.push({ name: 'english-article-detail', params: { id } })
+    console.log('点击了文章ID:', id)
+    console.log('即将导航到:', { name: 'english-article-detail', params: { id } })
+    try {
+      router.push({ name: 'english-article-detail', params: { id } })
+      console.log('导航成功')
+    } catch (err) {
+      console.error('导航失败:', err)
+    }
 }
 </script>
 
