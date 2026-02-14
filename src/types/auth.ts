@@ -43,7 +43,7 @@ export interface UserVO {
 // API 响应通用格式
 export interface ApiResponse<T = any> {
   code: number         // 状态码：0-成功，其他-失败
-  msg: string          // 提示信息
+  message: string      // 提示信息
   data: T             // 响应数据
 }
 
@@ -65,7 +65,7 @@ export interface RegisterDTO {
 // 认证响应（登录/注册成功后返回）
 export interface AuthResponse {
   code: number
-  msg: string
+  message: string
   data: string  // AccessToken
 }
 

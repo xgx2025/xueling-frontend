@@ -1,486 +1,67 @@
 <template>
   <div class="article-detail-page">
-    <!-- 返回按钮 -->
-    <el-page-header @back="router.back()" class="mb-4">
-      <template #content>
-        <div class="page-header-content">
-          <h1 v-if="article" class="article-title">{{ article.title }}</h1>
-          <div v-if="article" class="article-meta">
-            <span class="author">
-              <el-icon><User /></el-icon>
-              {{ article.author }}
-            </span>
-            <span class="date">
-              <el-icon><Calendar /></el-icon>
-              {{ formatDate(article.createTime) }}
-            </span>
-          </div>
-        </div>
-      </template>
-    </el-page-header>
-
     <!-- 加载状态 -->
     <el-skeleton v-if="loading" :rows="20" animated />
 
-    <!-- 文章内容 -->
-    <div v-if="article && !loading" class="article-container">
-      <!-- 文章图片 -->
-      <div v-if="article.imageUrl" class="article-image-container">
-        <img :src="article.imageUrl" :alt="article.title" class="article-image" />
-      </div>
-
-      <!-- 工具栏 -->
-      <div class="article-toolbar">
-        <!-- 左侧工具 -->
-        <div class="toolbar-left">
-          <!-- 会员功能：高亮开关 -->
-          <div v-if="userStore.userInfo?.vipLevel" class="highlight-toggle">
-            <el-checkbox v-model="showHighlights">
-              <span class="toggle-label">显示重点单词</span>
-            </el-checkbox>
-            <el-popover :width="250" placement="bottom" trigger="hover">
-              <template #reference>
-                <el-icon class="icon-info"><QuestionFilled /></el-icon>
-              </template>
-              <div class="color-legend">
-                <div class="legend-item">
-                  <span class="legend-color" style="background-color: #E63946"></span>
-                  <span>核心词汇</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-color" style="background-color: #2A9D8F"></span>
-                  <span>搭配用法</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-color" style="background-color: #457B9D"></span>
-                  <span>逻辑连接词</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-color" style="background-color: #E9C46A"></span>
-                  <span>语法重点</span>
-                </div>
-              </div>
-            </el-popover>
-          </div>
-        </div>
-
-        <!-- 右侧工具 -->
-        <div class="toolbar-right">
-          <el-button type="primary" @click="handleMarkAsRead" v-if="!isArticleReadComplete">
-            <el-icon><Check /></el-icon>
-            完成阅读
-          </el-button>
-          <el-button
-            :type="isFavorited ? 'danger' : 'default'"
-            @click="handleToggleFavorite"
-          >
-            <el-icon><Star /></el-icon>
-            {{ isFavorited ? '已收藏' : '收藏' }}
-          </el-button>
-        </div>
-      </div>
-
-      <!-- 文章内容 -->
-      <div class="article-content">
-        <div
-          v-for="(paragraph, index) in parsedParagraphs"
-          :key="index"
-          class="paragraph"
-          @mouseover="hoveredParagraphIndex = index"
-          @mouseleave="hoveredParagraphIndex = -1"
-        >
-          <!-- 段落标题 -->
-          <div v-if="paragraph.isTitle" class="paragraph-title">
-            {{ paragraph.text }}
-          </div>
-
-          <!-- 段落内容 -->
-          <div v-else class="paragraph-text">
-            <span
-              v-for="(sentence, sentenceIndex) in paragraph.sentences"
-              :key="`${index}-${sentenceIndex}`"
-              class="sentence-wrapper"
-            >
-              <span
-                class="sentence"
-                :class="{ hovered: hoveredParagraphIndex === index }"
-              >
-                <!-- 绘制包含高亮的句子 -->
-                <span
-                  v-for="(part, partIndex) in highlightSentence(sentence)"
-                  :key="`${index}-${sentenceIndex}-${partIndex}`"
-                  :class="[
-                    'sentence-part',
-                    {
-                      highlighted: part.isHighlighted && showHighlights && userStore.userInfo?.vipLevel,
-                    },
-                  ]"
-                  :style="{
-                    backgroundColor: part.isHighlighted && showHighlights && userStore.userInfo?.vipLevel ? part.color : 'transparent',
-                  }"
-                  :title="part.reason || ''"
-                >
-                  {{ part.text }}
-                </span>
-              </span>
-
-              <!-- 悬停时显示工具栏 -->
-              <div
-                v-if="hoveredParagraphIndex === index"
-                class="sentence-toolbar"
-              >
-                <el-button
-                  text
-                  type="primary"
-                  size="small"
-                  @click="handleAnalyzeSentence(sentence)"
-                >
-                  分析句子
-                </el-button>
-                <el-divider direction="vertical" />
-                <el-button
-                  text
-                  type="primary"
-                  size="small"
-                  @click="handleAIChat(sentence)"
-                >
-                  AI对话
-                </el-button>
-              </div>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 文章翻译 -->
-      <div class="article-translation">
-        <h3 class="translation-title">中文翻译</h3>
-        <div class="translation-content">
-          {{ article.chineseMeaning }}
-        </div>
-      </div>
-
-      <!-- 词汇短语总结（会员功能） -->
-      <div v-if="userStore.userInfo?.vipLevel && article.vocabularyPhrasesSummary" class="vocabulary-summary">
-        <h3 class="summary-title">
-          <BookmarkCircle />
-          词汇短语总结
-        </h3>
-        <div class="summary-content">
-          {{ article.vocabularyPhrasesSummary }}
-        </div>
-      </div>
-
-      <!-- 文章感悟 - 仅在已读完后显示 -->
-      <div v-if="isArticleReadComplete && article.articleInsights" class="article-insights">
-        <h3 class="insights-title">
-          <Sparkles />
-          金句
-        </h3>
-        <div class="insights-content">
-          {{ article.articleInsights }}
-        </div>
-      </div>
-
-      <!-- 测试题功能（会员功能） -->
-      <div v-if="userStore.userInfo?.vipLevel" class="test-section">
-        <h3 class="test-title">
-          <el-icon><DocumentCopy /></el-icon>
-          测试题
-        </h3>
-        <div class="test-controls">
-          <span class="difficulty-label">选择难度：</span>
-          <el-radio-group v-model="selectedDifficulty" size="small">
-            <el-radio-button :label="0">简单</el-radio-button>
-            <el-radio-button :label="1">中等</el-radio-button>
-            <el-radio-button :label="2">困难</el-radio-button>
-          </el-radio-group>
-          <el-button type="primary" @click="handleGetTestQuestions" :loading="testLoading">
-            生成测试题
-          </el-button>
-        </div>
-
-        <!-- 测试题显示 -->
-        <div v-if="testQuestion" class="test-question-display">
-          <div class="test-question-header">
-            <span class="difficulty-badge" :class="`difficulty-${testQuestion.difficulty}`">
-              {{ getDifficultyText(testQuestion.difficulty) }}
-            </span>
-          </div>
-          <div class="test-question-content">
-            {{ testQuestion.content }}
-          </div>
-        </div>
-      </div>
-
-      <!-- 分隔符 -->
-      <el-divider />
-    </div>
+    <!-- 使用新的ArticleReader组件 -->
+    <ArticleReader v-if="article && !loading" :article="article" :readingStatus="readingStatus" @reading-complete="handleReadingComplete" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useArticleStore } from '@/stores/article'
-import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import {
-  User,
-  Calendar,
-  Check,
-  Star,
-  QuestionFilled,
-  Edit,
-  DocumentCopy,
-  Trophy,
-} from '@element-plus/icons-vue'
-import { BookmarkCircle, Sparkles } from '@/components/Icon'
-import type { ArticleVO, HighlightItem, TestQuestion } from '@/types/article'
+import ArticleReader from '@/components/ArticleReader.vue'
+import type { ArticleVO } from '@/types/article'
+import { getArticlesByCategory, getArticleReadingStatus } from '@/api/article'
 
-const router = useRouter()
+/**
+ * 获取有效的图片URL
+ * @param imageUrl 原始图片URL
+ * @returns 有效的图片URL
+ */
+const getValidImageUrl = (imageUrl: string | null | undefined): string => {
+  // 默认图片URL
+  const defaultImageUrl = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
+  
+  // 检查图片URL是否有效
+  if (!imageUrl || imageUrl.trim() === '' || imageUrl === 'null' || imageUrl === 'undefined') {
+    return defaultImageUrl
+  }
+  
+  // 修复URL中的空格问题
+  let processedUrl = imageUrl.trim()
+  
+  // 将空格编码为 %20
+  processedUrl = processedUrl.replace(/ /g, '%20')
+  
+  // 检查是否是有效的URL格式
+  try {
+    new URL(processedUrl)
+    return processedUrl
+  } catch (error) {
+    console.warn('无效的图片URL:', imageUrl, '处理后URL:', processedUrl, '使用默认图片')
+    return defaultImageUrl
+  }
+}
+
 const route = useRoute()
 const articleStore = useArticleStore()
-const userStore = useUserStore()
 
 // 状态
 const loading = ref(false)
-const testLoading = ref(false)
-const showHighlights = ref(false)
-const selectedDifficulty = ref<0 | 1 | 2>(0)
-const hoveredParagraphIndex = ref(-1)
-const testQuestion = ref<TestQuestion | null>(null)
+const readingStatus = ref<number | undefined>(undefined)
 
 // 计算属性
 const article = computed(() => articleStore.currentArticle)
-const isFavorited = computed(() => articleStore.isFavorited)
-const isArticleReadComplete = computed(() => articleStore.isArticleReadComplete)
 
 // 获取文章ID
 const articleId = computed(() => {
   const id = route.params.id
   return typeof id === 'string' ? parseInt(id) : id
 })
-
-/**
- * 格式化日期
- */
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
-}
-
-/**
- * 获取难度文本
- */
-const getDifficultyText = (difficulty: 0 | 1 | 2): string => {
-  const map = { 0: '简单', 1: '中等', 2: '困难' }
-  return map[difficulty]
-}
-
-/**
- * 解析文章段落
- * 格式：## 标题，\n 分隔段落，& 分隔句子
- */
-const parsedParagraphs = computed(() => {
-  if (!article.value?.content) return []
-
-  const paragraphs: Array<{
-    isTitle: boolean
-    text: string
-    sentences?: string[]
-  }> = []
-
-  const lines = article.value.content.split('\n')
-
-  for (const line of lines) {
-    if (!line.trim()) continue
-
-    if (line.trim().startsWith('##')) {
-      paragraphs.push({
-        isTitle: true,
-        text: line.trim().substring(2).trim(),
-      })
-    } else {
-      const sentences = line.split('&').map(s => s.trim()).filter(s => s)
-      paragraphs.push({
-        isTitle: false,
-        text: line,
-        sentences,
-      })
-    }
-  }
-
-  return paragraphs
-})
-
-/**
- * 获取高亮映射表
- */
-const getHighlightMap = computed(() => {
-  if (!article.value?.highlights?.highlights) return new Map()
-
-  const map = new Map<string, HighlightItem>()
-  for (const highlight of article.value.highlights.highlights) {
-    map.set(highlight.text, highlight)
-  }
-  return map
-})
-
-/**
- * 高亮句子
- */
-const highlightSentence = (sentence: string) => {
-  const parts: Array<{
-    text: string
-    isHighlighted: boolean
-    color: string
-    reason: string
-  }> = []
-
-  const highlightMap = getHighlightMap.value
-  let currentPos = 0
-
-  // 找出所有高亮词汇的位置
-  const highlights: Array<{
-    start: number
-    end: number
-    item: HighlightItem
-  }> = []
-
-  for (const [text, item] of highlightMap) {
-    let index = sentence.indexOf(text, currentPos)
-    while (index !== -1) {
-      highlights.push({
-        start: index,
-        end: index + text.length,
-        item,
-      })
-      index = sentence.indexOf(text, index + 1)
-    }
-  }
-
-  // 按开始位置排序
-  highlights.sort((a, b) => a.start - b.start)
-
-  // 合并重叠的高亮
-  const mergedHighlights: Array<{
-    start: number
-    end: number
-    item: HighlightItem
-  }> = []
-
-  for (const hl of highlights) {
-    if (mergedHighlights.length === 0) {
-      mergedHighlights.push(hl)
-    } else {
-      const last = mergedHighlights[mergedHighlights.length - 1]
-      if (hl.start <= last.end) {
-        last.end = Math.max(last.end, hl.end)
-      } else {
-        mergedHighlights.push(hl)
-      }
-    }
-  }
-
-  // 生成部分
-  currentPos = 0
-  for (const hl of mergedHighlights) {
-    if (currentPos < hl.start) {
-      parts.push({
-        text: sentence.substring(currentPos, hl.start),
-        isHighlighted: false,
-        color: '',
-        reason: '',
-      })
-    }
-
-    parts.push({
-      text: sentence.substring(hl.start, hl.end),
-      isHighlighted: true,
-      color: hl.item.color_code,
-      reason: hl.item.reason,
-    })
-
-    currentPos = hl.end
-  }
-
-  if (currentPos < sentence.length) {
-    parts.push({
-      text: sentence.substring(currentPos),
-      isHighlighted: false,
-      color: '',
-      reason: '',
-    })
-  }
-
-  return parts
-}
-
-/**
- * 标记为已读
- */
-const handleMarkAsRead = async () => {
-  try {
-    await articleStore.markAsRead(articleId.value)
-    ElMessage.success('已标记为阅读完成')
-  } catch (err) {
-    ElMessage.error('标记失败，请重试')
-  }
-}
-
-/**
- * 切换收藏
- */
-const handleToggleFavorite = async () => {
-  try {
-    await articleStore.toggleFavorite(articleId.value)
-    const message = isFavorited.value ? '收藏成功' : '已取消收藏'
-    ElMessage.success(message)
-  } catch (err) {
-    ElMessage.error('操作失败，请重试')
-  }
-}
-
-/**
- * 分析句子
- */
-const handleAnalyzeSentence = (sentence: string) => {
-  // TODO: 实现句子分析功能
-  console.log('分析句子:', sentence)
-  ElMessage.info('句子分析功能开发中...')
-}
-
-/**
- * AI对话
- */
-const handleAIChat = (sentence: string) => {
-  // TODO: 实现AI对话功能
-  console.log('AI对话:', sentence)
-  ElMessage.info('AI对话功能开发中...')
-}
-
-/**
- * 获取测试题
- */
-const handleGetTestQuestions = async () => {
-  try {
-    testLoading.value = true
-    const result = await articleStore.fetchTestQuestions(articleId.value, selectedDifficulty.value)
-    if (result) {
-      testQuestion.value = result
-      ElMessage.success('测试题已生成')
-    }
-  } catch (err) {
-    ElMessage.error('获取测试题失败')
-  } finally {
-    testLoading.value = false
-  }
-}
 
 /**
  * 初始化页面 - 获取文章详情
@@ -490,86 +71,45 @@ const initArticle = async () => {
     console.log('初始化文章详情页面, 文章ID:', articleId.value)
     loading.value = true
 
-    // 尝试从 API 获取，如果失败则使用本地测试数据
-    try {
-      await articleStore.fetchArticleDetail(articleId.value)
-      console.log('文章详情加载成功:', articleStore.currentArticle)
-    } catch (err) {
-      console.warn('API 调用失败，使用本地测试数据:', err)
-      // 使用本地测试数据
-      const mockArticle: ArticleVO = {
-        id: articleId.value,
-        title: 'The Benefits of Learning a Second Language',
-        chineseTitle: '学习第二语言的好处',
-        categoryId: 1,
-        tag: 'education, learning',
-        author: 'John Smith',
-        content: `## Introduction
-Learning a new language is not just about communication; it changes your brain structure& It enhances cognitive abilities& Studies show remarkable improvements in memory& You can improve critical thinking skills significantly&
-
-## Brain Development
-The human brain is incredibly plastic& Language learning triggers neuroplasticity at any age& New neural pathways form continuously& This process strengthens overall brain function& Mental agility increases noticeably&
-
-## Career Advantages
-Bilingual professionals earn more on average& Job opportunities expand dramatically& Global companies value language skills highly& Career advancement becomes more accessible& Your marketability increases substantially&`,
-        highlights: {
-          highlights: [
-            {
-              text: 'Learning a new language',
-              type: 'core_vocabulary',
-              color_code: '#E63946',
-              reason: '关键概念',
-            },
-            {
-              text: 'brain structure',
-              type: 'core_vocabulary',
-              color_code: '#E63946',
-              reason: '核心词汇',
-            },
-            {
-              text: 'cognitive abilities',
-              type: 'collocation',
-              color_code: '#2A9D8F',
-              reason: '常见搭配',
-            },
-            {
-              text: 'Studies show',
-              type: 'logical_connector',
-              color_code: '#457B9D',
-              reason: '逻辑连接词',
-            },
-          ],
-        },
-        chineseMeaning: `## 介绍
-学习一门新语言不仅仅是为了交流，它改变你的大脑结构。它增强认知能力。研究显示记忆力有显著提高。你可以显著提高批判性思维技能。
-
-## 大脑发展
-人脑具有令人难以置信的可塑性。语言学习在任何年龄都会触发神经可塑性。新的神经通路不断形成。这个过程加强整体脑功能。心智敏捷度明显提高。
-
-## 职业优势
-双语专业人士平均收入更高。工作机会大幅扩大。全球公司高度重视语言技能。职业发展变得更容易获得。你的市场竞争力大幅提高。`,
-        vocabularyPhrasesSummary:
-          '关键词汇：brain structure（脑结构）, cognitive abilities（认知能力）, neuroplasticity（神经可塑性）, career advancement（职业发展）。常用搭配：language learning, career opportunities, brain function。',
-        articleInsights:
-          '"学习一门新语言不仅仅是为了交流，更是对人脑潜能的一次深度激发。" - 这提醒我们语言学习的深远影响不仅限于交流工具，而是涉及整个认知系统的升级。',
-        imageUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-        isFree: 1,
-        createTime: '2024-01-15',
-        updateTime: '2024-01-15',
+    // 从 API 获取文章列表
+    const response = await getArticlesByCategory(1) // 获取分类1下的所有文章
+    console.log('API响应状态码:', response.code)
+    console.log('API响应数据:', response.data)
+    
+    if (response.code === 0 && response.data) {
+      console.log('获取到的文章列表数量:', response.data.length)
+      
+      // 在文章列表中查找指定ID的文章
+      const articleData = response.data.find((a: any) => a.id === articleId.value)
+      console.log('找到的文章数据:', articleData)
+      
+      if (articleData) {
+        console.log('原始图片URL:', articleData.imageUrl)
+        console.log('处理后的图片URL:', getValidImageUrl(articleData.imageUrl))
+        
+        // 设置文章数据到store，保留 highlights 数据
+        articleStore.currentArticle = {
+          ...articleData,
+          chineseMeaning: articleData.chineseMeaning || '',
+          vocabularyPhrasesSummary: articleData.vocabularyPhrasesSummary || '',
+          articleInsights: articleData.articleInsights || '',
+          // 修复图片URL处理：确保使用有效的图片URL
+          imageUrl: getValidImageUrl(articleData.imageUrl),
+          // 解析 highlights 字段，因为它从 API 返回时是 JSON 字符串
+          highlights: articleData.highlights && typeof articleData.highlights === 'string' 
+            ? JSON.parse(articleData.highlights) 
+            : articleData.highlights
+        }
+        
+        console.log('最终存储的文章数据:', articleStore.currentArticle)
+      } else {
+        console.error('未找到文章ID:', articleId.value, '在文章列表中')
+        console.error('可用的文章ID:', response.data.map((a: any) => a.id))
+        throw new Error(`文章ID ${articleId.value} 不存在`)
       }
-      articleStore.currentArticle = mockArticle
+    } else {
+      throw new Error('获取文章列表失败')
     }
-
-    // 获取阅读进度和收藏状态
-    await Promise.all([
-      articleStore.fetchArticleProgress(articleId.value).catch(() => {
-        console.log('阅读进度获取失败，使用空值')
-      }),
-      articleStore.fetchFavoriteStatus(articleId.value).catch(() => {
-        console.log('收藏状态获取失败，默认为未收藏')
-      }),
-    ])
-    console.log('阅读进度和收藏状态加载成功')
   } catch (err) {
     console.error('加载文章失败:', err)
     ElMessage.error('加载文章失败，请检查网络或文章ID是否正确')
@@ -578,340 +118,49 @@ Bilingual professionals earn more on average& Job opportunities expand dramatica
   }
 }
 
+/**
+ * 获取文章阅读状态
+ */
+const getReadingStatus = async () => {
+  try {
+    console.log('获取文章阅读状态，文章ID:', articleId.value)
+    const response = await getArticleReadingStatus(articleId.value)
+    console.log('文章阅读状态响应:', response)
+    
+    if (response.code === 0 && response.data) {
+      console.log('文章阅读状态:', response.data)
+      // 保存阅读状态到变量中，传递给ArticleReader组件
+      readingStatus.value = response.data.progressStatus
+      console.log('设置阅读状态为:', readingStatus.value)
+    } else {
+      console.warn('获取文章阅读状态失败:', response.message)
+      readingStatus.value = undefined
+    }
+  } catch (err) {
+    console.error('获取文章阅读状态出错:', err)
+    readingStatus.value = undefined
+  }
+}
+
+/**
+ * 处理阅读完成事件
+ */
+const handleReadingComplete = async () => {
+  console.log('收到阅读完成事件，重新获取阅读状态')
+  // 延迟一小段时间，确保后端状态已经更新
+  setTimeout(() => {
+    getReadingStatus()
+  }, 500)
+}
+
 // 生命周期
 onMounted(() => {
   initArticle()
+  // 获取文章阅读状态
+  getReadingStatus()
 })
 
 onUnmounted(() => {
   articleStore.clearCurrentArticle()
 })
 </script>
-
-<style scoped>
-.article-detail-page {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.page-header-content {
-  width: 100%;
-}
-
-.article-title {
-  margin: 0;
-  font-size: 2rem;
-  color: #333;
-  line-height: 1.3;
-}
-
-.article-meta {
-  display: flex;
-  gap: 20px;
-  margin-top: 10px;
-  color: #666;
-  font-size: 0.95rem;
-}
-
-.article-meta span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.article-container {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-}
-
-.article-image-container {
-  margin: 0 0 30px 0;
-  border-radius: 8px;
-  overflow: hidden;
-  max-height: 400px;
-}
-
-.article-image {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.article-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #f0f0f0;
-  flex-wrap: wrap;
-  gap: 15px;
-}
-
-.toolbar-left,
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.highlight-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-}
-
-.toggle-label {
-  margin-left: 5px;
-}
-
-.icon-info {
-  cursor: help;
-  color: #409eff;
-  font-size: 1.1rem;
-}
-
-.color-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-}
-
-.legend-color {
-  width: 16px;
-  height: 16px;
-  border-radius: 2px;
-}
-
-.article-content {
-  line-height: 2;
-  font-size: 1rem;
-  color: #333;
-  margin-bottom: 40px;
-}
-
-.paragraph {
-  margin-bottom: 20px;
-}
-
-.paragraph-title {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #333;
-  margin: 20px 0 10px 0;
-  padding: 10px 0;
-  border-left: 4px solid #409eff;
-  padding-left: 10px;
-}
-
-.paragraph-text {
-  text-align: justify;
-}
-
-.sentence-wrapper {
-  position: relative;
-  display: inline;
-}
-
-.sentence {
-  position: relative;
-  padding: 2px 0;
-}
-
-.sentence.hovered {
-  background-color: #f0f7ff;
-}
-
-.sentence-part {
-  transition: background-color 0.2s;
-  border-radius: 2px;
-  padding: 1px 2px;
-}
-
-.sentence-part.highlighted {
-  font-weight: 500;
-}
-
-.sentence-toolbar {
-  position: absolute;
-  top: -30px;
-  left: 0;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 4px 8px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-}
-
-.article-translation {
-  margin: 40px 0;
-  padding: 20px;
-  background: #f5f7fa;
-  border-left: 4px solid #409eff;
-  border-radius: 4px;
-}
-
-.translation-title {
-  margin: 0 0 15px 0;
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: #333;
-}
-
-.translation-content {
-  line-height: 1.8;
-  color: #666;
-  font-size: 0.95rem;
-}
-
-.vocabulary-summary,
-.article-insights,
-.test-section {
-  margin: 40px 0;
-  padding: 20px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  border: 1px solid #f0f0f0;
-}
-
-.summary-title,
-.insights-title,
-.test-title {
-  margin: 0 0 15px 0;
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: #333;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.summary-title svg,
-.insights-title svg,
-.test-title svg {
-  width: 1.2em;
-  height: 1.2em;
-  color: inherit;
-}
-
-.summary-content,
-.insights-content {
-  line-height: 1.8;
-  color: #666;
-  font-size: 0.95rem;
-}
-
-.test-controls {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.difficulty-label {
-  font-size: 0.95rem;
-  color: #666;
-}
-
-.test-question-display {
-  margin-top: 20px;
-  padding: 20px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-
-.test-question-header {
-  margin-bottom: 12px;
-}
-
-.difficulty-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: bold;
-  color: #fff;
-}
-
-.difficulty-0 {
-  background-color: #67c23a;
-}
-
-.difficulty-1 {
-  background-color: #e6a23c;
-}
-
-.difficulty-2 {
-  background-color: #f56c6c;
-}
-
-.test-question-content {
-  line-height: 1.8;
-  color: #333;
-  font-size: 0.95rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-@media (max-width: 768px) {
-  .article-detail-page {
-    padding: 12px;
-  }
-
-  .article-container {
-    padding: 16px;
-  }
-
-  .article-title {
-    font-size: 1.5rem;
-  }
-
-  .article-toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .toolbar-left,
-  .toolbar-right {
-    width: 100%;
-  }
-
-  .toolbar-right {
-    justify-content: flex-start;
-  }
-
-  .article-content {
-    font-size: 0.95rem;
-    line-height: 1.8;
-  }
-
-  .sentence-toolbar {
-    position: static;
-    margin-top: 8px;
-    margin-left: 0;
-  }
-
-  .test-controls {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-</style>

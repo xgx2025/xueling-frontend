@@ -3,11 +3,15 @@
     <el-page-header @back="router.back()" content="英语文章阅读" class="mb-4" />
     
     <div class="filter-bar">
-      <el-radio-group v-model="levelFilter" size="large">
-        <el-radio-button label="all">全部</el-radio-button>
-        <el-radio-button label="entry">入门</el-radio-button>
-        <el-radio-button label="intermediate">进阶</el-radio-button>
-        <el-radio-button label="advanced">高级</el-radio-button>
+      <el-radio-group v-model="selectedCategory" size="large" @change="handleCategoryChange">
+        <el-radio-button :label="null">全部</el-radio-button>
+        <el-radio-button 
+          v-for="category in categories" 
+          :key="category.id" 
+          :label="category.id"
+        >
+          {{ category.name }}
+        </el-radio-button>
       </el-radio-group>
     </div>
 
@@ -21,7 +25,6 @@
         <div class="article-content">
            <div class="article-text">
               <div class="tags">
-                <el-tag :type="getLevelType(article.level)" size="small">{{ article.levelText }}</el-tag>
                 <span class="date">{{ article.date }}</span>
               </div>
               <h3 class="title" @click="readArticle(article.id)">{{ article.title }}</h3>
@@ -31,7 +34,9 @@
                 <span><el-icon><Timer /></el-icon> {{ article.readTime }} min</span>
               </div>
            </div>
-           <div class="article-image" :style="{ backgroundImage: `url(${article.image})` }"></div>
+           <div class="article-image">
+             <img :src="article.image || fallbackImage" :alt="article.title" class="article-img">
+           </div>
         </div>
       </el-card>
     </div>
@@ -39,62 +44,119 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { View, Timer } from '@element-plus/icons-vue'
+import { getArticleCategories, getArticlesByCategory } from '@/api/article'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
-const levelFilter = ref('all')
+const loading = ref(false)
 
-// 模拟文章数据
-const articles = ref([
- {
-    id: 1,
-    title: 'The Benefits of Learning a Second Language',
-    summary: 'Learning a new language is not just about communication; it changes your brain structure...',
-    level: 'entry',
-    levelText: '入门',
-    date: '2023-10-24',
-    views: 1205,
-    readTime: 5,
-    image: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
-  },
-  {
-    id: 2,
-    title: 'Artificial Intelligence in Modern Society',
-    summary: 'AI is reshaping industries from healthcare to finance. What does the future hold?',
-    level: 'intermediate',
-    levelText: '进阶',
-    date: '2023-10-25',
-    views: 890,
-    readTime: 8,
-    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60'
-  },
-  {
-    id: 3,
-    title: 'Climate Change: A Global Perspective',
-    summary: 'An in-depth analysis of the latest IPCC report and its implications for policy makers.',
-    level: 'advanced',
-    levelText: '高级',
-    date: '2023-10-20',
-    views: 450,
-    readTime: 12,
-    image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
+// 文章列表和分类
+const articles = ref<any[]>([])
+const categories = ref<any[]>([])
+const selectedCategory = ref<number | null>(null)
+
+// 备用图片URL
+const fallbackImage = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60' 
+
+/**
+ * 加载文章分类
+ */
+const loadCategories = async () => {
+  try {
+    const response = await getArticleCategories()
+    console.log('分类响应:', response)
+    if (response.code === 0 && response.data) {
+      categories.value = response.data
+      console.log('分类数据已加载:', categories.value)
+    }
+  } catch (error) {
+    console.error('加载分类失败:', error)
+    ElMessage.error('加载分类失败')
   }
-])
+}
+
+/**
+ * 加载文章列表
+ */
+const loadArticles = async (categoryId?: number) => {
+  try {
+    loading.value = true
+    const response = await getArticlesByCategory(categoryId || 1) // 默认加载第一个分类
+    console.log('文章列表响应:', response)
+    if (response.code === 0 && response.data) {
+      // 转换API返回的数据为组件需要的格式
+      articles.value = response.data.map((article: any) => {
+        console.log('处理文章数据:', article)
+        console.log('文章imageUrl:', article.imageUrl)
+
+        // 解析JSON格式的content字段
+        let summary = ''
+        try {
+          if (article.content) {
+            const contentObj = JSON.parse(article.content)
+            if (contentObj.blocks && contentObj.blocks.length > 0) {
+              // 获取第一个段落的第一句话作为摘要
+              const firstBlock = contentObj.blocks[0]
+              if (firstBlock.sentences && firstBlock.sentences.length > 0) {
+                summary = firstBlock.sentences[0].substring(0, 100) + '...'
+              }
+            }
+          }
+        } catch (e) {
+          console.error('解析content失败:', e)
+          summary = article.content?.substring(0, 100) + '...' || ''
+        }
+
+        // 处理图片URL，确保使用有效的图片
+        let imageUrl = article.imageUrl
+        // 修复URL中的空格问题
+        if (imageUrl && imageUrl.trim() !== '') {
+          // 将空格编码为 %20
+          imageUrl = imageUrl.trim().replace(/ /g, '%20')
+        } else {
+          imageUrl = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
+        }
+
+        return {
+          id: article.id,
+          title: article.title,
+          summary: summary,
+          date: article.createTime?.split(' ')[0] || '',
+          views: 0, // API未提供此字段
+          readTime: 5, // 固定显示5分钟
+          image: imageUrl
+        }
+      })
+      console.log('文章列表已加载:', articles.value)
+    }
+  } catch (error) {
+    console.error('加载文章失败:', error)
+    ElMessage.error('加载文章失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 const filteredArticles = computed(() => {
-    if (levelFilter.value === 'all') return articles.value;
-    return articles.value.filter(a => a.level === levelFilter.value);
+  return articles.value
 })
 
-const getLevelType = (level: string) => {
-    const map: Record<string, string> = {
-        'entry': 'success',
-        'intermediate': 'warning',
-        'advanced': 'danger'
+/**
+ * 处理分类变更
+ */
+const handleCategoryChange = async (categoryId: number | null) => {
+  selectedCategory.value = categoryId
+  if (categoryId !== null) {
+    await loadArticles(categoryId)
+  } else {
+    // 加载所有分类的文章
+    if (categories.value.length > 0) {
+      await loadArticles(categories.value[0].id)
     }
-    return map[level] || 'info'
+  }
 }
 
 const readArticle = (id: number) => {
@@ -107,6 +169,15 @@ const readArticle = (id: number) => {
       console.error('导航失败:', err)
     }
 }
+
+// 初始化
+onMounted(async () => {
+  await loadCategories()
+  if (categories.value.length > 0) {
+    // 默认加载第一个分类的文章
+    await loadArticles(categories.value[0].id)
+  }
+})
 </script>
 
 <style scoped>
@@ -144,10 +215,16 @@ const readArticle = (id: number) => {
 .article-image {
   width: 150px;
   height: 120px;
-  background-size: cover;
-  background-position: center;
   border-radius: 6px;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.article-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
 }
 
 .tags {
