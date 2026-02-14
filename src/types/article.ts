@@ -19,10 +19,6 @@ export interface ArticleHighlights {
 export interface ArticleCategory {
   id: number
   name: string
-  sortOrder: number
-  isActive: number
-  createTime: string
-  updateTime: string
 }
 
 // 文章详情 VO
@@ -100,7 +96,13 @@ export interface RemoveFavoriteDTO {
 // 获取测试题 DTO
 export interface GetTestQuestionsDTO {
   articleId: number
-  difficulty: 0 | 1 | 2    // 0：简单，1：中等，2：困难
+  difficulty: 1 | 2 | 3    // 1：简单，2：中等，3：困难
+}
+
+// 文章阅读状态 VO
+export interface ArticleReadingStatusVO {
+  articleId: number        // 文章 ID
+  progressStatus: number   // 文章阅读状态（0：未开始，1：阅读中，2：已读完）
 }
 
 // 测试题项
@@ -108,15 +110,27 @@ export interface TestQuestion {
   id: number
   userId: number
   articleId: number
-  difficulty: 0 | 1 | 2
+  difficulty: 1 | 2 | 3
   content: string
   createTime: string
   updateTime: string
 }
 
+// 增加阅读时间 DTO
+export interface AddReadTimeDTO {
+  /**
+   * 文章ID
+   */
+  articleId: number
+  /**
+   * 阅读时间（秒）
+   */
+  readTime: number
+}
+
 // API 响应通用格式
 export interface ApiResponse<T = any> {
   code: number
-  msg: string
+  message: string
   data: T
 }

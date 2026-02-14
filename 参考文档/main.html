@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沉浸式阅读 - AI学习版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自定义样式补充 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Ma+Shan+Zheng&display=swap');
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(to bottom, #EFF2F7, #F7F9FC);
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* 水印字母背景 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255,255,255,0.03) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(255,255,255,0.03) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* 水印字母 */
+        .watermark-letters {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.05;
+            font-family: 'Georgia', serif;
+            font-size: 120px;
+            font-weight: bold;
+            color: #E1E6ED;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-content: space-around;
+            padding: 50px;
+        }
+
+        .watermark-letter {
+            opacity: 0.3;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-10px) rotate(2deg); }
+            50% { transform: translateY(0) rotate(0deg); }
+            75% { transform: translateY(10px) rotate(-2deg); }
+        }
+
+        /* 沉浸式阅读字体 */
+        .article-text {
+            font-family: 'Noto Serif SC', serif;
+            line-height: 1.8;
+            font-size: 1rem;
+            color: #2d3748;
+        }
+
+        /* 句子悬浮交互 */
+        .sentence-span {
+            position: relative;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .sentence-span:hover {
+            background-color: rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        /* 悬浮工具栏动画 */
+        .sentence-toolbar {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            padding: 4px;
+            display: flex;
+            gap: 4px;
+            border: 1px solid #e2e8f0;
+        }
+        .sentence-span:hover .sentence-toolbar {
+            transform: translateX(-50%) scale(1);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 高亮样式 (默认隐藏，通过类名控制显示) */
+        .highlight-vocab { background-color: transparent; transition: background 0.3s; }
+        .highlight-grammar { background-color: transparent; transition: background 0.3s; }
+
+        .show-highlights .highlight-vocab {
+            background-color: #fef08a; /* 黄色背景 */
+            border-bottom: 2px solid #eab308;
+            padding: 0 2px;
+        }
+        
+        .show-highlights .highlight-grammar {
+            background-color: #bae6fd; /* 蓝色背景 */
+            border-bottom: 2px solid #0ea5e9;
+            padding: 0 2px;
+        }
+
+        /* 金句手写字体 */
+        .golden-quote-font {
+            font-family: 'Ma Shan Zheng', cursive;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, 5px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        
+        /* 侧边栏动画 */
+        .vocab-sidebar {
+            transition: all 0.4s ease-in-out;
+            width: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .vocab-sidebar.active {
+            width: 280px;
+            opacity: 1;
+            margin-left: 1rem;
+        }
+
+        /* 词汇项悬停 */
+        .vocab-item {
+            transition: all 0.2s;
+        }
+        .vocab-item:hover {
+            background-color: #f1f5f9;
+            transform: translateX(4px);
+        }
+
+        /* 难度选择按钮 */
+        .difficulty-btn {
+            transition: all 0.2s;
+        }
+        .difficulty-btn.active {
+            background-color: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+
+        /* 金句区域动画 */
+        .insights-section {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .insights-section.show {
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 2rem;
+        }
+
+        /* 按钮提示框 */
+        .btn-tooltip {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 8px;
+            background-color: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 50;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+        }
+        .btn-tooltip::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent transparent #1f2937 transparent;
+        }
+        .btn-tooltip-trigger {
+            position: relative;
+        }
+        .btn-tooltip-trigger:hover .btn-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-gray-800">
+    
+    <div class="watermark-letters">
+        <span class="watermark-letter" style="animation-delay: 0s">A</span>
+        <span class="watermark-letter" style="animation-delay: 1s">B</span>
+        <span class="watermark-letter" style="animation-delay: 2s">C</span>
+        <span class="watermark-letter" style="animation-delay: 3s">D</span>
+        <span class="watermark-letter" style="animation-delay: 4s">E</span>
+        <span class="watermark-letter" style="animation-delay: 0s">F</span>
+        <span class="watermark-letter" style="animation-delay: 1s">G</span>
+        <span class="watermark-letter" style="animation-delay: 2s">H</span>
+        <span class="watermark-letter" style="animation-delay: 3s">I</span>
+        <span class="watermark-letter" style="animation-delay: 4s">J</span>
+        <span class="watermark-letter" style="animation-delay: 0s">K</span>
+        <span class="watermark-letter" style="animation-delay: 1s">L</span>
+        <span class="watermark-letter" style="animation-delay: 2s">M</span>
+        <span class="watermark-letter" style="animation-delay: 3s">N</span>
+        <span class="watermark-letter" style="animation-delay: 4s">O</span>
+        <span class="watermark-letter" style="animation-delay: 0s">P</span>
+        <span class="watermark-letter" style="animation-delay: 1s">Q</span>
+        <span class="watermark-letter" style="animation-delay: 2s">R</span>
+        <span class="watermark-letter" style="animation-delay: 3s">S</span>
+        <span class="watermark-letter" style="animation-delay: 4s">T</span>
+        <span class="watermark-letter" style="animation-delay: 0s">U</span>
+        <span class="watermark-letter" style="animation-delay: 1s">V</span>
+        <span class="watermark-letter" style="animation-delay: 2s">W</span>
+        <span class="watermark-letter" style="animation-delay: 3s">X</span>
+        <span class="watermark-letter" style="animation-delay: 4s">Y</span>
+        <span class="watermark-letter" style="animation-delay: 0s">Z</span>
+    </div>
+
+    <nav class="bg-white/95 backdrop-blur-md border-b border-gray-300/50 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+            <div class="flex justify-between h-14 items-center">
+                <div class="flex-shrink-0 flex items-center font-bold text-xl text-slate-600">
+                    SmartRead AI
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="px-1.5 py-0.5 bg-slate-200/50 text-slate-600 text-xs font-semibold rounded-full border border-slate-300/50">VIP会员</span>
+                    <div class="h-7 w-7 rounded-full bg-slate-200/50 overflow-hidden border border-slate-300/50">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex-grow flex max-w-7xl mx-auto w-full pt-2 pb-8 px-2">
+        
+        <main class="flex-1 min-w-0 bg-white/95 backdrop-blur-sm shadow-sm rounded-xl overflow-hidden border border-gray-200/50 relative">
+            
+            <div class="relative w-full h-48 sm:h-56 overflow-hidden group">
+                <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+                     alt="Article Cover" 
+                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                
+                <button onclick="toggleLike(this)" class="absolute top-4 right-4 p-3 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/40 transition-all active:scale-95 group-like">
+                    <svg class="w-6 h-6 text-white heart-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="px-6 pt-4 pb-3">
+                <h1 class="text-2xl font-bold text-gray-900 mb-2">2026年：人机协作的新范式</h1>
+                <div class="flex items-center text-sm text-gray-500 space-x-3">
+                    <div class="flex items-center">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Author" class="w-5 h-5 rounded-full mr-1.5">
+                        <span>李未来</span>
+                    </div>
+                    <span>•</span>
+                    <span>2026年2月6日</span>
+                    <span>•</span>
+                    <span>阅读时长 5分钟</span>
+                </div>
+            </div>
+
+            <div class="sticky top-14 z-30 bg-white/95 backdrop-blur border-y border-gray-200/50 px-6 py-1.5 flex flex-wrap items-center justify-between shadow-sm">
+                
+                <div class="flex items-center space-x-3">
+                    <label class="flex items-center cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="highlight-toggle" class="sr-only" onchange="toggleHighlights()">
+                            <div class="w-10 h-6 bg-gray-200 rounded-full shadow-inner transition-colors toggle-bg"></div>
+                            <div class="dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300"></div>
+                        </div>
+                        <span class="ml-2 text-sm font-medium text-gray-700">重点高亮</span>
+                    </label>
+
+                    <div id="highlight-legend" class="hidden flex items-center space-x-3 ml-4 text-xs animate-fade-in">
+                        <div class="flex items-center"><span class="w-3 h-3 bg-yellow-200 border border-yellow-400 rounded-full mr-1"></span> 重点词汇</div>
+                        <div class="flex items-center"><span class="w-3 h-3 bg-sky-200 border border-sky-400 rounded-full mr-1"></span> 语法难点</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <div class="btn-tooltip-trigger">
+                        <button onclick="toggleSidebar('vocab')" class="flex items-center space-x-1 text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            <span>词汇汇总</span>
+                        </button>
+                        <div class="btn-tooltip">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-1.5 py-0.5 bg-amber-400/20 text-amber-300 text-[10px] font-bold rounded uppercase">VIP</span>
+                                <span class="font-semibold">词汇汇总</span>
+                            </div>
+                            <p class="text-xs text-gray-300">汇总重要的词汇与短语，可快速浏览，进行学习和复习</p>
+                        </div>
+                    </div>
+                    <div class="btn-tooltip-trigger">
+                        <button onclick="toggleSidebar('quiz')" class="flex items-center space-x-1 text-sm text-blue-500 hover:text-blue-600 font-medium transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                            <span>阅读测试</span>
+                        </button>
+                        <div class="btn-tooltip">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-1.5 py-0.5 bg-amber-400/20 text-amber-300 text-[10px] font-bold rounded uppercase">VIP</span>
+                                <span class="font-semibold">阅读测试</span>
+                            </div>
+                            <p class="text-xs text-gray-300">文章阅读后，可以对自己进行测试，了解自己的阅读情况，提升阅读能力</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="article-body" class="px-6 py-4 article-text text-justify">
+                <p class="mb-4">
+                    <span class="sentence-span">
+                        随着人工智能技术的飞速发展，我们正站在一个历史的转折点上。
+                        <span class="sentence-toolbar">
+                            <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-md transition" onclick="analyzeSentence(1)">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                                分析句子
+                            </button>
+                            <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-600 hover:bg-purple-50 rounded-md transition" onclick="aiChat(1)">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                                AI对话
+                            </button>
+                        </span>
+                    </span>
+                    <span class="sentence-span">
+                        这不仅仅是技术的革新，更是<span class="highlight-vocab">认知思维</span>的重塑。
+                        <span class="sentence-toolbar">
+                            <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-md transition" onclick="analyzeSentence(2)">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                                分析句子
+                            </button>
+                            <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-600 hover:bg-purple-50 rounded-md transition" onclick="aiChat(2)">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                                AI对话
+                            </button>
+                        </span>
+                    </span>
+                </p>
+
+                <p class="mb-4">
+                    <span class="sentence-span">
+                        在未来，<span class="highlight-grammar">能否熟练运用AI工具</span>将成为衡量人才的重要标准。
+                        <span class="sentence-toolbar">
+                             <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-md transition" onclick="analyzeSentence(3)">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                                分析句子
+                             </button>
+                             <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-600 hover:bg-purple-50 rounded-md transition" onclick="aiChat(3)">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                                AI对话
+                             </button>
+                        </span>
+                    </span>
+                    <span class="sentence-span">
+                        我们需要学会从繁琐的重复劳动中解脱出来，专注于更具<span class="highlight-vocab">创造性</span>和<span class="highlight-vocab">同理心</span>的工作。
+                        <span class="sentence-toolbar">
+                             <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-md transition" onclick="analyzeSentence(4)">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                                分析句子
+                             </button>
+                             <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-600 hover:bg-purple-50 rounded-md transition" onclick="aiChat(4)">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                                AI对话
+                             </button>
+                        </span>
+                    </span>
+                </p>
+                
+                <p class="mb-4">
+                     <span class="sentence-span">
+                         真正的智慧，在于如何提出正确的问题，而不是死记硬背标准的答案。
+                         <span class="sentence-toolbar">
+                             <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-md transition" onclick="analyzeSentence(5)">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                                分析句子
+                             </button>
+                             <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-600 hover:bg-purple-50 rounded-md transition" onclick="aiChat(5)">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                                AI对话
+                             </button>
+                        </span>
+                    </span>
+                </p>
+            </div>
+
+            <div class="px-6 pb-8 pt-3 flex justify-center border-t border-gray-200/50">
+                <button id="finish-btn" onclick="finishReading()" class="px-6 py-2.5 bg-slate-600 hover:bg-slate-700 text-white text-base font-medium rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all flex items-center">
+                    <span>✅ 我已读完</span>
+                </button>
+            </div>
+
+            <div id="post-read-section" class="insights-section bg-gradient-to-br from-amber-50 to-orange-50 border-t border-gray-200/50">
+                
+                <div class="p-6">
+                    <div class="flex items-center gap-2 mb-4 text-amber-800">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <h3 class="text-lg font-bold">金句</h3>
+                    </div>
+                    
+                    <blockquote class="relative pl-6 border-l-4 border-amber-400 mb-4">
+                        <p class="text-xl font-serif text-slate-800 italic leading-relaxed mb-2">
+                            "人不是被AI取代，而是被善用AI的人取代。"
+                        </p>
+                        <footer class="text-sm text-slate-600">— 本文核心观点</footer>
+                    </blockquote>
+                    
+                    <div class="bg-white/60 rounded-lg p-4 text-sm text-slate-700 leading-relaxed">
+                        <p class="font-medium text-amber-900 mb-2">💡 深度感悟：</p>
+                        <p>这句话揭示了人与AI关系的本质。在AI时代，真正的竞争力不在于与AI对抗，而在于学会与AI协作。那些能够熟练运用AI工具、将AI作为助手的人，将在未来职场中占据优势。我们需要转变思维，从恐惧被取代转向主动拥抱AI，将其作为提升自己能力的工具。这种"人机协作"的思维模式，正是未来社会最需要培养的核心能力。</p>
+                    </div>
+                </div>
+
+                <div class="px-6 pb-8 max-w-2xl mx-auto text-center">
+                    <p class="text-slate-600 text-sm mb-2">🎉 恭喜您完成阅读！</p>
+                    <p class="text-slate-500 text-xs">您可以在侧边栏进行阅读理解测试</p>
+                </div>
+
+            </div>
+
+        </main>
+
+        <aside id="vocab-sidebar" class="vocab-sidebar bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200/50 flex flex-col h-auto self-start sticky top-20 overflow-hidden">
+            <div class="px-3 py-2 bg-slate-100/50 border-b border-gray-200/50 flex items-center justify-between">
+                <h4 class="font-bold text-slate-700 text-sm">本文词汇</h4>
+                <span class="text-xs text-slate-500 bg-white/50 px-1.5 py-0.5 rounded-full border border-slate-300/50">3个重点词</span>
+            </div>
+            <div class="max-h-[400px] overflow-y-auto p-1.5 space-y-1">
+                
+                <div class="vocab-item p-2 rounded-lg cursor-pointer border border-transparent hover:border-slate-300/50">
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                        <span class="px-1.5 py-0.5 bg-slate-200/50 text-slate-700 text-[10px] font-bold rounded uppercase">核心</span>
+                        <span class="font-bold text-slate-800 text-sm">认知思维</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mb-0.5">/rèn zhī sī wéi/</div>
+                    <div class="text-xs text-slate-700">n. 认知思维模式</div>
+                </div>
+
+                <div class="vocab-item p-2 rounded-lg cursor-pointer border border-transparent hover:border-slate-300/50">
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                        <span class="px-1.5 py-0.5 bg-slate-200/50 text-slate-700 text-[10px] font-bold rounded uppercase">核心</span>
+                        <span class="font-bold text-slate-800 text-sm">创造性</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mb-0.5">/chuàng zào xìng/</div>
+                    <div class="text-xs text-slate-700">n. 创造力；创新能力</div>
+                </div>
+
+                <div class="vocab-item p-2 rounded-lg cursor-pointer border border-transparent hover:border-slate-300/50">
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                        <span class="px-1.5 py-0.5 bg-slate-200/50 text-slate-700 text-[10px] font-bold rounded uppercase">核心</span>
+                        <span class="font-bold text-slate-800 text-sm">同理心</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mb-0.5">/tóng lǐ xīn/</div>
+                    <div class="text-xs text-slate-700">n. 同理心；共情能力</div>
+                </div>
+
+            </div>
+        </aside>
+
+        <aside id="quiz-sidebar" class="vocab-sidebar bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200/50 flex flex-col h-auto self-start sticky top-20 overflow-hidden">
+            <div class="px-3 py-2 bg-slate-100/50 border-b border-gray-200/50 flex items-center justify-between">
+                <h4 class="font-bold text-slate-700 text-sm">阅读理解测试</h4>
+                <span class="text-xs text-slate-500 bg-white/50 px-1.5 py-0.5 rounded-full border border-slate-300/50">VIP</span>
+            </div>
+            <div class="p-3">
+                <div class="mb-3">
+                    <label class="text-xs text-gray-500 font-medium mb-1.5 block">选择难度</label>
+                    <div class="flex gap-1.5">
+                        <button class="difficulty-btn flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:border-indigo-300 active" data-level="easy" onclick="selectDifficulty('easy')">简单</button>
+                        <button class="difficulty-btn flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:border-indigo-300" data-level="medium" onclick="selectDifficulty('medium')">中等</button>
+                        <button class="difficulty-btn flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:border-indigo-300" data-level="hard" onclick="selectDifficulty('hard')">困难</button>
+                    </div>
+                </div>
+
+                <button id="generateQuizBtn" onclick="generateSidebarQuiz()" class="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-lg text-sm font-medium transition mb-3">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    生成测试题
+                </button>
+
+                <div id="quizContainer" class="hidden space-y-3">
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-xl opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        <span id="toastMessage">操作成功</span>
+    </div>
+
+    <script>
+        // 1. 高亮开关逻辑
+        function toggleHighlights() {
+            const toggle = document.getElementById('highlight-toggle');
+            const toggleBg = document.querySelector('.toggle-bg');
+            const dot = document.querySelector('.dot');
+            const legend = document.getElementById('highlight-legend');
+            const articleBody = document.getElementById('article-body');
+
+            if (toggle.checked) {
+                // 开启状态样式
+                toggleBg.classList.replace('bg-gray-200', 'bg-indigo-500');
+                dot.classList.add('translate-x-full');
+                legend.classList.remove('hidden');
+                articleBody.classList.add('show-highlights');
+            } else {
+                // 关闭状态样式
+                toggleBg.classList.replace('bg-indigo-500', 'bg-gray-200');
+                dot.classList.remove('translate-x-full');
+                legend.classList.add('hidden');
+                articleBody.classList.remove('show-highlights');
+            }
+        }
+
+        // 2. 侧边栏开关逻辑
+        function toggleSidebar(type) {
+            const vocabSidebar = document.getElementById('vocab-sidebar');
+            const quizSidebar = document.getElementById('quiz-sidebar');
+            
+            if (type === 'vocab') {
+                vocabSidebar.classList.toggle('active');
+                quizSidebar.classList.remove('active');
+            } else if (type === 'quiz') {
+                quizSidebar.classList.toggle('active');
+                vocabSidebar.classList.remove('active');
+            }
+        }
+
+        // 3. 收藏按钮交互
+        function toggleLike(btn) {
+            const icon = btn.querySelector('.heart-icon');
+            if (icon.getAttribute('fill') === 'none') {
+                icon.setAttribute('fill', '#ef4444'); // Red
+                icon.classList.add('text-red-500');
+                icon.classList.remove('text-white');
+            } else {
+                icon.setAttribute('fill', 'none');
+                icon.classList.remove('text-red-500');
+                icon.classList.add('text-white');
+            }
+        }
+
+        // 4. 完成阅读逻辑
+        function finishReading() {
+            const btn = document.getElementById('finish-btn');
+            const section = document.getElementById('post-read-section');
+            
+            // 改变按钮状态
+            btn.innerHTML = '<span>🎉 已完成</span>';
+            btn.classList.add('bg-gray-400', 'cursor-default');
+            btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'hover:shadow-xl', 'transform');
+            btn.disabled = true;
+
+            // 显示底部区域
+            setTimeout(() => {
+                section.classList.add('show');
+                section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 300);
+            
+            // 显示Toast提示
+            showToast('恭喜！您已完成本篇阅读 🎉');
+            
+            // 触发庆祝效果（彩色纸屑）
+            createConfetti();
+        }
+
+        // 分析句子
+        function analyzeSentence(id) {
+            showToast(`正在分析句子 ${id}...`);
+        }
+
+        // AI对话
+        function aiChat(id) {
+            showToast(`正在启动 AI 对话...`);
+        }
+
+        // 5. 模拟生成测试题
+        function generateQuiz() {
+            const btn = document.getElementById('generate-btn');
+            const quizContainer = document.getElementById('quiz-container');
+
+            // Loading 状态
+            const originalText = btn.innerText;
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 正在智能分析文章...';
+            btn.disabled = true;
+            btn.classList.add('opacity-75');
+
+            // 模拟 API 请求延迟
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-75');
+                btn.style.display = 'none'; // 生成后隐藏按钮，或者改成"重新生成"
+
+                quizContainer.classList.remove('hidden');
+            }, 1500);
+        }
+
+        // 6. 选择难度
+        function selectDifficulty(level) {
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-level') === level) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // 7. 侧边栏生成测试题
+        function generateSidebarQuiz() {
+            const btn = document.getElementById('generateQuizBtn');
+            const container = document.getElementById('quizContainer');
+            
+            btn.innerHTML = '<svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 生成中...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    重新生成
+                `;
+                btn.disabled = false;
+                
+                container.classList.remove('hidden');
+                container.innerHTML = `
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <p class="text-sm font-medium text-gray-800 mb-2">Q1: 文章认为未来衡量人才的重要标准是什么？</p>
+                        <div class="space-y-1.5">
+                            <label class="flex items-center gap-2 p-2 rounded hover:bg-white cursor-pointer transition text-xs text-gray-600">
+                                <input type="radio" name="sq1" value="0" class="text-indigo-600 focus:ring-indigo-500">
+                                <span>A. 记忆力的强弱</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded hover:bg-white cursor-pointer transition text-xs text-gray-600">
+                                <input type="radio" name="sq1" value="1" class="text-indigo-600 focus:ring-indigo-500">
+                                <span>B. 熟练运用AI工具的能力</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded hover:bg-white cursor-pointer transition text-xs text-gray-600">
+                                <input type="radio" name="sq1" value="2" class="text-indigo-600 focus:ring-indigo-500">
+                                <span>C. 重复劳动的速度</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <p class="text-sm font-medium text-gray-800 mb-2">Q2: 真正的智慧在于什么？</p>
+                        <div class="space-y-1.5">
+                            <label class="flex items-center gap-2 p-2 rounded hover:bg-white cursor-pointer transition text-xs text-gray-600">
+                                <input type="radio" name="sq2" value="0" class="text-indigo-600 focus:ring-indigo-500">
+                                <span>A. 死记硬背标准答案</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded hover:bg-white cursor-pointer transition text-xs text-gray-600">
+                                <input type="radio" name="sq2" value="1" class="text-indigo-600 focus:ring-indigo-500">
+                                <span>B. 提出正确的问题</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded hover:bg-white cursor-pointer transition text-xs text-gray-600">
+                                <input type="radio" name="sq2" value="2" class="text-indigo-600 focus:ring-indigo-500">
+                                <span>C. 快速完成任务</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button onclick="submitSidebarQuiz()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition">
+                        提交答案
+                    </button>
+                `;
+            }, 1000);
+        }
+
+        function submitSidebarQuiz() {
+            alert('答案已提交！正确率：100%');
+        }
+
+        // Toast 提示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // 彩色纸屑庆祝动画
+        function createConfetti() {
+            const colors = ['#4f46e5', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.style.position = 'fixed';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '-10px';
+                confetti.style.width = '10px';
+                confetti.style.height = '10px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.borderRadius = '50%';
+                confetti.style.pointerEvents = 'none';
+                confetti.style.zIndex = '9999';
+                document.body.appendChild(confetti);
+                
+                const animation = confetti.animate([
+                    { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                    { transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                ], {
+                    duration: 2000 + Math.random() * 1000,
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                });
+                
+                animation.onfinish = () => confetti.remove();
+            }
+        }
+    </script>
+</body>
+</html>
