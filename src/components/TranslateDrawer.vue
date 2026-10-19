@@ -333,9 +333,9 @@ import {
 import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTranslate } from '@/composables/useTranslate'
-import { getWordBooks } from '@/api/wordbook'
-import { matchWords, addWordsToBook, removeWordsFromBook } from '@/api/wordbook'
-import type { WordBookVo } from '@/types/wordbook'
+import { getWordBooks } from '@/features/vocab/api'
+import { matchWords, addWordsToBook, removeWordsFromBook } from '@/features/vocab/api'
+import type { WordBookVo } from '@/features/vocab/types'
 import { useTokenStore } from '@/stores/token'
 
 const tokenStore = useTokenStore()

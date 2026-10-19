@@ -6,7 +6,7 @@
 import request from '@/utils/request'
 import type { ApiResponse } from '@/types/auth'
 import type { TranslateResult, Translation } from '@/types/translate'
-import type { WordDictionary } from '@/types/wordbook'
+import type { WordDictionary } from '@/features/vocab/types'
 
 /**
  * 翻译单词

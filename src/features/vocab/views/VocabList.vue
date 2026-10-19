@@ -122,8 +122,8 @@ import { useRouter } from 'vue-router'
 import { Plus, Check } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage } from 'element-plus'
-import { createWordBook, getWordBooks } from '@/api/wordbook'
-import type { WordBookVo } from '@/types/wordbook'
+import { createWordBook, getWordBooks } from '@/features/vocab/api'
+import type { WordBookVo } from '@/features/vocab/types'
 
 const router = useRouter()
 const dialogVisible = ref(false)

@@ -320,9 +320,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { Plus, VideoPlay, Edit, Delete, Microphone, Search, DataLine, Trophy, MagicStick, Check, RefreshLeft, ArrowRight, Collection, Lock, InfoFilled, EditPen, ArrowLeft, Mouse } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { matchWords, getWordBookDetail, addWordsToBook, removeWordsFromBook } from '@/api/wordbook'
-import type { WordDictionary, WordVO } from '@/types/wordbook'
-import { useReviewStore } from '@/stores/review'
+import { matchWords, getWordBookDetail, addWordsToBook, removeWordsFromBook } from '@/features/vocab/api'
+import type { WordDictionary, WordVO } from '@/features/vocab/types'
+import { useReviewStore } from '@/features/vocab/reviewStore'
 
 const route = useRoute()
 const router = useRouter()

@@ -272,10 +272,10 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Check, Close, Microphone, Trophy, MagicStick, Back, RefreshRight, VideoPlay, VideoPause, View, Hide, EditPen, Monitor, Service } from '@element-plus/icons-vue'
 import { ElMessage, ElNotification } from 'element-plus'
-import WordFamilyTree from '@/components/WordFamilyTree.vue'
-import { getWordsByIds, getWordFamily } from '@/api/wordbook'
-import type { WordFamilyNodeVO } from '@/types/wordbook'
-import { useReviewStore } from '@/stores/review'
+import WordFamilyTree from '@/features/vocab/WordFamilyTree.vue'
+import { getWordsByIds, getWordFamily } from '@/features/vocab/api'
+import type { WordFamilyNodeVO } from '@/features/vocab/types'
+import { useReviewStore } from '@/features/vocab/reviewStore'
 
 const router = useRouter()
 const route = useRoute()

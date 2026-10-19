@@ -34,19 +34,19 @@ const router = createRouter({
     {
       path: '/english/vocab',
       name: 'english-vocab',
-      component: () => import('@/view/english/vocab/VocabList.vue'),
+      component: () => import('@/features/vocab/views/VocabList.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/english/vocab/book/:id',
       name: 'english-vocab-book',
-      component: () => import('@/view/english/vocab/BookDetail.vue'),
+      component: () => import('@/features/vocab/views/BookDetail.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/english/vocab/review/:id',
       name: 'english-vocab-review',
-      component: () => import('@/view/english/vocab/CardReview.vue'),
+      component: () => import('@/features/vocab/views/CardReview.vue'),
       meta: { requiresAuth: true }
     },
     {

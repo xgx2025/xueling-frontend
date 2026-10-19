@@ -5,7 +5,7 @@
 
 import request from '@/utils/request'
 import type { ApiResponse } from '@/types/auth'
-import type { CreateWordBookDTO, WordDictionary, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO, WordFamilyNodeVO } from '@/types/wordbook'
+import type { CreateWordBookDTO, WordDictionary, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO, WordFamilyNodeVO } from '@/features/vocab/types'
 
 /**
  * 创建一个单词本
