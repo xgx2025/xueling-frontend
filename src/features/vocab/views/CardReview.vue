@@ -493,7 +493,7 @@ onUnmounted(() => {
 })
 
 interface ReviewCard {
-  id: number
+  id: string
   word: string
   phonetic: string
   meaning: string
@@ -558,7 +558,7 @@ const loadData = async () => {
     // 模拟数据 (Fallback)
     cards.value = [
       { 
-        id: 1, 
+        id: '1', 
         word: 'Ambiguous', 
         phonetic: 'æmbɪɡjuəs', 
         meaning: 'adj. 模棱两可的；含糊不清的', 
@@ -567,7 +567,7 @@ const loadData = async () => {
         imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&auto=format&fit=crop&q=60'
       },
       { 
-        id: 2, 
+        id: '2', 
         word: 'Benevolent', 
         phonetic: 'bənevələnt', 
         meaning: 'adj. 仁慈的；慈善的', 
@@ -576,7 +576,7 @@ const loadData = async () => {
         imageUrl: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=500&auto=format&fit=crop&q=60'
       },
       { 
-        id: 3, 
+        id: '3', 
         word: 'Comprehensive', 
         phonetic: 'kɒmprɪhensɪv', 
         meaning: 'adj. 全面的；综合的', 
@@ -585,7 +585,7 @@ const loadData = async () => {
         imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&auto=format&fit=crop&q=60'
       },
       { 
-        id: 4, 
+        id: '4', 
         word: 'Diligence', 
         phonetic: 'dɪlɪdʒəns', 
         meaning: 'n. 勤奋，勤勉', 
@@ -594,7 +594,7 @@ const loadData = async () => {
         imageUrl: 'https://images.unsplash.com/photo-1503428593586-e225b476b52c?w=500&auto=format&fit=crop&q=60'
       },
       { 
-        id: 5, 
+        id: '5', 
         word: 'Eloquent', 
         phonetic: 'eləkwənt', 
         meaning: 'adj. 雄辩的；有口才的', 

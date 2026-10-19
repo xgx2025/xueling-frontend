@@ -1,10 +1,13 @@
 /**
  * 单词本相关的 TypeScript 类型定义
+ *
+ * 说明：后端所有主键（雪花算法生成的 19 位 Long）统一以字符串返回，
+ * 前端一律使用 string，避免超出 JS 安全整数范围导致精度丢失。
  */
 
 // 单词本信息
 export interface WordBook {
-  id: number           // 单词本ID
+  id: string           // 单词本ID
   name: string         // 单词本名称
   wordCount?: number   // 单词数量
   createTime?: string  // 创建时间
@@ -30,7 +33,7 @@ export interface CreateWordBookDTO {
 
 // 单词字典（用于智能匹配）
 export interface WordDictionary {
-  id: number           // 主键ID
+  id: string           // 主键ID
   word: string         // 单词
   meaning: string      // 释义
   phonetic: string     // 音标
@@ -42,16 +45,19 @@ export interface WordDictionary {
 
 // 单词 VO
 export interface WordVO {
-  id: number
+  id: string
   word: string
   meaning: string
   phonetic: string
-  createTime: string
+  example?: string
+  exampleTranslation?: string
+  imageUrl?: string
+  createTime?: string
 }
 
 // 单词本详情 VO
 export interface WordBookDetailVO {
-  id: number
+  id: string
   name: string
   wordCount: number
   mastery: number

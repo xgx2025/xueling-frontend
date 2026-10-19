@@ -35,7 +35,7 @@ export interface TranslateHistory {
 
 // 添加到单词本的参数
 export interface AddToBookParams {
-  wordBookId: number
+  wordBookId: string
   word: string
   meaning: string
   phonetic: string

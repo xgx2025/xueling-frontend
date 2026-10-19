@@ -26,8 +26,10 @@ export interface UserInfo {
 }
 
 // 用户详细信息 VO（对应后端 UserVO）
+// 注意：后端 id 为雪花算法生成的 19 位 Long，超出 JS 安全整数范围，
+// 因此后端统一以字符串形式返回，前端也必须按 string 处理。
 export interface UserVO {
-  id: number              // 用户ID
+  id: string              // 用户ID
   username: string        // 用户名
   email: string           // 邮箱
   phone?: string          // 手机号
@@ -81,7 +83,7 @@ export interface PasswordValidationResult {
 
 // 用户信息更新 DTO
 export interface UserDTO {
-  id?: number           // 用户ID（由后端从token获取，前端不需要传）
+  id?: string          // 用户ID（由后端从token获取，前端不需要传）
   username?: string     // 用户名
   email?: string        // 邮箱
   phone?: string        // 手机号

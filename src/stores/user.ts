@@ -57,7 +57,8 @@ export const useUserStore = defineStore(
           const userVO: UserVO = response.data
           // 转换为 UserInfo 格式并存储
           const info: UserInfo = {
-            id: userVO.id.toString(),
+            // 后端已统一返回字符串 id，这里再做一次兜底转换
+            id: String(userVO.id),
             email: userVO.email,
             username: userVO.username,
             avatar: userVO.avatarUrl,

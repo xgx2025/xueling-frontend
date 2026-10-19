@@ -5,7 +5,7 @@
 
 import request from '@/utils/request'
 import type { ApiResponse } from '@/types/auth'
-import type { CreateWordBookDTO, WordDictionary, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO, WordFamilyNodeVO } from '@/features/vocab/types'
+import type { CreateWordBookDTO, WordDictionary, WordVO, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO, WordFamilyNodeVO } from '@/features/vocab/types'
 
 /**
  * 创建一个单词本
@@ -67,9 +67,9 @@ export const matchWords = (words: string): Promise<ApiResponse<WordDictionary[]>
 /**
  * 根据ID列表获取单词详情
  * @param ids ID列表（逗号分隔）
- * @returns Promise<ApiResponse<WordDictionary[]>>
+ * @returns Promise<ApiResponse<WordVO[]>> 后端返回的是 WordVO 列表
  */
-export const getWordsByIds = (ids: string): Promise<ApiResponse<WordDictionary[]>> => {
+export const getWordsByIds = (ids: string): Promise<ApiResponse<WordVO[]>> => {
   // 将逗号分隔的字符串转换为数组
   const wordIds = ids.split(',')
   return request.post('/word-review/word-detail', {
