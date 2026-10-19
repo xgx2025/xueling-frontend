@@ -7,6 +7,7 @@ export interface TranslateResult {
   word: string              // 原始单词
   phonetic?: string         // 音标
   translations: Translation[] // 翻译列表
+  source?: 'ECDICT' | 'AI' | 'AI_ENRICHED'
   examples?: Example[]      // 例句
   etymology?: string        // 词源
   inWordBook?: boolean      // 是否已在单词本中

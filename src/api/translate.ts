@@ -23,7 +23,7 @@ export const translateText = async (text: string): Promise<ApiResponse<Translate
       const wordData = response.data
       
       // 解析释义，提取词性和含义
-      const translations: Translation[] = parseTranslations(wordData.meaning)
+      const translations: Translation[] = wordData.translations ?? parseTranslations(wordData.meaning)
       
       // 处理例句
       const examples = []
@@ -39,6 +39,7 @@ export const translateText = async (text: string): Promise<ApiResponse<Translate
         word: wordData.word,
         phonetic: wordData.phonetic,
         translations,
+        source: wordData.source,
         examples,
         inWordBook: wordData.inWordBook,
         wordBookId: wordData.wordBookId

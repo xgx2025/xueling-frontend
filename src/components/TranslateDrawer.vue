@@ -70,6 +70,9 @@
               <div class="card-header">
                 <div class="word-title-row">
                   <h2 class="word-text">{{ currentResult.word }}</h2>
+                  <span v-if="currentResult.source && currentResult.source !== 'ECDICT'" class="dictionary-source">
+                    AI 释义
+                  </span>
                   <div class="header-actions">
                     <el-button 
                       circle 
@@ -809,6 +812,17 @@ onMounted(() => {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
   letter-spacing: -0.5px;
+}
+
+.dictionary-source {
+  align-self: center;
+  margin-left: 10px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .header-actions {
