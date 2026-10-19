@@ -306,8 +306,8 @@
                   class="quiz-option"
                   :class="{
                     'selected': selectedAnswers[qIndex] === oIndex,
-                    'correct': showExplanation && question.answer === String.fromCharCode(65 + oIndex),
-                    'wrong': showExplanation && selectedAnswers[qIndex] === oIndex && question.answer !== String.fromCharCode(65 + oIndex)
+                    'correct': showExplanation && question.answer === String.fromCharCode(65 + Number(oIndex)),
+                    'wrong': showExplanation && selectedAnswers[qIndex] === oIndex && question.answer !== String.fromCharCode(65 + Number(oIndex))
                   }"
                 >
                   <input 
@@ -317,7 +317,7 @@
                     v-model="selectedAnswers[qIndex]"
                     :disabled="showExplanation"
                   >
-                  <span class="option-label">{{ String.fromCharCode(65 + oIndex) }}.</span>
+                  <span class="option-label">{{ String.fromCharCode(65 + Number(oIndex)) }}.</span>
                   <span class="option-text">{{ option }}</span>
                 </label>
               </div>
@@ -773,7 +773,7 @@ const formatAnalysisResult = (content: string) => {
         listItems = []
       }
       // 保留缩进以支持嵌套列表
-      const indent = listMatch[1].length / 4 // 假设4个空格为一个缩进级别
+      const indent = (listMatch[1]?.length ?? 0) / 4 // 假设4个空格为一个缩进级别
       const indentClass = indent > 0 ? ` indent-${Math.min(indent, 3)}` : ''
       listItems.push(`<li class="list-item${indentClass}">${listMatch[2]}</li>`)
     } else {
@@ -868,7 +868,8 @@ const toggleTranslation = async () => {
 /**
  * 获取段落翻译
  */
-const getParagraphTranslation = (paragraphIndex: number) => {
+const getParagraphTranslation = (paragraphIndex: number | string) => {
+  const index = Number(paragraphIndex)
   if (!translationContent.value?.blocks || !Array.isArray(translationContent.value.blocks)) {
     return ''
   }
@@ -947,8 +948,9 @@ const loadTranslation = async () => {
 /**
  * 选择难度
  */
-const selectDifficulty = (level: 1 | 2 | 3) => {
-  selectedDifficulty.value = level
+const selectDifficulty = (level: number) => {
+  // difficultyLevels 中的 value 是普通 number，这里收敛回 1 | 2 | 3
+  selectedDifficulty.value = level as 1 | 2 | 3
 }
 
 /**
@@ -993,7 +995,7 @@ const createConfetti = () => {
     confetti.style.top = '-10px'
     confetti.style.width = '10px'
     confetti.style.height = '10px'
-    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)] ?? '#333'
     confetti.style.borderRadius = '50%'
     confetti.style.pointerEvents = 'none'
     confetti.style.zIndex = '9999'
@@ -1029,7 +1031,7 @@ const handleAnalyzeSentence = async (sentence: string) => {
     if (response.code === 0 && response.data) {
       sentenceAnalysisResult.value = response.data
     } else {
-      sentenceAnalysisResult.value = response.message || '句子分析失败'
+      sentenceAnalysisResult.value = response.msg || '句子分析失败'
     }
   } catch (err) {
     console.error('句子分析失败:', err)
@@ -1104,7 +1106,7 @@ const completeReading = async () => {
     
     // 通知后端完成阅读
     if (props.article?.id) {
-      await articleStore.completeArticleReading(props.article.id)
+      await articleStore.completeReading(props.article.id)
     }
   }
 }

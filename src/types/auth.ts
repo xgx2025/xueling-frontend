@@ -42,10 +42,10 @@ export interface UserVO {
   vipExpireTime?: string  // VIP到期时间
 }
 
-// API 响应通用格式
+// API 响应通用格式（字段名与后端 Result 保持一致：code / msg / data）
 export interface ApiResponse<T = any> {
   code: number         // 状态码：0-成功，其他-失败
-  message: string      // 提示信息
+  msg: string          // 提示信息
   data: T             // 响应数据
 }
 
@@ -67,7 +67,7 @@ export interface RegisterDTO {
 // 认证响应（登录/注册成功后返回）
 export interface AuthResponse {
   code: number
-  message: string
+  msg: string
   data: string  // AccessToken
 }
 

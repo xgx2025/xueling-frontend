@@ -60,7 +60,9 @@ const article = computed(() => articleStore.currentArticle)
 // 获取文章ID
 const articleId = computed(() => {
   const id = route.params.id
-  return typeof id === 'string' ? parseInt(id) : id
+  // route.params 的值可能是 string | string[] | undefined，统一收敛为 number
+  const raw = Array.isArray(id) ? id[0] : id
+  return raw ? parseInt(raw, 10) : 0
 })
 
 /**
@@ -133,7 +135,7 @@ const getReadingStatus = async () => {
       readingStatus.value = response.data.progressStatus
       console.log('设置阅读状态为:', readingStatus.value)
     } else {
-      console.warn('获取文章阅读状态失败:', response.message)
+      console.warn('获取文章阅读状态失败:', response.msg)
       readingStatus.value = undefined
     }
   } catch (err) {

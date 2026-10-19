@@ -36,9 +36,9 @@ export interface AddReadTimeRequest {
   readTime: number  // 阅读时间（秒），必须≥150秒
 }
 
-// API 响应通用格式
+// API 响应通用格式（字段名与后端 Result 保持一致：code / msg / data）
 export interface ApiResponse<T = any> {
   code: number
-  message: string
+  msg: string
   data: T
 }

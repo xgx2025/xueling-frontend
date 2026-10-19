@@ -128,9 +128,9 @@ export interface AddReadTimeDTO {
   readTime: number
 }
 
-// API 响应通用格式
+// API 响应通用格式（字段名与后端 Result 保持一致：code / msg / data）
 export interface ApiResponse<T = any> {
   code: number
-  message: string
+  msg: string
   data: T
 }
