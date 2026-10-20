@@ -6,13 +6,13 @@
         <template #content>
           <div class="header-title-area">
             <span class="text-large font-600 mr-3"> {{ bookName }} </span>
-            <el-tag type="primary" effect="light" round>英语四级</el-tag>
+            <el-tag type="primary" effect="light" round>{{ bookType === 'SYSTEM' ? '系统词书' : '个人词书' }}</el-tag>
           </div>
         </template>
         <template #extra>
           <div class="header-actions">
             <!-- 主要操作移至右侧栏，这里保留添加 -->
-            <el-button circle @click="dialogVisible = true">
+            <el-button v-if="bookType !== 'SYSTEM'" circle @click="dialogVisible = true">
               <el-icon><Plus /></el-icon>
             </el-button>
           </div>
@@ -33,11 +33,6 @@
                   prefix-icon="Search"
                   class="search-input"
                 />
-                <el-radio-group v-model="filterStatus" class="filter-group">
-                  <el-radio-button label="all">全部</el-radio-button>
-                  <el-radio-button label="learning">学习中</el-radio-button>
-                  <el-radio-button label="mastered">已掌握</el-radio-button>
-                </el-radio-group>
              </div>
              <div class="right-tools">
                 <span class="total-count">共 {{ filteredWords.length }} 个</span>
@@ -77,7 +72,7 @@
                 </template>
               </el-table-column>
               
-              <el-table-column label="操作" width="80" fixed="right">
+              <el-table-column v-if="bookType !== 'SYSTEM'" label="操作" width="80" fixed="right">
                 <template #default="scope">
                   
                   <el-tooltip content="删除" placement="top">
@@ -95,7 +90,7 @@
                   :width="200"
                 />
                 <p class="empty-text">这里空空如也，快去添加新单词吧！</p>
-                <el-button type="primary" plain @click="dialogVisible = true">立即添加</el-button>
+                <el-button v-if="bookType !== 'SYSTEM'" type="primary" plain @click="dialogVisible = true">立即添加</el-button>
             </div>
           </el-card>
         </div>
@@ -114,24 +109,26 @@
                        <el-progress type="dashboard" :percentage="mastery" :width="130" :stroke-width="8" color="#409EFF">
                           <template #default="{ percentage }">
                              <span class="percentage-value">{{ percentage }}%</span>
-                             <span class="percentage-label">掌握率</span>
+                             <span class="percentage-label">已学比例</span>
                           </template>
                        </el-progress>
                    </div>
                    <div class="stats-grid">
                       <div class="stat-box">
-                         <span class="num text-success">12</span>
-                         <span class="label">已掌握</span>
+                         <span class="num text-success">{{ learnedCount }}</span>
+                         <span class="label">已学习</span>
                       </div>
                       <div class="stat-box">
-                         <span class="num text-warning">23</span>
-                         <span class="label">学习中</span>
+                         <span class="num text-warning">{{ Math.max(0, words.length - learnedCount) }}</span>
+                         <span class="label">未学习</span>
                       </div>
                    </div>
                 </div>
                 <div class="action-area">
+                   <el-button type="success" class="start-btn" size="large" @click="router.push('/english/vocab/study')" round>进入今日学习</el-button>
+                   <el-button class="start-btn" size="large" @click="togglePlan" round>{{ studyEnabled ? '移出学习计划' : '加入学习计划' }}</el-button>
                    <el-button type="primary" class="start-btn" size="large" @click="startReview" round>
-                      <el-icon class="mr-2"><VideoPlay /></el-icon> 开始复习 / 专项训练
+                      <el-icon class="mr-2"><VideoPlay /></el-icon> 自由练习（不计入计划）
                    </el-button>
                    <div class="review-tips-wrapper">
                      <transition name="el-fade-in" mode="out-in">
@@ -268,7 +265,7 @@
     <!-- 复习分组选择弹窗 -->
     <el-dialog
       v-model="reviewDialogVisible"
-      title="开启复习计划"
+      title="选择自由练习单词"
       width="640px"
       align-center
       class="review-select-dialog"
@@ -276,7 +273,7 @@
     >
       <div class="dialog-body-content">
         <div class="dialog-header-tip">
-           <el-alert title="系统已根据当前排序为您生成智能分组，请选择要复习的组别" type="info" :closable="false" show-icon />
+           <el-alert title="请选择练习组别；自由练习不计入今日计划" type="info" :closable="false" show-icon />
         </div>
         
         <el-scrollbar max-height="400px" class="group-scrollbar">
@@ -320,7 +317,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Plus, VideoPlay, Edit, Delete, Microphone, Search, DataLine, Trophy, MagicStick, Check, RefreshLeft, ArrowRight, Collection, Lock, InfoFilled, EditPen, ArrowLeft, Mouse } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { matchWords, getWordBookDetail, addWordsToBook, removeWordsFromBook } from '@/features/vocab/api'
+import { matchWords, getWordBookDetail, addWordsToBook, removeWordsFromBook, setStudyBookEnabled } from '@/features/vocab/api'
 import type { WordDictionary, WordVO } from '@/features/vocab/types'
 import { useReviewStore } from '@/features/vocab/reviewStore'
 
@@ -328,12 +325,14 @@ const route = useRoute()
 const router = useRouter()
 const reviewStore = useReviewStore()
 const bookId = route.params.id
-const bookName = ref('CET-4 核心词') 
+const bookName = ref('单词本')
 const dialogVisible = ref(false)
 
 const searchQuery = ref('')
-const filterStatus = ref('all')
 const mastery = ref(0)
+const learnedCount = ref(0)
+const studyEnabled = ref(false)
+const bookType = ref<'SYSTEM' | 'USER'>('USER')
 const words = ref<WordVO[]>([])
 const selectedRows = ref<WordVO[]>([])
 
@@ -361,11 +360,6 @@ const filteredWords = computed(() => {
     )
   }
 
-  // 状态过滤 (预留扩展)
-  if (filterStatus.value !== 'all') {
-    // TODO: 后续根据实际字段过滤 learning/mastered
-  }
-
   return result
 })
 
@@ -376,13 +370,11 @@ const loadData = async () => {
     if (res.code === 0 && res.data) {
       bookName.value = res.data.name
       mastery.value = res.data.mastery || 0
-      // 根据create_time降序排序
+      learnedCount.value = res.data.learnedCount || 0
+      studyEnabled.value = !!res.data.studyEnabled
+      bookType.value = res.data.bookType || 'USER'
       if (res.data.wordList) {
-        words.value = res.data.wordList.sort((a, b) => {
-          const timeA = a.createTime ? new Date(a.createTime).getTime() : 0
-          const timeB = b.createTime ? new Date(b.createTime).getTime() : 0
-          return timeB - timeA
-        })
+        words.value = res.data.wordList
       }
     }
   } catch (error) {
@@ -394,6 +386,16 @@ const loadData = async () => {
 onMounted(() => {
   loadData()
 })
+
+const togglePlan = async () => {
+  try {
+    await setStudyBookEnabled(String(bookId), !studyEnabled.value)
+    studyEnabled.value = !studyEnabled.value
+    ElMessage.success(studyEnabled.value ? '已加入学习计划' : '已移出学习计划')
+  } catch (error: any) {
+    ElMessage.error(error?.msg || '更新学习计划失败')
+  }
+}
 
 // 批量添加相关
 const batchInput = ref('')
@@ -491,7 +493,7 @@ const startReview = () => {
     if (selectedRows.value.length > 0) {
         const selection = selectedRows.value
         if (selection.length < 5) {
-             ElMessage.warning('复习单词过少（至少5个），无法生成复习计划')
+             ElMessage.warning('自由练习至少需要5个单词')
              return
         }
         if (selection.length > 10) {
@@ -505,7 +507,7 @@ const startReview = () => {
 
     // 2. 默认流程：检查总数
     if (words.value.length < 5) {
-         ElMessage.warning('单词本词汇太少，无法生成复习计划')
+         ElMessage.warning('单词本词汇太少，无法开始自由练习')
          return
     }
 

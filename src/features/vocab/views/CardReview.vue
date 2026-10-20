@@ -104,8 +104,8 @@
             <div class="success-icon-wrapper">
                 <el-icon class="success-icon"><Trophy /></el-icon>
             </div>
-            <h2>今日复习完成！</h2>
-            <p>坚持就是胜利，明天继续加油</p>
+            <h2>自由练习完成</h2>
+            <p>本次练习不会改变今日计划或下次复习时间</p>
             
             <div class="completion-actions">
                 <el-button size="large" round class="back-btn" @click="router.back()">
@@ -118,7 +118,7 @@
                     class="consolidate-btn" 
                     @click="startConsolidation"
                 >
-                    <el-icon><MagicStick /></el-icon> AI 智能巩固
+                    <el-icon><MagicStick /></el-icon> 故事巩固演示
                 </el-button>
             </div>
         </div>
@@ -129,7 +129,7 @@
             <!-- Top Bar -->
             <div class="overlay-header">
                 <div class="header-left">
-                    <div class="logo-text">⚡ AI 智能巩固</div>
+                    <div class="logo-text">⚡ 故事巩固演示</div>
                 </div>
                 <div class="header-center">
                     <h2 class="story-title-mini">{{ consolidationData.title }}</h2>

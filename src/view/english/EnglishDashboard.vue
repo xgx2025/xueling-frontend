@@ -18,7 +18,7 @@
           <el-card 
             class="module-card vocab-card" 
             shadow="hover" 
-            @click="navigateTo('/english/vocab')"
+            @click="navigateTo('/english/vocab/study')"
           >
             <div class="card-inner">
               <div class="text-section">
@@ -28,15 +28,15 @@
                   </div>
                   <h3>单词宝库</h3>
                 </div>
-                <p class="card-desc">创建专属单词本，使用科学记忆法高效复习。</p>
+                <p class="card-desc">先完成到期复习，再学习今天的新词。</p>
                 
                 <div class="tags-group">
                   <el-tag effect="plain" type="primary" round class="custom-tag">自定义词库</el-tag>
-                  <el-tag effect="plain" type="success" round class="custom-tag">艾宾浩斯</el-tag>
+                  <el-tag effect="plain" type="success" round class="custom-tag">间隔复习</el-tag>
                 </div>
                 
                 <el-button type="primary" round class="action-btn">
-                  开始记单词 <el-icon class="el-icon--right"><ArrowRight /></el-icon>
+                  今日学习 <el-icon class="el-icon--right"><ArrowRight /></el-icon>
                 </el-button>
               </div>
               <div class="visual-section">
@@ -96,8 +96,8 @@
           <el-row>
             <el-col :span="8">
               <div class="stat-item">
-                <div class="stat-value">0</div>
-                <div class="stat-label">今日单词</div>
+                <div class="stat-value">{{ studyStats?.todayReviewed ?? '—' }}</div>
+                <div class="stat-label">今日回忆次数</div>
               </div>
             </el-col>
             <el-col :span="8">
@@ -120,11 +120,19 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Collection, Reading, ArrowRight } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
+import { getStudyStats } from '@/features/vocab/api'
+import type { StudyStats } from '@/features/vocab/types'
 
 const router = useRouter()
+const studyStats = ref<StudyStats | null>(null)
+
+onMounted(async () => {
+  try { studyStats.value = (await getStudyStats()).data } catch (error) { console.error('读取学习统计失败', error) }
+})
 
 const navigateTo = (path: string) => {
   router.push(path)

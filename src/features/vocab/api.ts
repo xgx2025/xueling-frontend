@@ -5,7 +5,17 @@
 
 import request from '@/utils/request'
 import type { ApiResponse } from '@/types/auth'
-import type { CreateWordBookDTO, WordDictionary, WordVO, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO, WordFamilyNodeVO } from '@/features/vocab/types'
+import type { CreateWordBookDTO, WordDictionary, WordVO, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO, WordFamilyNodeVO, TodayStudy, StudySettings, StudyStats, StudyReviewResult, SubmitStudyReview } from '@/features/vocab/types'
+
+export const getTodayStudy = (): Promise<ApiResponse<TodayStudy>> => request.get('/study/today')
+export const submitStudyReview = (data: SubmitStudyReview): Promise<ApiResponse<StudyReviewResult>> =>
+  request.post('/study/reviews', data)
+export const getStudyStats = (): Promise<ApiResponse<StudyStats>> => request.get('/study/stats')
+export const getStudySettings = (): Promise<ApiResponse<StudySettings>> => request.get('/study/settings')
+export const updateStudySettings = (data: StudySettings): Promise<ApiResponse<StudySettings>> =>
+  request.put('/study/settings', data)
+export const setStudyBookEnabled = (bookId: string, enabled: boolean): Promise<ApiResponse<string>> =>
+  request.put(`/study/books/${bookId}`, { enabled })
 
 /**
  * 创建一个单词本

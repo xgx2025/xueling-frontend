@@ -22,6 +22,9 @@ export interface WordBookVo {
   mastery: number      // 掌握度（0-100）
   color?: string       // 封面背景色
   icon?: string        // 封面图标
+  learnedCount?: number
+  studyEnabled?: boolean
+  bookType?: 'SYSTEM' | 'USER'
 }
 
 // 创建单词本 DTO
@@ -64,6 +67,61 @@ export interface WordBookDetailVO {
   wordCount: number
   mastery: number
   wordList: WordVO[]
+  learnedCount?: number
+  studyEnabled?: boolean
+  bookType?: 'SYSTEM' | 'USER'
+}
+
+export interface StudyQueueCard {
+  wordId: string
+  word: string
+  phonetic?: string
+  meaning: string
+  example?: string
+  exampleTranslation?: string
+  imageUrl?: string
+  state: 'NEW' | 'LEARNING' | 'REVIEW' | 'RELEARNING'
+  dueAt?: string
+  version: number
+  newCard: boolean
+}
+
+export interface TodayStudy {
+  dueCount: number
+  newRemaining: number
+  todayReviewed: number
+  todayNew: number
+  nextDueAt?: string
+  cards: StudyQueueCard[]
+}
+
+export interface StudySettings {
+  timeZone: string
+  dailyNewLimit: number
+  desiredRetention: number
+}
+
+export interface StudyStats {
+  todayReviewed: number
+  todayNew: number
+  learnedWords: number
+  dueCount: number
+  dueRecallRate: number
+}
+
+export interface StudyReviewResult {
+  wordId: string
+  state: string
+  dueAt: string
+  version: number
+}
+
+export interface SubmitStudyReview {
+  wordId: string
+  rating: 1 | 2 | 3 | 4
+  expectedVersion: number
+  requestId: string
+  elapsedMs: number
 }
 
 // 添加单词到单词本 DTO

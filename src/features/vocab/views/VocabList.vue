@@ -8,6 +8,15 @@
         </el-button>
       </header>
 
+      <section class="today-entry" @click="router.push('/english/vocab/study')">
+        <div>
+          <span class="today-kicker">DAILY STUDY · 今日计划</span>
+          <h2>先复习，再认识新单词</h2>
+          <p>待复习 {{ today?.dueCount ?? '—' }} · 可学新词 {{ today?.newRemaining ?? '—' }} · 今日已完成 {{ today?.todayReviewed ?? '—' }}</p>
+        </div>
+        <button type="button" class="today-start" @click.stop="router.push('/english/vocab/study')">开始今日学习 ↗</button>
+      </section>
+
       <!-- Hero Section with Lottie -->
       <div class="hero-section">
         <div class="hero-content">
@@ -16,7 +25,7 @@
           <div class="stats-row">
             <div class="stat-item">
                 <span class="stat-num">{{ wordBooks.reduce((acc, cur) => acc + cur.wordCount, 0) }}</span>
-                <span class="stat-label">总词汇量</span>
+                <span class="stat-label">词书收录量</span>
             </div>
             <div class="stat-item">
                 <span class="stat-num">{{ wordBooks.length }}</span>
@@ -43,7 +52,7 @@
           <div class="book-cover" :style="{ background: book.color }">
             <span class="book-icon">{{ book.icon }}</span>
             <div class="book-overlay">
-                <el-button round size="small" class="start-btn">开始复习</el-button>
+                <el-button round size="small" class="start-btn">查看词书</el-button>
             </div>
           </div>
           <div class="book-info">
@@ -53,7 +62,7 @@
             </div>
             <div class="progress-container">
               <div class="progress-info">
-                  <span>掌握度</span>
+                  <span>已学习 {{ book.learnedCount ?? 0 }} 词</span>
                   <span class="progress-val">{{ book.mastery }}%</span>
               </div>
               <el-progress 
@@ -64,6 +73,10 @@
                   :duration="10"
                   indeterminate
               />
+              <button type="button" class="book-plan-toggle" :disabled="busyBookId === book.id"
+                @click.stop="toggleBook(book)">
+                {{ book.studyEnabled ? '已加入计划 · 点击移出' : '加入今日学习计划' }}
+              </button>
             </div>
           </div>
         </div>
@@ -122,8 +135,8 @@ import { useRouter } from 'vue-router'
 import { Plus, Check } from '@element-plus/icons-vue'
 import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage } from 'element-plus'
-import { createWordBook, getWordBooks } from '@/features/vocab/api'
-import type { WordBookVo } from '@/features/vocab/types'
+import { createWordBook, getWordBooks, getTodayStudy, setStudyBookEnabled } from '@/features/vocab/api'
+import type { TodayStudy, WordBookVo } from '@/features/vocab/types'
 
 const router = useRouter()
 const dialogVisible = ref(false)
@@ -147,6 +160,8 @@ const newBookForm = ref({
 
 const loading = ref(false)
 const loadingBooks = ref(false)
+const today = ref<TodayStudy | null>(null)
+const busyBookId = ref<string | null>(null)
 // 这是一个学习场景的 Lottie 动画链接
 const animationLink = 'https://assets5.lottiefiles.com/packages/lf20_1a8sx7oe.json' 
 
@@ -190,9 +205,24 @@ const fetchWordBooks = async () => {
 }
 
 // 组件挂载时获取数据
-onMounted(() => {
-  fetchWordBooks()
+onMounted(async () => {
+  try { today.value = (await getTodayStudy()).data } catch (error) { console.error('读取今日任务失败', error) }
+  await fetchWordBooks()
 })
+
+const toggleBook = async (book: WordBookVo) => {
+  busyBookId.value = book.id
+  try {
+    await setStudyBookEnabled(book.id, !book.studyEnabled)
+    today.value = (await getTodayStudy()).data
+    await fetchWordBooks()
+    ElMessage.success(book.studyEnabled ? '已移出学习计划' : '已加入学习计划')
+  } catch (error: any) {
+    ElMessage.error(error?.msg || '更新学习计划失败')
+  } finally {
+    busyBookId.value = null
+  }
+}
 
 const handleBookClick = (id: string) => {
   router.push(`/english/vocab/book/${id}`)
@@ -244,6 +274,12 @@ const createBook = async () => {
 </script>
 
 <style scoped>
+.today-entry { display: flex; justify-content: space-between; align-items: center; gap: 24px; color: #f5f7ed; padding: 30px 38px; margin: 3px 0 24px; border-radius: 22px; background: #244e36; cursor: pointer; box-shadow: 0 18px 35px #244e3625; }
+.today-kicker { color: #b6d0ae; font-size: 11px; font-weight: 800; letter-spacing: .16em; }
+.today-entry h2 { font-family: Georgia, 'Songti SC', serif; font-size: 28px; margin: 9px 0; }.today-entry p { color: #d1dfd0; margin: 0; }
+.today-start { border: 0; border-radius: 12px; background: #ebbe70; color: #263f2d; padding: 13px 20px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+.book-plan-toggle { width: 100%; margin-top: 12px; padding: 9px 12px; border: 1px solid #cbded0; border-radius: 9px; color: #2e6645; background: #f5faf5; font-weight: 700; cursor: pointer; }.book-plan-toggle:disabled { opacity: .55; cursor: wait; }
+@media (max-width: 650px) { .vocab-content { padding: 16px; }.today-entry { flex-direction: column; align-items: stretch; padding: 25px; }.today-start { width: 100%; } }
 .vocab-list-page {
   min-height: 100vh;
   background-color: #f8fafc;
