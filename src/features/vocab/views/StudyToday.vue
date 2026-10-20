@@ -4,6 +4,7 @@
       <header class="study-header">
         <button class="back-link" type="button" @click="router.push('/english/vocab')">← 返回词书</button>
         <span class="eyebrow">XUELING · DAILY STUDY</span>
+        <button class="settings-link" type="button" @click="router.push('/english/vocab/insights')">学习记录</button>
         <button class="settings-link" type="button" @click="openSettings">学习设置</button>
       </header>
 
@@ -24,13 +25,13 @@
 
       <div v-if="loading" class="state-panel" role="status">正在整理今天的单词…</div>
       <section v-else-if="pendingReview" class="state-panel" aria-label="待确认的评分">
-        <h2>{{ saving ? '正在确认评分…' : '上次评分尚未确认' }}</h2>
+        <h2>{{ saving ? '正在确认评分…' : canRefreshAfterError ? '当前卡片已变化' : '上次评分尚未确认' }}</h2>
         <p>{{ saveError || '正在用原请求确认保存结果，请稍候。' }}</p>
         <div class="complete-actions">
           <button class="primary-button" type="button" :disabled="saving" @click="sendReview(pendingReview)">
             {{ saving ? '正在确认…' : '重试确认本次评分' }}
           </button>
-          <button class="text-button" type="button" :disabled="saving" @click="refreshAfterConflict">放弃待确认评分并刷新</button>
+          <button v-if="canRefreshAfterError" class="text-button" type="button" :disabled="saving" @click="refreshAfterConflict">同步最新学习计划</button>
         </div>
       </section>
       <div v-else-if="loadError" class="state-panel">
@@ -123,6 +124,7 @@ const loadError = ref('')
 const revealed = ref(false)
 const saving = ref(false)
 const saveError = ref('')
+const canRefreshAfterError = ref(false)
 const pendingReview = ref<SubmitStudyReview | null>(null)
 const shownAt = ref(Date.now())
 const settingsOpen = ref(false)
@@ -202,14 +204,17 @@ async function sendReview(review: SubmitStudyReview) {
   if (saving.value) return
   saving.value = true
   saveError.value = ''
+  canRefreshAfterError.value = false
   try {
     await submitStudyReview(review)
     clearPendingReview(userStore.userInfo?.id)
     pendingReview.value = null
     saveError.value = ''
+    canRefreshAfterError.value = false
     await loadToday()
   } catch (error: any) {
     saveError.value = error?.msg || '评分未确认保存，请使用同一个请求重试。'
+    canRefreshAfterError.value = error?.code === 500 || error?.code === 501
   } finally {
     saving.value = false
   }
@@ -219,6 +224,7 @@ function refreshAfterConflict() {
   clearPendingReview(userStore.userInfo?.id)
   pendingReview.value = null
   saveError.value = ''
+  canRefreshAfterError.value = false
   void loadToday()
 }
 

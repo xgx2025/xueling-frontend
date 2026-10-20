@@ -44,6 +44,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/english/vocab/insights',
+      name: 'english-vocab-insights',
+      component: () => import('@/features/vocab/views/StudyInsights.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/english/vocab/book/:id',
       name: 'english-vocab-book',
       component: () => import('@/features/vocab/views/BookDetail.vue'),

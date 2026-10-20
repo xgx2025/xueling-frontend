@@ -69,10 +69,10 @@
               </div>
               <div class="progress-label">
                 <span>学习覆盖率 · 已学习 {{ book.learnedCount ?? 0 }} / {{ book.wordCount }}</span>
-                <strong :aria-label="'学习覆盖率 ' + book.mastery + '%'">{{ book.mastery }}%</strong>
+                <strong :aria-label="'学习覆盖率 ' + book.learningCoverage + '%'">{{ book.learningCoverage }}%</strong>
               </div>
-              <div class="progress-track" role="progressbar" :aria-valuenow="Math.min(100, Math.max(0, book.mastery))" aria-valuemin="0" aria-valuemax="100" :aria-label="book.name + ' 学习覆盖率'">
-                <span :style="{ width: Math.min(100, Math.max(0, book.mastery)) + '%' }"></span>
+              <div class="progress-track" role="progressbar" :aria-valuenow="Math.min(100, Math.max(0, book.learningCoverage))" aria-valuemin="0" aria-valuemax="100" :aria-label="book.name + ' 学习覆盖率'">
+                <span :style="{ width: Math.min(100, Math.max(0, book.learningCoverage)) + '%' }"></span>
               </div>
               <div class="book-actions">
                 <button class="open-book" type="button" @click="handleBookClick(book.id)">查看词书 <span aria-hidden="true">↗</span></button>
@@ -161,6 +161,7 @@ async function fetchWordBooks() {
     if (response.code !== 0 || !response.data) throw new Error(response.msg || '请稍后重试。')
     wordBooks.value = response.data.map((book, index) => ({
       ...book,
+      learningCoverage: book.learningCoverage ?? book.mastery ?? 0,
       color: book.color || presetColors[index % presetColors.length]!,
       icon: book.icon || presetIcons[index % presetIcons.length]!
     }))

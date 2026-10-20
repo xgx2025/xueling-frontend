@@ -19,7 +19,8 @@ export interface WordBookVo {
   id: string           // 单词本ID
   name: string         // 单词本名称
   wordCount: number    // 单词总数
-  mastery: number      // 已学词数占比，即学习覆盖率（0-100）
+  learningCoverage: number // 已学词数占比（0-100）
+  mastery?: number     // 旧接口兼容字段
   color?: string       // 封面背景色
   icon?: string        // 封面图标
   learnedCount?: number
@@ -65,7 +66,8 @@ export interface WordBookDetailVO {
   id: string
   name: string
   wordCount: number
-  mastery: number      // 已学词数占比，即学习覆盖率（0-100）
+  learningCoverage: number // 已学词数占比（0-100）
+  mastery?: number     // 旧接口兼容字段
   wordList: WordVO[]
   learnedCount?: number
   studyEnabled?: boolean
@@ -108,6 +110,23 @@ export interface StudyStats {
   dueCount: number
   dueRecallAttempts: number
   dueRecallRate: number | null
+}
+
+export interface StudyDayStats {
+  date: string
+  reviewCount: number
+  newWords: number
+  studyTimeMs: number
+  dueRecallAttempts: number
+  dueRecallRate: number | null
+  dueBacklog: number
+}
+
+export interface StudyReviewCount {
+  once: number
+  twice: number
+  threeToFive: number
+  sixOrMore: number
 }
 
 export interface StudyReviewResult {

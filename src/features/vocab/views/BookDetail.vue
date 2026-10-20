@@ -131,7 +131,7 @@
                 </div>
                 <div class="dashboard-area">
                    <div class="chart-container">
-                       <el-progress type="dashboard" :percentage="mastery" :width="130" :stroke-width="8" color="#315b40">
+                       <el-progress type="dashboard" :percentage="learningCoverage" :width="130" :stroke-width="8" color="#315b40">
                           <template #default="{ percentage }">
                              <span class="percentage-value">{{ percentage }}%</span>
                              <span class="percentage-label">学习覆盖率</span>
@@ -353,7 +353,7 @@ const bookName = ref('单词本')
 const dialogVisible = ref(false)
 
 const searchQuery = ref('')
-const mastery = ref(0)
+const learningCoverage = ref(0)
 const learnedCount = ref(0)
 const totalWordCount = ref(0)
 const studyEnabled = ref(false)
@@ -405,7 +405,7 @@ const loadData = async () => {
     const res = await getWordBookDetail(bookId as string)
     if (res.code === 0 && res.data) {
       bookName.value = res.data.name
-      mastery.value = res.data.mastery || 0
+      learningCoverage.value = res.data.learningCoverage ?? res.data.mastery ?? 0
       learnedCount.value = res.data.learnedCount || 0
       totalWordCount.value = res.data.wordCount || 0
       studyEnabled.value = !!res.data.studyEnabled

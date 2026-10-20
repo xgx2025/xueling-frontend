@@ -1,0 +1,82 @@
+// @vitest-environment jsdom
+import { flushPromises, shallowMount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import StudyToday from './StudyToday.vue'
+
+const api = vi.hoisted(() => ({
+  getTodayStudy: vi.fn(),
+  getStudySettings: vi.fn(),
+  submitStudyReview: vi.fn(),
+  updateStudySettings: vi.fn()
+}))
+
+vi.mock('@/features/vocab/api', () => api)
+vi.mock('@/stores/user', () => ({ useUserStore: () => ({ userInfo: { id: '7' } }) }))
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }))
+
+const card = {
+  wordId: '123', word: 'hello', meaning: '你好', state: 'NEW',
+  version: 0, newCard: true
+}
+
+function mountStudy() {
+  return shallowMount(StudyToday, { global: { stubs: {
+    'el-dialog': true, 'el-form': true, 'el-form-item': true,
+    'el-input-number': true, 'el-slider': true, 'el-input': true, 'el-button': true
+  } } })
+}
+
+describe('today study review recovery', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    sessionStorage.clear()
+    api.getTodayStudy.mockResolvedValue({ code: 0, data: {
+      dueCount: 0, newRemaining: 1, todayReviewed: 0, todayNew: 0, cards: [card]
+    } })
+    api.getStudySettings.mockResolvedValue({ code: 0, data: {
+      timeZone: 'Asia/Shanghai', dailyNewLimit: 15, desiredRetention: 0.9
+    } })
+  })
+
+  it('replays the same rating after refresh and then reloads server progress', async () => {
+    api.submitStudyReview.mockRejectedValueOnce(new Error('network interrupted'))
+      .mockResolvedValueOnce({ code: 0, data: { wordId: '123', version: 1 } })
+    const first = mountStudy()
+    await flushPromises()
+    await first.find('.reveal-button').trigger('click')
+    await first.findAll('.rating-button')[2]!.trigger('click')
+    await flushPromises()
+
+    expect(api.submitStudyReview).toHaveBeenCalledTimes(1)
+    const original = api.submitStudyReview.mock.calls[0]![0]
+    expect(original).toMatchObject({ wordId: '123', rating: 3, expectedVersion: 0 })
+    expect(sessionStorage.getItem('study.pending-review.7')).not.toBeNull()
+    expect(first.text()).not.toContain('同步最新学习计划')
+    first.unmount()
+
+    const second = mountStudy()
+    await flushPromises()
+    expect(api.submitStudyReview).toHaveBeenCalledTimes(2)
+    expect(api.submitStudyReview.mock.calls[1]![0]).toEqual(original)
+    expect(sessionStorage.getItem('study.pending-review.7')).toBeNull()
+    expect(api.getTodayStudy).toHaveBeenCalledTimes(3)
+    second.unmount()
+  })
+
+  it('offers a fresh queue after a confirmed stale-card rejection', async () => {
+    api.submitStudyReview.mockRejectedValueOnce({ code: 500, msg: '卡片已在其他设备更新，请刷新今日学习' })
+    const wrapper = mountStudy()
+    await flushPromises()
+    await wrapper.find('.reveal-button').trigger('click')
+    await wrapper.findAll('.rating-button')[2]!.trigger('click')
+    await flushPromises()
+
+    const refresh = wrapper.findAll('button').find(button => button.text().includes('同步最新学习计划'))
+    expect(refresh).toBeDefined()
+    await refresh!.trigger('click')
+    await flushPromises()
+    expect(sessionStorage.getItem('study.pending-review.7')).toBeNull()
+    expect(api.getTodayStudy).toHaveBeenCalledTimes(2)
+    wrapper.unmount()
+  })
+})
