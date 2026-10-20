@@ -1,57 +1,9 @@
 <template>
   <div class="register-container">
-    <!-- 动态交互背景 -->
-    <InteractiveBackground />
-
-    <!-- 背景装饰元素 -->
-    <div class="background-decorations">
-      <div class="decor-circle decor-1"></div>
-      <div class="decor-circle decor-2"></div>
-      <div class="decor-icon decor-3">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5 13.5L12 21l-7.5-7.5M12 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3l4 4-8 8 4 4" stroke="currentColor" stroke-width="2"/></svg>
-      </div>
-      <div class="decor-icon decor-4">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
-      </div>
-    </div>
-
     <div class="register-content">
       <!-- 左侧动画区域 -->
       <div class="animation-section">
-        <!-- 装饰性 Lottie 背景 -->
-        <div class="lottie-bg-pattern">
-          <Vue3Lottie
-            animationLink="https://lottie.host/4f8e8de7-eadb-4e0f-8e3f-4c3c8c6e5f5e/YrF7RqLJHN.json"
-            :height="500"
-            :width="500"
-            :loop="true"
-            :autoPlay="true"
-            :speed="0.5"
-          />
-        </div>
-
-        <!-- 装饰性几何图形 -->
-        <div class="decoration-shapes">
-          <div class="shape icon-rocket">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5 13.5L12 21l-7.5-7.5M12 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3l4 4-8 8 4 4" stroke="currentColor" stroke-width="2"/></svg>
-          </div>
-          <div class="shape icon-target">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
-          </div>
-          <div class="shape icon-star">
-             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="shape circle-lg"></div>
-        </div>
-
-        <Vue3Lottie
-          animationLink="https://assets4.lottiefiles.com/packages/lf20_j1adxtyb.json"
-          height="auto"
-          width="80%"
-          :loop="true"
-          :autoPlay="true"
-          class="main-lottie"
-        />
+        <div class="auth-symbol" aria-hidden="true">学</div>
         <div class="animation-text">
           <h2>加入我们</h2>
           <p>开启智能学习新篇章</p>
@@ -168,8 +120,6 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Vue3Lottie } from 'vue3-lottie'
-import InteractiveBackground from '@/components/InteractiveBackground.vue'
 import { register, sendVerificationCode as sendCode } from '@/api/auth'
 import { validateEmail, validatePasswordStrength, validateVerificationCode } from '@/utils/validators'
 import type { RegisterDTO } from '@/types/auth'
@@ -962,4 +912,24 @@ onUnmounted(() => {
     padding: 3px 10px;
   }
 }
+
+/* 与学习空间共用的认证页视觉语言 */
+.register-container { background: var(--xl-bg); overflow: visible; }
+.register-container::before, .register-container::after { display: none; }
+.register-content { background: var(--xl-surface); border: 1px solid var(--xl-border); box-shadow: var(--xl-shadow-card); backdrop-filter: none; animation: none; }
+.animation-section { background: #e9eee4; color: var(--xl-ink); gap: 24px; }
+.auth-symbol { width: 250px; height: 250px; display: grid; place-items: center; border: 1px solid #bed0bd; border-radius: 50%; color: var(--xl-brand); font: 180px/1 'Songti SC', var(--xl-font-display); }
+.animation-text h2 { color: var(--xl-ink); font: 650 35px/1.2 var(--xl-font-display); }
+.animation-text p { color: var(--xl-ink-soft); }
+.register-card { background: var(--xl-surface); }
+.brand-title { color: var(--xl-ink); font: 650 31px/1.2 var(--xl-font-display); }
+.brand-subtitle { color: var(--xl-ink-soft); }
+.register-form :deep(.el-input__wrapper), .register-form :deep(.el-input__wrapper:hover) { box-shadow: 0 0 0 1px var(--xl-border) inset; }
+.register-form :deep(.el-input__wrapper.is-focus) { box-shadow: 0 0 0 1px var(--xl-brand) inset; }
+.code-button { background: var(--xl-surface-muted); color: var(--xl-brand); border-color: var(--xl-border); }
+.code-button:not(:disabled):hover { background: #dce9db; color: var(--xl-brand-hover); border-color: #a9bda7; box-shadow: none; }
+.register-button { background: var(--xl-brand); box-shadow: none; }
+.register-button:hover { background: var(--xl-brand-hover); box-shadow: var(--xl-shadow-card); }
+.register-footer { border-color: var(--xl-border); }
+.auth-footer { color: var(--xl-ink-soft); }
 </style>

@@ -1,0 +1,74 @@
+:root {
+  color-scheme: light;
+  --xl-bg: #f5f5ee;
+  --xl-surface: #fffefa;
+  --xl-surface-muted: #eaf0e8;
+  --xl-ink: #243b2d;
+  --xl-ink-soft: #5d6e61;
+  --xl-brand: #315b40;
+  --xl-brand-hover: #234a32;
+  --xl-accent: #dba753;
+  --xl-border: #dce2d7;
+  --xl-radius-sm: 8px;
+  --xl-radius-md: 14px;
+  --xl-radius-lg: 20px;
+  --xl-shadow-card: 0 14px 30px rgba(36, 59, 45, 0.06);
+  --xl-font-body: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  --xl-font-display: Georgia, 'Songti SC', serif;
+
+  --el-color-primary: #315b40;
+  --el-color-primary-light-3: #64836e;
+  --el-color-primary-light-5: #98ad9c;
+  --el-color-primary-light-7: #c4d0c5;
+  --el-color-primary-light-8: #d8e1d8;
+  --el-color-primary-light-9: #edf2eb;
+  --el-color-primary-dark-2: #234a32;
+  --el-color-success: #3d7451;
+  --el-color-warning: #a77127;
+  --el-text-color-primary: #243b2d;
+  --el-text-color-regular: #4c5e50;
+  --el-border-color: #dce2d7;
+  --el-fill-color-blank: #fffefa;
+  --el-bg-color: #fffefa;
+  --el-border-radius-base: 8px;
+}
+
+body {
+  background: var(--xl-bg);
+  color: var(--xl-ink);
+  font-family: var(--xl-font-body);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible,
+.el-button:focus-visible {
+  outline: 3px solid var(--xl-accent);
+  outline-offset: 3px;
+}
+
+.el-button {
+  font-weight: 650;
+}
+
+.el-card {
+  --el-card-border-radius: var(--xl-radius-md);
+  --el-card-border-color: var(--xl-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

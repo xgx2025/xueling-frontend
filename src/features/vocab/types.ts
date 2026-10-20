@@ -19,7 +19,7 @@ export interface WordBookVo {
   id: string           // 单词本ID
   name: string         // 单词本名称
   wordCount: number    // 单词总数
-  mastery: number      // 掌握度（0-100）
+  mastery: number      // 已学词数占比，即学习覆盖率（0-100）
   color?: string       // 封面背景色
   icon?: string        // 封面图标
   learnedCount?: number
@@ -65,7 +65,7 @@ export interface WordBookDetailVO {
   id: string
   name: string
   wordCount: number
-  mastery: number
+  mastery: number      // 已学词数占比，即学习覆盖率（0-100）
   wordList: WordVO[]
   learnedCount?: number
   studyEnabled?: boolean

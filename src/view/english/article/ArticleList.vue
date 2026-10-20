@@ -1,276 +1,162 @@
-<template>
-  <div class="article-list-page">
-    <el-page-header @back="router.back()" content="英语文章阅读" class="mb-4" />
-    
-    <div class="filter-bar">
-      <el-radio-group v-model="selectedCategory" size="large" @change="handleCategoryChange">
-        <el-radio-button :label="null">全部</el-radio-button>
-        <el-radio-button 
-          v-for="category in categories" 
-          :key="category.id" 
-          :label="category.id"
-        >
-          {{ category.name }}
-        </el-radio-button>
-      </el-radio-group>
-    </div>
-
-    <div class="article-grid">
-      <el-card 
-        v-for="article in filteredArticles" 
-        :key="article.id" 
-        class="article-card" 
-        shadow="hover"
-      >
-        <div class="article-content">
-           <div class="article-text">
-              <div class="tags">
-                <span class="date">{{ article.date }}</span>
-              </div>
-              <h3 class="title" @click="readArticle(article.id)">{{ article.title }}</h3>
-              <p class="summary">{{ article.summary }}</p>
-              <div class="meta">
-                <span><el-icon><View /></el-icon> {{ article.views }}</span>
-                <span><el-icon><Timer /></el-icon> {{ article.readTime }} min</span>
-              </div>
-           </div>
-           <div class="article-image">
-             <img :src="article.image || fallbackImage" :alt="article.title" class="article-img">
-           </div>
-        </div>
-      </el-card>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { View, Timer } from '@element-plus/icons-vue'
+import { onMounted, ref } from 'vue'
 import { getArticleCategories, getArticlesByCategory } from '@/api/article'
-import { ElMessage } from 'element-plus'
+import type { ArticleCategory, ArticleVO } from '@/types/article'
 
-const router = useRouter()
-const loading = ref(false)
-
-// 文章列表和分类
-const articles = ref<any[]>([])
-const categories = ref<any[]>([])
+const categories = ref<ArticleCategory[]>([])
+const articles = ref<ArticleVO[]>([])
 const selectedCategory = ref<number | null>(null)
+const loading = ref(true)
+const errorMessage = ref('')
+const brokenImageIds = ref(new Set<number>())
 
-// 备用图片URL
-const fallbackImage = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60' 
-
-/**
- * 加载文章分类
- */
-const loadCategories = async () => {
+function getSummary(content: string): string {
+  if (!content) return '打开文章，开始阅读。'
+  let text = content
   try {
-    const response = await getArticleCategories()
-    console.log('分类响应:', response)
-    if (response.code === 0 && response.data) {
-      categories.value = response.data
-      console.log('分类数据已加载:', categories.value)
-    }
-  } catch (error) {
-    console.error('加载分类失败:', error)
-    ElMessage.error('加载分类失败')
+    const parsed = JSON.parse(content) as { blocks?: { sentences?: unknown[] }[] }
+    const sentence = parsed.blocks?.[0]?.sentences?.[0]
+    if (typeof sentence === 'string') text = sentence
+  } catch {
+    // 旧文章使用 ##、换行和 & 分隔内容。
   }
+  const normalized = text.replace(/##/g, ' ').replace(/&/g, ' ').replace(/\s+/g, ' ').trim()
+  return normalized.length > 112 ? `${normalized.slice(0, 112)}…` : normalized
 }
 
-/**
- * 加载文章列表
- */
-const loadArticles = async (categoryId?: number) => {
+function formatDate(value: string): string {
+  return value?.split(/[ T]/)[0] || ''
+}
+
+async function loadArticles(categoryId: number | null = selectedCategory.value) {
+  selectedCategory.value = categoryId
+  loading.value = true
+  errorMessage.value = ''
   try {
-    loading.value = true
-    const response = await getArticlesByCategory(categoryId || 1) // 默认加载第一个分类
-    console.log('文章列表响应:', response)
-    if (response.code === 0 && response.data) {
-      // 转换API返回的数据为组件需要的格式
-      articles.value = response.data.map((article: any) => {
-        console.log('处理文章数据:', article)
-        console.log('文章imageUrl:', article.imageUrl)
-
-        // 解析JSON格式的content字段
-        let summary = ''
-        try {
-          if (article.content) {
-            const contentObj = JSON.parse(article.content)
-            if (contentObj.blocks && contentObj.blocks.length > 0) {
-              // 获取第一个段落的第一句话作为摘要
-              const firstBlock = contentObj.blocks[0]
-              if (firstBlock.sentences && firstBlock.sentences.length > 0) {
-                summary = firstBlock.sentences[0].substring(0, 100) + '...'
-              }
-            }
-          }
-        } catch (e) {
-          console.error('解析content失败:', e)
-          summary = article.content?.substring(0, 100) + '...' || ''
-        }
-
-        // 处理图片URL，确保使用有效的图片
-        let imageUrl = article.imageUrl
-        // 修复URL中的空格问题
-        if (imageUrl && imageUrl.trim() !== '') {
-          // 将空格编码为 %20
-          imageUrl = imageUrl.trim().replace(/ /g, '%20')
-        } else {
-          imageUrl = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
-        }
-
-        return {
-          id: article.id,
-          title: article.title,
-          summary: summary,
-          date: article.createTime?.split(' ')[0] || '',
-          views: 0, // API未提供此字段
-          readTime: 5, // 固定显示5分钟
-          image: imageUrl
-        }
-      })
-      console.log('文章列表已加载:', articles.value)
+    const ids = categoryId === null ? categories.value.map((category) => category.id) : [categoryId]
+    const responses = await Promise.all(ids.map((id) => getArticlesByCategory(id)))
+    const failed = responses.find((response) => response.code !== 0)
+    if (failed) throw new Error(failed.msg || '文章加载失败')
+    const byId = new Map<number, ArticleVO>()
+    for (const response of responses) {
+      for (const article of response.data || []) byId.set(article.id, article)
     }
+    articles.value = [...byId.values()]
   } catch (error) {
     console.error('加载文章失败:', error)
-    ElMessage.error('加载文章失败')
+    articles.value = []
+    errorMessage.value = error instanceof Error ? error.message : '文章暂时无法加载，请稍后重试。'
   } finally {
     loading.value = false
   }
 }
 
-const filteredArticles = computed(() => {
-  return articles.value
-})
-
-/**
- * 处理分类变更
- */
-const handleCategoryChange = async (categoryId: number | null) => {
-  selectedCategory.value = categoryId
-  if (categoryId !== null) {
-    await loadArticles(categoryId)
-  } else {
-    // 加载所有分类的文章
-    if (categories.value.length > 0) {
-      await loadArticles(categories.value[0].id)
-    }
-  }
-}
-
-const readArticle = (id: number) => {
-    console.log('点击了文章ID:', id)
-    console.log('即将导航到:', { name: 'english-article-detail', params: { id } })
-    try {
-      router.push({ name: 'english-article-detail', params: { id } })
-      console.log('导航成功')
-    } catch (err) {
-      console.error('导航失败:', err)
-    }
-}
-
-// 初始化
 onMounted(async () => {
-  await loadCategories()
-  if (categories.value.length > 0) {
-    // 默认加载第一个分类的文章
-    await loadArticles(categories.value[0].id)
+  try {
+    const response = await getArticleCategories()
+    if (response.code !== 0) throw new Error(response.msg || '分类加载失败')
+    categories.value = response.data || []
+    await loadArticles(null)
+  } catch (error) {
+    console.error('加载文章分类失败:', error)
+    loading.value = false
+    errorMessage.value = error instanceof Error ? error.message : '文章暂时无法加载，请稍后重试。'
   }
 })
 </script>
 
+<template>
+  <main class="article-list-page">
+    <div class="article-shell">
+      <header class="page-header">
+        <router-link to="/english" class="back-link">← 英语学习中心</router-link>
+        <p class="eyebrow">READ A LITTLE, SEE FURTHER</p>
+        <h1>英语悦读<span>.</span></h1>
+        <p class="intro-copy">选一篇感兴趣的文章，在完整语境里读懂词句。</p>
+      </header>
+
+      <section class="article-section" aria-label="文章列表">
+        <div class="section-topline">
+          <h2>文章精选</h2>
+          <span v-if="!loading && !errorMessage">共 {{ articles.length }} 篇</span>
+        </div>
+        <div class="filters" role="group" aria-label="文章分类">
+          <button type="button" :aria-pressed="selectedCategory === null" @click="loadArticles(null)">全部</button>
+          <button v-for="category in categories" :key="category.id" type="button"
+            :aria-pressed="selectedCategory === category.id" @click="loadArticles(category.id)">
+            {{ category.name }}
+          </button>
+        </div>
+
+        <div v-if="loading" class="list-state" role="status">正在整理文章…</div>
+        <div v-else-if="errorMessage" class="list-state" role="alert">
+          <h3>文章暂时没有加载出来</h3>
+          <p>{{ errorMessage }}</p>
+          <button type="button" @click="loadArticles()">重新加载</button>
+        </div>
+        <div v-else-if="articles.length === 0" class="list-state">
+          <h3>这里还没有文章</h3>
+          <p>换个分类看看，或稍后再来。</p>
+        </div>
+        <div v-else class="article-grid">
+          <router-link v-for="article in articles" :key="article.id" class="article-card"
+            :to="{ name: 'english-article-detail', params: { id: article.id }, query: { categoryId: article.categoryId } }">
+            <div class="article-text">
+              <p class="article-meta"><span>{{ formatDate(article.createTime) }}</span><span v-if="article.author">{{ article.author }}</span></p>
+              <h3>{{ article.title }}</h3>
+              <p v-if="article.chineseTitle" class="chinese-title">{{ article.chineseTitle }}</p>
+              <p class="summary">{{ getSummary(article.content) }}</p>
+              <span class="read-link">阅读文章 <span aria-hidden="true">↗</span></span>
+            </div>
+            <div class="article-image" aria-hidden="true">
+              <img v-if="article.imageUrl && !brokenImageIds.has(article.id)" :src="article.imageUrl" alt="" @error="brokenImageIds.add(article.id)" />
+              <span v-else>READ</span>
+            </div>
+          </router-link>
+        </div>
+      </section>
+    </div>
+  </main>
+</template>
+
 <style scoped>
-.article-list-page {
-  padding: 20px;
-  max-width: 900px;
-  margin: 0 auto;
+.article-list-page { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
+.article-shell { max-width: 1100px; margin: auto; padding: 24px 30px 88px; }
+.page-header { padding-bottom: 36px; border-bottom: 1px solid var(--xl-border); }
+.back-link { display: inline-block; color: var(--xl-brand); text-decoration: none; font-size: 13px; font-weight: 700; padding: 9px 0; }
+.back-link:hover { text-decoration: underline; }
+.eyebrow { margin-top: 42px; color: #66816a; font-size: 11px; font-weight: 800; letter-spacing: .18em; }
+.page-header h1 { margin: 12px 0 15px; font: 700 clamp(44px, 6vw, 76px)/1.08 var(--xl-font-display); letter-spacing: -.04em; }
+.page-header h1 span { color: var(--xl-accent); }
+.intro-copy { color: var(--xl-ink-soft); font-size: 16px; line-height: 1.75; }
+.article-section { padding-top: 40px; }
+.section-topline { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; }
+.section-topline h2 { font: 650 30px/1.2 var(--xl-font-display); }
+.section-topline span { color: var(--xl-ink-soft); font-size: 12px; }
+.filters { display: flex; gap: 9px; flex-wrap: wrap; margin: 23px 0 27px; }
+.filters button { cursor: pointer; border: 1px solid var(--xl-border); background: var(--xl-surface); color: var(--xl-ink-soft); border-radius: 99px; min-height: 38px; padding: 0 16px; font-size: 13px; font-weight: 700; }
+.filters button:hover { border-color: #9bb39e; color: var(--xl-brand); }
+.filters button[aria-pressed='true'] { background: var(--xl-brand); color: white; border-color: var(--xl-brand); }
+.article-grid { display: grid; gap: 16px; }
+.article-card { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 26px; padding: 20px; background: var(--xl-surface); border: 1px solid var(--xl-border); border-radius: var(--xl-radius-md); color: inherit; text-decoration: none; transition: transform .2s, border-color .2s, box-shadow .2s; }
+.article-card:hover { transform: translateY(-2px); border-color: #a9bda7; box-shadow: var(--xl-shadow-card); }
+.article-text { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.article-meta { display: flex; flex-wrap: wrap; gap: 15px; color: #718174; font-size: 11px; letter-spacing: .06em; }
+.article-card h3 { margin: 17px 0 4px; font: 650 clamp(21px, 2.5vw, 29px)/1.3 var(--xl-font-display); overflow-wrap: anywhere; }
+.chinese-title { color: #68806d; font-size: 13px; }
+.summary { margin: 17px 0; color: var(--xl-ink-soft); font-size: 13px; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.read-link { margin-top: auto; color: var(--xl-brand); font-size: 12px; font-weight: 800; }
+.read-link span { padding-left: 11px; }
+.article-image { min-height: 170px; display: grid; place-items: center; overflow: hidden; background: #e7ede3; border-radius: var(--xl-radius-sm); color: #829985; font: italic 53px var(--xl-font-display); }
+.article-image img { width: 100%; height: 100%; object-fit: cover; }
+.list-state { border: 1px dashed #c8d5c8; border-radius: var(--xl-radius-md); background: var(--xl-surface); text-align: center; padding: 55px 20px; color: var(--xl-ink-soft); }
+.list-state h3 { color: var(--xl-ink); margin-bottom: 8px; font: 650 23px var(--xl-font-display); }
+.list-state button { margin-top: 20px; border: 0; border-radius: var(--xl-radius-sm); background: var(--xl-brand); color: white; cursor: pointer; padding: 11px 18px; font-weight: 750; }
+@media (max-width: 760px) {
+  .article-shell { padding: 16px 16px 60px; }
+  .eyebrow { margin-top: 30px; }
+  .article-card { grid-template-columns: 1fr; gap: 17px; }
+  .article-image { grid-row: 1; min-height: 190px; }
 }
-
-.filter-bar {
-  margin-bottom: 25px;
-  display: flex;
-  justify-content: center;
-}
-
-.article-card {
-  margin-bottom: 20px;
-  border-radius: 8px;
-  transition: transform 0.2s;
-}
-
-.article-card:hover {
-  transform: translateY(-2px);
-}
-
-.article-content {
-  display: flex;
-  gap: 20px;
-}
-
-.article-text {
-  flex: 1;
-}
-
-.article-image {
-  width: 150px;
-  height: 120px;
-  border-radius: 6px;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
-.article-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 6px;
-}
-
-.tags {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.date {
-  font-size: 12px;
-  color: #999;
-}
-
-.title {
-  margin: 0 0 10px 0;
-  font-size: 1.2rem;
-  color: #333;
-  cursor: pointer;
-}
-
-.title:hover {
-  color: #409EFF;
-}
-
-.summary {
-  color: #666;
-  font-size: 0.95rem;
-  margin-bottom: 15px;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.meta {
-  display: flex;
-  gap: 15px;
-  color: #999;
-  font-size: 0.85rem;
-}
-
-.meta span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+@media (prefers-reduced-motion: reduce) { .article-card:hover { transform: none; } }
 </style>

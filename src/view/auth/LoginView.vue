@@ -1,57 +1,9 @@
 <template>
   <div class="login-container">
-    <!-- 动态交互背景 -->
-    <InteractiveBackground />
-    
-    <!-- 背景装饰元素 -->
-    <div class="background-decorations">
-      <div class="decor-circle decor-1"></div>
-      <div class="decor-circle decor-2"></div>
-      <div class="decor-icon decor-3">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <div class="decor-icon decor-4">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-    </div>
-
     <div class="login-content">
       <!-- 左侧动画区域 -->
       <div class="animation-section">
-        <!-- 装饰性 Lottie 背景 -->
-        <div class="lottie-bg-pattern">
-          <Vue3Lottie
-            animationLink="https://lottie.host/4f8e8de7-eadb-4e0f-8e3f-4c3c8c6e5f5e/YrF7RqLJHN.json"
-            :height="500"
-            :width="500"
-            :loop="true"
-            :autoPlay="true"
-            :speed="0.5"
-          />
-        </div>
-
-        <!-- 装饰性几何图形 -->
-        <div class="decoration-shapes">
-          <div class="shape icon-book">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="shape icon-bulb">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 18v-1.5m-4.5-1.5h9M9 10.5a3 3 0 116 0c0 1.657-1.343 3-3 3s-3-1.343-3-3zM12 3v1.5M5.636 5.636l1.06 1.06M18.364 18.364l1.06 1.06M5.636 18.364l1.06-1.06M18.364 5.636l1.06-1.06" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15a3 3 0 016 0" stroke="currentColor" stroke-width="2"/></svg>
-          </div>
-          <div class="shape icon-pencil">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="shape circle-lg"></div>
-        </div>
-
-        <Vue3Lottie
-          animationLink="https://assets10.lottiefiles.com/packages/lf20_jcikwtux.json"
-          height="auto"
-          width="80%"
-          :loop="true"
-          :autoPlay="true"
-          class="main-lottie"
-        />
+        <div class="auth-symbol" aria-hidden="true">学</div>
         <div class="animation-text">
           <h2>欢迎回来</h2>
           <p>开启智能学习新体验</p>
@@ -110,27 +62,6 @@
           </el-button>
         </el-form-item>
 
-        <div class="social-login">
-          <div class="social-login-divider">
-            <span>其他登录方式</span>
-          </div>
-          <div class="social-login-icons">
-            <button class="social-icon phone-icon" @click="handlePhoneLogin" title="手机号登录">
-              <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-                <path d="M714.4 64H309.6C250.4 64 202 112.4 202 171.6v680.8c0 59.2 48.4 107.6 107.6 107.6h404.8c59.2 0 107.6-48.4 107.6-107.6V171.6c0-59.2-48.4-107.6-107.6-107.6zM512 896c-35.2 0-64-28.8-64-64s28.8-64 64-64 64 28.8 64 64-28.8 64-64 64z m246.4-192H265.6V192h492.8v512z" fill="currentColor"/>
-              </svg>
-            </button>
-            <button class="social-icon wechat-icon" @click="handleWechatLogin" title="微信登录">
-              <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-                <path d="M664.250054 368.541681c10.015098 0 19.892049 0.732687 29.67281 1.795902-26.647917-122.810047-159.358451-214.077703-310.826188-214.077703-169.353083 0-308.085774 114.232694-308.085774 259.274068 0 83.708494 46.165436 152.460344 123.281791 205.78483l-30.80868 91.730191 107.688651-53.455469c38.558178 7.53665 69.459978 15.308661 107.924012 15.308661 9.66308 0 19.230993-0.470721 28.752858-1.225921-6.025227-20.36584-9.521864-41.723264-9.521864-63.862493C402.328693 476.632491 517.908058 368.541681 664.250054 368.541681zM498.62897 285.87389c23.200398 0 38.557154 15.120372 38.557154 38.061874 0 22.846334-15.356756 38.156018-38.557154 38.156018-23.107277 0-46.260603-15.309684-46.260603-38.156018C452.368366 300.994262 475.522716 285.87389 498.62897 285.87389zM283.016307 362.090758c-23.107277 0-46.402843-15.309684-46.402843-38.156018 0-22.941502 23.295566-38.061874 46.402843-38.061874 23.081695 0 38.46301 15.120372 38.46301 38.061874C321.479317 346.782098 306.098002 362.090758 283.016307 362.090758zM945.448458 606.151333c0-121.888048-123.258255-221.236753-261.683954-221.236753-146.57838 0-262.015505 99.348706-262.015505 221.236753 0 122.06508 115.437126 221.200938 262.015505 221.200938 30.66644 0 61.617359-7.609305 92.423993-15.262612l84.513836 45.786813-23.178909-76.17082C899.379213 735.776599 945.448458 674.90216 945.448458 606.151333zM598.803483 567.994292c-15.332197 0-30.807656-15.096836-30.807656-30.501688 0-15.190981 15.47546-30.477129 30.807656-30.477129 23.295566 0 38.558178 15.286148 38.558178 30.477129C637.361661 552.897456 622.099049 567.994292 598.803483 567.994292zM768.25071 567.994292c-15.213493 0-30.594809-15.096836-30.594809-30.501688 0-15.190981 15.381315-30.477129 30.594809-30.477129 23.107277 0 38.558178 15.286148 38.558178 30.477129C806.808888 552.897456 791.357987 567.994292 768.25071 567.994292z" fill="currentColor"/>
-              </svg>
-            </button>
-            <button class="social-icon qq-icon" @click="handleQQLogin" title="QQ登录">
-              <QQ />
-            </button>
-          </div>
-        </div>
-
         <div class="login-footer">
           <span>还没有账号？</span>
           <el-link type="primary" :underline="false" @click="navigateToRegister">
@@ -151,14 +82,11 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Vue3Lottie } from 'vue3-lottie'
-import InteractiveBackground from '@/components/InteractiveBackground.vue'
 import { login } from '@/api/auth'
 import { useTokenStore } from '@/stores/token'
 import { useUserStore } from '@/stores/user'
 import { validateEmail } from '@/utils/validators'
 import type { LoginDTO } from '@/types/auth'
-import { QQ } from '@/components/Icon'
 
 const router = useRouter()
 const tokenStore = useTokenStore()
@@ -259,20 +187,6 @@ const navigateToRegister = () => {
   router.push('/register')
 }
 
-// 手机号登录
-const handlePhoneLogin = () => {
-  ElMessage.info('手机号登录功能开发中...')
-}
-
-// 微信登录
-const handleWechatLogin = () => {
-  ElMessage.info('微信登录功能开发中...')
-}
-
-// QQ登录
-const handleQQLogin = () => {
-  ElMessage.info('QQ登录功能开发中...')
-}
 </script>
 
 <style scoped>
@@ -819,4 +733,22 @@ const handleQQLogin = () => {
     padding: 10px 14px;
   }
 }
+
+/* 与学习空间共用的认证页视觉语言 */
+.login-container { background: var(--xl-bg); overflow: visible; }
+.login-container::before, .login-container::after { display: none; }
+.login-content { background: var(--xl-surface); border: 1px solid var(--xl-border); box-shadow: var(--xl-shadow-card); backdrop-filter: none; animation: none; }
+.animation-section { background: #e9eee4; color: var(--xl-ink); gap: 24px; }
+.auth-symbol { width: 250px; height: 250px; display: grid; place-items: center; border: 1px solid #bed0bd; border-radius: 50%; color: var(--xl-brand); font: 180px/1 'Songti SC', var(--xl-font-display); }
+.animation-text h2 { color: var(--xl-ink); font: 650 35px/1.2 var(--xl-font-display); }
+.animation-text p { color: var(--xl-ink-soft); }
+.login-card { background: var(--xl-surface); }
+.brand-title { color: var(--xl-ink); font: 650 31px/1.2 var(--xl-font-display); }
+.brand-subtitle { color: var(--xl-ink-soft); }
+.login-form :deep(.el-input__wrapper), .login-form :deep(.el-input__wrapper:hover) { box-shadow: 0 0 0 1px var(--xl-border) inset; }
+.login-form :deep(.el-input__wrapper.is-focus) { box-shadow: 0 0 0 1px var(--xl-brand) inset; }
+.login-button { background: var(--xl-brand); box-shadow: none; }
+.login-button:hover { background: var(--xl-brand-hover); box-shadow: var(--xl-shadow-card); }
+.login-footer { border-color: var(--xl-border); }
+.auth-footer { color: var(--xl-ink-soft); }
 </style>

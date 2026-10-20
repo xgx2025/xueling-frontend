@@ -13,7 +13,7 @@
     <!-- 导航栏 -->
     <nav class="reader-nav">
       <div class="nav-content">
-        <div class="nav-brand">SmartRead AI</div>
+        <router-link class="nav-brand" to="/english/articles">学灵 · 英语悦读</router-link>
         <div class="nav-user">
           <span v-if="isSVIP" class="vip-badge svip-badge">SVIP会员</span>
           <span v-else-if="isVIP" class="vip-badge">VIP会员</span>
@@ -131,7 +131,7 @@
       <!-- 文章内容 -->
       <main class="article-main">
         <!-- 文章封面 -->
-        <div v-if="article?.imageUrl && article.imageUrl.trim() !== ''" class="article-cover">
+        <div v-if="article?.imageUrl && article.imageUrl.trim() !== '' && !imageFailed" class="article-cover">
           <img :src="article.imageUrl.trim()" :alt="article.title" class="cover-image" 
                @error="handleImageError" @load="handleImageLoad">
           <button class="like-button" @click="handleToggleFavorite">
@@ -143,6 +143,9 @@
 
         <!-- 文章标题和信息 -->
         <div class="article-header">
+          <button v-if="!article?.imageUrl || imageFailed" class="header-favorite" type="button" @click="handleToggleFavorite">
+            {{ isFavorited ? '♥ 已收藏' : '♡ 收藏文章' }}
+          </button>
           <h1 class="article-title">{{ article?.title }}</h1>
           <div class="article-meta">
             <div class="meta-item">
@@ -444,7 +447,8 @@ watch(() => props.readingStatus, (newStatus) => {
 
 // 常量
 const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-const defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Author'
+const defaultAvatar = '/logo.svg'
+const imageFailed = ref(false)
 const difficultyLevels = [
   { value: 1, label: '简单' },
   { value: 2, label: '中等' },
@@ -1045,12 +1049,7 @@ const handleAnalyzeSentence = async (sentence: string) => {
 const handleImageError = (event: Event) => {
   const imgElement = event.target as HTMLImageElement
   console.error('图片加载失败:', imgElement.src)
-  
-  // 设置默认图片
-  imgElement.src = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
-  
-  // 移除错误监听器，避免循环
-  imgElement.onerror = null
+  imageFailed.value = true
 }
 
 /**
@@ -1275,8 +1274,9 @@ onUnmounted(() => {
   /* 移除 height: 100vh; 让内容自然流动 */
   display: flex;
   flex-direction: column;
-  background: linear-gradient(to bottom, #EFF2F7, #F7F9FC);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--xl-bg);
+  color: var(--xl-ink);
+  font-family: var(--xl-font-body);
   /* 移除 overflow: hidden; 允许内容溢出 */
 }
 
@@ -1333,9 +1333,9 @@ onUnmounted(() => {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 254, 250, 0.96);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--xl-border);
   flex-shrink: 0;
 }
 
@@ -1352,7 +1352,9 @@ onUnmounted(() => {
 .nav-brand {
   font-size: 1.25rem;
   font-weight: bold;
-  color: #475569;
+  color: var(--xl-brand);
+  text-decoration: none;
+  font-family: var(--xl-font-display);
 }
 
 .nav-user {
@@ -1408,11 +1410,10 @@ onUnmounted(() => {
 .article-main {
   flex: 1;
   min-width: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(4px);
+  background: var(--xl-surface);
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--xl-border);
   overflow-y: auto;  /* 改为允许垂直滚动 */
   position: relative;
   display: flex;
@@ -1425,6 +1426,7 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 12rem;
+  min-height: 0;
   overflow: hidden;
   /* 移除 flex-shrink: 0; 允许随容器滚动 */
 }
@@ -1481,14 +1483,30 @@ onUnmounted(() => {
 
 /* 文章标题和信息 */
 .article-header {
-  padding: 1rem 1.5rem 0.75rem;
+  padding: 1.5rem 1.5rem 0.75rem;
+  width: min(100%, 780px);
+  margin: 0 auto;
   /* 移除 flex-shrink: 0; 允许随容器滚动 */
 }
 
+.header-favorite {
+  float: right;
+  border: 1px solid var(--xl-border);
+  border-radius: var(--xl-radius-sm);
+  background: var(--xl-surface);
+  color: var(--xl-brand);
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+.header-favorite:hover { background: var(--xl-surface-muted); }
+
 .article-title {
-  font-size: 1.5rem;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: bold;
-  color: #111827;
+  color: var(--xl-ink);
+  font-family: var(--xl-font-display);
   margin: 0 0 0.5rem;
   line-height: 1.3;
 }
@@ -1522,7 +1540,7 @@ onUnmounted(() => {
   position: sticky;
   top: 3.5rem;
   z-index: 30;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 254, 250, 0.96);
   backdrop-filter: blur(4px);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -1576,7 +1594,7 @@ onUnmounted(() => {
 }
 
 .toggle-input:checked + .toggle-track {
-  background: #6366f1;
+  background: var(--xl-brand);
 }
 
 .toggle-thumb {
@@ -1658,20 +1676,20 @@ onUnmounted(() => {
 }
 
 .vocab-btn {
-  color: #f97316;
+  color: #926321;
 }
 
 .vocab-btn:hover {
-  color: #ea580c;
+  color: #76501c;
   background: rgba(249, 115, 22, 0.05);
 }
 
 .quiz-btn {
-  color: #3b82f6;
+  color: var(--xl-brand);
 }
 
 .quiz-btn:hover {
-  color: #2563eb;
+  color: var(--xl-brand-hover);
   background: rgba(59, 130, 246, 0.05);
 }
 
@@ -1727,8 +1745,10 @@ onUnmounted(() => {
   padding: 1rem 1.5rem;
   line-height: 1.8;
   font-size: 1rem;
-  color: #2d3748;
+  color: var(--xl-ink);
   font-family: 'Noto Serif SC', serif;
+  width: min(100%, 780px);
+  margin: 0 auto;
   /* 移除 min-height: 0; */
 }
 
@@ -1744,7 +1764,7 @@ onUnmounted(() => {
   color: #333;
   margin: 1.25rem 0 0.625rem;
   padding: 0.625rem 0;
-  border-left: 4px solid #6366f1;
+  border-left: 4px solid var(--xl-brand);
   padding-left: 0.625rem;
   flex-shrink: 0;
 }
@@ -1860,7 +1880,7 @@ onUnmounted(() => {
 
 .finish-button {
   padding: 0.625rem 1.5rem;
-  background: #475569;
+  background: var(--xl-brand);
   color: white;
   font-size: 1rem;
   font-weight: 500;
@@ -1875,7 +1895,7 @@ onUnmounted(() => {
 }
 
 .finish-button:hover {
-  background: #334155;
+  background: var(--xl-brand-hover);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   transform: translateY(-0.125rem);
 }
@@ -2433,11 +2453,11 @@ onUnmounted(() => {
 }
 
 .translate-btn {
-  color: #6366f1;
+  color: var(--xl-brand);
 }
 
 .translate-btn:hover {
-  background-color: rgba(99, 102, 241, 0.1);
+  background-color: var(--xl-surface-muted);
 }
 
 /* 禁用状态 */

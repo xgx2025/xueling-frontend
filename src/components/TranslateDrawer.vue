@@ -1,15 +1,17 @@
 <template>
   <div class="translate-drawer-container" v-if="tokenStore.accessToken">
     <!-- 悬浮按钮 -->
-    <div 
+    <button
       class="translate-fab" 
+      type="button"
       @click="toggleDrawer"
       :class="{ 'is-open': isOpen }"
       v-show="!isOpen"
+      aria-label="打开翻译助手"
     >
       <el-icon :size="24"><Document /></el-icon>
       <span class="fab-text">翻译</span>
-    </div>
+    </button>
 
     <!-- 侧边抽屉 -->
     <transition name="drawer-slide">
@@ -684,26 +686,28 @@ onMounted(() => {
 /* 悬浮按钮 */
 .translate-fab {
   position: fixed;
-  bottom: 110px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
+  bottom: 22px;
+  right: 82px;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--xl-border);
   border-radius: 50%;
-  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-  color: white;
+  background: var(--xl-surface);
+  color: var(--xl-brand);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 4px 15px rgba(132, 250, 176, 0.4);
+  box-shadow: 0 5px 16px rgba(36, 59, 45, 0.12);
   user-select: none;
 }
 
 .translate-fab:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 8px 25px rgba(132, 250, 176, 0.5);
+  transform: translateY(-2px);
+  background: var(--xl-surface-muted);
+  box-shadow: 0 8px 22px rgba(36, 59, 45, 0.18);
 }
 
 .fab-text {
@@ -730,7 +734,7 @@ onMounted(() => {
 /* 头部 */
 .drawer-header {
   padding: 20px;
-  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+  background: var(--xl-brand);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -1121,10 +1125,10 @@ onMounted(() => {
   }
   
   .translate-fab {
-    bottom: 90px;
-    right: 20px;
-    width: 56px;
-    height: 56px;
+    bottom: 22px;
+    right: 82px;
+    width: 52px;
+    height: 52px;
   }
 }
 

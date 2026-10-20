@@ -5,7 +5,7 @@
       <el-page-header @back="router.back()" class="custom-header">
         <template #content>
           <div class="header-title-area">
-            <span class="text-large font-600 mr-3"> {{ bookName }} </span>
+            <h1 class="book-heading">{{ bookName }}</h1>
             <el-tag type="primary" effect="light" round>{{ bookType === 'SYSTEM' ? '系统词书' : '个人词书' }}</el-tag>
           </div>
         </template>
@@ -131,10 +131,10 @@
                 </div>
                 <div class="dashboard-area">
                    <div class="chart-container">
-                       <el-progress type="dashboard" :percentage="mastery" :width="130" :stroke-width="8" color="#409EFF">
+                       <el-progress type="dashboard" :percentage="mastery" :width="130" :stroke-width="8" color="#315b40">
                           <template #default="{ percentage }">
                              <span class="percentage-value">{{ percentage }}%</span>
-                             <span class="percentage-label">已学比例</span>
+                             <span class="percentage-label">学习覆盖率</span>
                           </template>
                        </el-progress>
                    </div>
@@ -144,15 +144,15 @@
                          <span class="label">已学习</span>
                       </div>
                       <div class="stat-box">
-                         <span class="num text-warning">{{ Math.max(0, words.length - learnedCount) }}</span>
+                         <span class="num text-warning">{{ Math.max(0, totalWordCount - learnedCount) }}</span>
                          <span class="label">未学习</span>
                       </div>
                    </div>
                 </div>
                 <div class="action-area">
-                   <el-button type="success" class="start-btn" size="large" @click="router.push('/english/vocab/study')" round>进入今日学习</el-button>
-                   <el-button class="start-btn" size="large" :loading="updatingPlan" @click="togglePlan" round>{{ studyEnabled ? '移出学习计划' : '加入学习计划' }}</el-button>
-                   <el-button type="primary" class="start-btn" size="large" @click="startReview" round>
+                   <el-button type="primary" class="start-btn" size="large" @click="router.push('/english/vocab/study')">进入今日学习</el-button>
+                   <el-button class="start-btn" size="large" :loading="updatingPlan" @click="togglePlan">{{ studyEnabled ? '移出学习计划' : '加入学习计划' }}</el-button>
+                   <el-button class="start-btn" size="large" @click="startReview">
                       <el-icon class="mr-2"><VideoPlay /></el-icon> 自由练习（不计入计划）
                    </el-button>
                    <div class="review-tips-wrapper">
@@ -355,6 +355,7 @@ const dialogVisible = ref(false)
 const searchQuery = ref('')
 const mastery = ref(0)
 const learnedCount = ref(0)
+const totalWordCount = ref(0)
 const studyEnabled = ref(false)
 const bookType = ref<'SYSTEM' | 'USER'>('USER')
 const words = ref<WordVO[]>([])
@@ -406,6 +407,7 @@ const loadData = async () => {
       bookName.value = res.data.name
       mastery.value = res.data.mastery || 0
       learnedCount.value = res.data.learnedCount || 0
+      totalWordCount.value = res.data.wordCount || 0
       studyEnabled.value = !!res.data.studyEnabled
       bookType.value = res.data.bookType || 'USER'
       if (res.data.wordList) {
@@ -649,9 +651,10 @@ const resetDialog = () => {
 
 <style scoped>
 .book-detail-page {
-  max-width: 1200px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 30px 88px;
+  color: var(--xl-ink);
 }
 
 .custom-header :deep(.el-page-header__content) {
@@ -660,10 +663,10 @@ const resetDialog = () => {
 
 /* Header Section */
 .header-section {
-  background: white;
+  background: var(--xl-surface);
   padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+  border: 1px solid var(--xl-border);
+  border-radius: var(--xl-radius-md);
   margin-bottom: 24px;
   display: flex;
   align-items: center;
@@ -673,7 +676,10 @@ const resetDialog = () => {
 .header-title-area {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
+
+.book-heading { margin: 0; font: 650 22px/1.2 var(--xl-font-display); color: var(--xl-ink); }
 
 /* Layout */
 .main-layout {
@@ -686,10 +692,10 @@ const resetDialog = () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-  background: #fff;
+  background: var(--xl-surface);
   padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+  border: 1px solid var(--xl-border);
+  border-radius: var(--xl-radius-md);
 }
 
 .left-tools {
@@ -709,10 +715,10 @@ const resetDialog = () => {
 
 /* Table Card */
 .table-card {
-  border-radius: 12px;
-  border: none;
+  border-radius: var(--xl-radius-md);
+  border: 1px solid var(--xl-border);
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  box-shadow: none;
 }
 
 .word-cell {
@@ -753,10 +759,10 @@ const resetDialog = () => {
 
 /* Side Card */
 .side-card {
-  border-radius: 12px;
-  border: none;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  border-radius: var(--xl-radius-md);
+  border: 1px solid var(--xl-border);
+  background: var(--xl-surface);
+  box-shadow: none;
 }
 
 .stats-widget {
@@ -803,7 +809,7 @@ const resetDialog = () => {
 
 .stat-box {
   flex: 1;
-  background: #f9fafc;
+  background: var(--xl-surface-muted);
   border-radius: 8px;
   padding: 12px;
   text-align: center;
@@ -868,13 +874,13 @@ const resetDialog = () => {
   font-weight: 600;
   letter-spacing: 0.5px;
   height: 44px;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+  box-shadow: none;
   transition: all 0.3s;
 }
 
 .start-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.4);
+  box-shadow: var(--xl-shadow-card);
 }
 
 /* Review Tips Widget - Vertical Optimize */

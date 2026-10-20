@@ -1,325 +1,121 @@
-<template>
-  <div class="english-dashboard">
-    <header class="dashboard-header animate__animated animate__fadeInDown">
-      <div class="header-content">
-        <el-page-header @back="router.push('/')" title="返回首页">
-          <template #content>
-            <span class="text-large font-600 mr-3"> 英语学习中心 </span>
-          </template>
-        </el-page-header>
-        <p class="header-subtitle">保持每天进步一点点，探索语言的无限可能</p>
-      </div>
-    </header>
-
-    <div class="module-content animate__animated animate__fadeInUp">
-      <el-row :gutter="24">
-        <!-- 单词库模块 -->
-        <el-col :xs="24" :sm="12" :lg="12">
-          <el-card 
-            class="module-card vocab-card" 
-            shadow="hover" 
-            @click="navigateTo('/english/vocab/study')"
-          >
-            <div class="card-inner">
-              <div class="text-section">
-                <div class="card-title">
-                  <div class="icon-wrapper vocab-bg">
-                    <el-icon :size="24" color="#409EFF"><Collection /></el-icon>
-                  </div>
-                  <h3>单词宝库</h3>
-                </div>
-                <p class="card-desc">先完成到期复习，再学习今天的新词。</p>
-                
-                <div class="tags-group">
-                  <el-tag effect="plain" type="primary" round class="custom-tag">自定义词库</el-tag>
-                  <el-tag effect="plain" type="success" round class="custom-tag">间隔复习</el-tag>
-                </div>
-                
-                <el-button type="primary" round class="action-btn">
-                  今日学习 <el-icon class="el-icon--right"><ArrowRight /></el-icon>
-                </el-button>
-              </div>
-              <div class="visual-section">
-                <!-- Word/Book Animation -->
-                <Vue3Lottie
-                  animationLink="https://assets9.lottiefiles.com/packages/lf20_DMgKk1.json"
-                  :height="160"
-                  :width="160"
-                />
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-
-        <!-- 英语文章模块 -->
-        <el-col :xs="24" :sm="12" :lg="12">
-          <el-card 
-            class="module-card article-card" 
-            shadow="hover" 
-            @click="navigateTo('/english/articles')"
-          >
-            <div class="card-inner">
-              <div class="text-section">
-                <div class="card-title">
-                  <div class="icon-wrapper article-bg">
-                    <el-icon :size="24" color="#E6A23C"><Reading /></el-icon>
-                  </div>
-                  <h3>英语悦读</h3>
-                </div>
-                <p class="card-desc">精选英语文章，沉浸式阅读体验，提升语感。</p>
-                
-                <div class="tags-group">
-                  <el-tag effect="plain" type="warning" round class="custom-tag">分级阅读</el-tag>
-                  <el-tag effect="plain" type="danger" round class="custom-tag">每日推荐</el-tag>
-                </div>
-
-                <el-button type="warning" round class="action-btn">
-                  开始阅读 <el-icon class="el-icon--right"><ArrowRight /></el-icon>
-                </el-button>
-              </div>
-              <div class="visual-section">
-                <!-- Reading/News Animation -->
-                <Vue3Lottie
-                  animationLink="https://assets10.lottiefiles.com/packages/lf20_4XmSkB.json"
-                  :height="160"
-                  :width="160"
-                />
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
-
-      <!-- 底部统计区域 (示例) -->
-      <div class="stats-section mt-4">
-        <el-card shadow="never" class="stats-card">
-          <el-row>
-            <el-col :span="8">
-              <div class="stat-item">
-                <div class="stat-value">{{ studyStats?.todayReviewed ?? '—' }}</div>
-                <div class="stat-label">今日回忆次数</div>
-              </div>
-            </el-col>
-            <el-col :span="8">
-              <div class="stat-item">
-                <div class="stat-value">0</div>
-                <div class="stat-label">累计阅读篇数</div>
-              </div>
-            </el-col>
-            <el-col :span="8">
-              <div class="stat-item">
-                <div class="stat-value">0h</div>
-                <div class="stat-label">本周学习时长</div>
-              </div>
-            </el-col>
-          </el-row>
-        </el-card>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { Collection, Reading, ArrowRight } from '@element-plus/icons-vue'
-import { Vue3Lottie } from 'vue3-lottie'
 import { getStudyStats } from '@/features/vocab/api'
 import type { StudyStats } from '@/features/vocab/types'
 
-const router = useRouter()
 const studyStats = ref<StudyStats | null>(null)
+const statsError = ref(false)
 
 onMounted(async () => {
-  try { studyStats.value = (await getStudyStats()).data } catch (error) { console.error('读取学习统计失败', error) }
+  try {
+    studyStats.value = (await getStudyStats()).data
+  } catch (error) {
+    statsError.value = true
+    console.error('读取学习统计失败', error)
+  }
 })
-
-const navigateTo = (path: string) => {
-  router.push(path)
-}
 </script>
 
+<template>
+  <main class="english-dashboard">
+    <div class="dashboard-shell">
+      <header class="dashboard-header">
+        <router-link to="/" class="back-link">← 返回首页</router-link>
+        <p class="eyebrow">YOUR ENGLISH SPACE</p>
+        <h1>英语学习<span class="title-dot">.</span></h1>
+        <p class="header-subtitle">先回忆，再理解。让单词和阅读一起成为每天的小习惯。</p>
+      </header>
+
+      <section class="today-strip" aria-label="今日单词学习数据">
+        <div><span>今日已完成</span><strong>{{ studyStats?.todayReviewed ?? '—' }}</strong><small>次回忆</small></div>
+        <div><span>今日新词</span><strong>{{ studyStats?.todayNew ?? '—' }}</strong><small>个单词</small></div>
+        <div><span>当前待复习</span><strong>{{ studyStats?.dueCount ?? '—' }}</strong><small>张卡片</small></div>
+      </section>
+      <p v-if="statsError" class="stats-note" role="status">学习数据暂时无法读取，仍可继续学习。</p>
+
+      <section class="learning-modules" aria-labelledby="modules-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TWO WAYS TO GROW</p>
+            <h2 id="modules-title">从哪里开始？</h2>
+          </div>
+          <p>选一个适合此刻的节奏。</p>
+        </div>
+        <div class="module-grid">
+          <article class="module-card vocab-card">
+            <div class="module-top"><span>01 / WORDS</span><span class="module-mark" aria-hidden="true">Aa</span></div>
+            <div class="module-body">
+              <h3>单词记忆</h3>
+              <p>先完成到期复习，再认识今天的新词。每次回忆都为下次见面做好准备。</p>
+            </div>
+            <div class="module-actions">
+              <router-link class="module-primary" to="/english/vocab/study">今日学习 <span aria-hidden="true">↗</span></router-link>
+              <router-link class="module-secondary" to="/english/vocab">管理词书</router-link>
+            </div>
+          </article>
+          <article class="module-card article-card">
+            <div class="module-top"><span>02 / READING</span><span class="module-mark" aria-hidden="true">“</span></div>
+            <div class="module-body">
+              <h3>英语阅读</h3>
+              <p>在完整语境里遇见词句。放慢一点，让阅读成为理解世界的另一种方式。</p>
+            </div>
+            <div class="module-actions">
+              <router-link class="module-primary" to="/english/articles">浏览文章 <span aria-hidden="true">↗</span></router-link>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+</template>
+
 <style scoped>
-.english-dashboard {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+.english-dashboard { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
+.dashboard-shell { max-width: 1180px; margin: auto; padding: 24px 30px 88px; }
+.dashboard-header { border-bottom: 1px solid var(--xl-border); padding-bottom: 38px; }
+.back-link { display: inline-block; color: var(--xl-brand); text-decoration: none; font-size: 13px; font-weight: 700; padding: 9px 0; }
+.back-link:hover { text-decoration: underline; }
+.eyebrow { color: #66816a; font-size: 11px; font-weight: 800; letter-spacing: .18em; }
+.dashboard-header .eyebrow { margin-top: 42px; }
+.dashboard-header h1 { margin: 12px 0 15px; font: 700 clamp(44px, 6vw, 76px)/1.08 var(--xl-font-display); letter-spacing: -.04em; }
+.title-dot { color: var(--xl-accent); }
+.header-subtitle { color: var(--xl-ink-soft); font-size: 16px; line-height: 1.75; }
+.today-strip { margin-top: 28px; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--xl-border); border-radius: var(--xl-radius-md); background: var(--xl-surface); }
+.today-strip > div { min-height: 116px; padding: 23px 32px; display: flex; align-items: baseline; gap: 8px; border-right: 1px solid var(--xl-border); }
+.today-strip > div:last-child { border-right: 0; }
+.today-strip span { display: block; align-self: flex-start; color: var(--xl-ink-soft); font-size: 12px; margin-right: auto; }
+.today-strip strong { font: 500 39px/1 var(--xl-font-display); }
+.today-strip small { color: var(--xl-ink-soft); font-size: 12px; white-space: nowrap; }
+.stats-note { margin-top: 10px; color: #8b6430; font-size: 12px; }
+.learning-modules { margin-top: 66px; }
+.section-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 24px; }
+.section-heading h2 { margin-top: 8px; font: 650 34px/1.2 var(--xl-font-display); }
+.section-heading > p { color: var(--xl-ink-soft); font-size: 13px; }
+.module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.module-card { min-height: 340px; display: flex; flex-direction: column; padding: 27px 30px 30px; border: 1px solid var(--xl-border); border-radius: var(--xl-radius-md); background: var(--xl-surface); transition: transform .2s, box-shadow .2s, border-color .2s; }
+.module-card:hover { transform: translateY(-3px); border-color: #a9bda7; box-shadow: var(--xl-shadow-card); }
+.module-top { display: flex; justify-content: space-between; align-items: start; color: #728d75; font-size: 10px; font-weight: 800; letter-spacing: .15em; }
+.module-mark { color: #a2b9a0; font: italic 68px/.9 var(--xl-font-display); letter-spacing: 0; }
+.article-card .module-mark { color: #c9af82; }
+.module-body { margin-top: auto; max-width: 400px; }
+.module-body h3 { margin: 0 0 12px; font: 650 30px/1.2 var(--xl-font-display); }
+.module-body p { color: var(--xl-ink-soft); font-size: 14px; line-height: 1.8; }
+.module-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; margin-top: 26px; }
+.module-primary { min-height: 44px; display: inline-flex; align-items: center; gap: 34px; padding: 0 17px; background: var(--xl-brand); color: #fff; border-radius: var(--xl-radius-sm); text-decoration: none; font-size: 13px; font-weight: 750; }
+.module-primary:hover { background: var(--xl-brand-hover); }
+.module-secondary { color: var(--xl-brand); font-size: 13px; font-weight: 700; text-decoration: none; }
+.module-secondary:hover { text-decoration: underline; }
+@media (max-width: 760px) {
+  .dashboard-shell { padding: 16px 16px 60px; }
+  .dashboard-header .eyebrow { margin-top: 30px; }
+  .today-strip > div { min-height: 96px; padding: 17px 12px; flex-wrap: wrap; gap: 4px; }
+  .today-strip span { flex-basis: 100%; }
+  .today-strip strong { font-size: 30px; }
+  .learning-modules { margin-top: 48px; }
+  .section-heading { display: block; }
+  .section-heading > p { margin-top: 9px; }
+  .module-grid { grid-template-columns: 1fr; }
+  .module-card { min-height: 300px; }
 }
-
-.dashboard-header {
-  margin-bottom: 30px;
-  padding: 24px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-}
-
-.header-subtitle {
-  color: #909399;
-  margin-top: 10px;
-  margin-left: 20px; /* Align with header title visual flow */
-  font-size: 14px;
-}
-
-.module-content {
-  /* Animation handled by animate.css classes if available, otherwise just layout */
-}
-
-/* Custom spacing utility since we might not have tailwind/bootstrap */
-.mt-4 {
-  margin-top: 24px;
-}
-
-.module-card {
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid #f0f2f5;
-  height: 100%;
-  margin-bottom: 20px;
-  overflow: hidden;
-  position: relative;
-  background-color: #ffffff;
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.03);
-}
-
-.module-card:hover {
-  transform: translateY(-8px);
-}
-
-.module-card.vocab-card:hover {
-  box-shadow: 0 16px 32px -12px rgba(64, 158, 255, 0.3);
-  border-color: #c6e2ff;
-}
-
-.module-card.article-card:hover {
-  box-shadow: 0 16px 32px -12px rgba(230, 162, 60, 0.3);
-  border-color: #f5dab1;
-}
-
-.card-inner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.text-section {
-  flex: 1;
-  padding-right: 20px;
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.icon-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  margin-right: 16px;
-  transition: transform 0.3s ease;
-}
-
-.module-card:hover .icon-wrapper {
-  transform: scale(1.1);
-}
-
-.vocab-bg {
-  background-color: #ecf5ff;
-}
-
-.article-bg {
-  background-color: #fdf6ec;
-}
-
-.card-title h3 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.card-desc {
-  color: #606266;
-  font-size: 14px;
-  line-height: 1.6;
-  margin-bottom: 24px;
-  min-height: 44px; /* Ensure alignment */
-}
-
-.tags-group {
-  margin-bottom: 24px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.custom-tag {
-  border: none;
-  padding: 0 16px;
-  height: 28px;
-  line-height: 28px;
-}
-
-.action-btn {
-  font-weight: 500;
-}
-
-.visual-section {
-  width: 160px;
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.stats-card {
-  border-radius: 12px;
-  background: linear-gradient(to right, #f8f9fa, #ffffff);
-}
-
-.stat-item {
-  text-align: center;
-  padding: 10px;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #409EFF;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #909399;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .card-inner {
-    flex-direction: column-reverse;
-    text-align: center;
-  }
-  
-  .text-section {
-    padding-right: 0;
-  }
-  
-  .visual-section {
-    margin-bottom: 20px;
-  }
-  
-  .card-title {
-    justify-content: center;
-  }
-  
-  .tags-group {
-    justify-content: center;
-  }
-}
+@media (prefers-reduced-motion: reduce) { .module-card:hover { transform: none; } }
 </style>

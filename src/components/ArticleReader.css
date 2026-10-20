@@ -1,8 +1,8 @@
 .article-reader {
   position: relative;
   min-height: 100vh;
-  background: linear-gradient(to bottom, #EFF2F7, #F7F9FC);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--xl-bg);
+  font-family: var(--xl-font-body);
   height: 100vh;
   overflow-y: auto;
 }

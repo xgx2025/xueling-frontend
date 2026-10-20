@@ -1,13 +1,19 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import AIAssistant from '@/components/AIAssistant.vue'
 import TranslateDrawer from '@/components/TranslateDrawer.vue'
+
+const route = useRoute()
+const focusedRoutes = new Set(['english-vocab-study', 'english-vocab-review', 'english-article-detail'])
+const showUtilities = computed(() => !focusedRoutes.has(String(route.name)))
 </script>
 
 <template>
   <div id="app-container">
     <router-view />
-    <AIAssistant />
-    <TranslateDrawer />
+    <AIAssistant v-if="showUtilities" />
+    <TranslateDrawer v-if="showUtilities" />
   </div>
 </template>
 

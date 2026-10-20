@@ -8,10 +8,6 @@ interface Message {
   content: string
 }
 
-// 机器人动画地址 (Lottie JSON)
-// 注意：Vue3Lottie 组件需要 .json 格式的动画文件，.lottie 格式可能无法直接显示
-const robotAnimationUrl = 'https://lottie.host/85b50248-807a-4313-b1b5-8063f937c7e3/j7vnQD5YjX.json'
-
 const tokenStore = useTokenStore()
 const isOpen = ref(false)
 const inputMessage = ref('')
@@ -23,7 +19,7 @@ const isLoading = ref(false)
 
 // --- 拖动逻辑 Start ---
 const fabRef = ref<HTMLElement | null>(null)
-const position = ref({ right: 30, bottom: 30 }) // 使用 right/bottom 定位
+const position = ref({ right: 22, bottom: 22 }) // 使用 right/bottom 定位
 const isDragging = ref(false)
 const hasMoved = ref(false) // 用于区分点击和拖动
 
@@ -186,22 +182,19 @@ const getMockAIResponse = (query: string): string => {
     </transition>
 
     <!-- 悬浮球 -->
-    <div 
+    <button
       class="fab-button shadow-lg" 
+      type="button"
       @mousedown="handleMouseDown"
       @touchstart="handleMouseDown"
       @click="toggleChat" 
       :class="{ 'is-open': isOpen, 'is-dragging': isDragging }"
+      :aria-label="isOpen ? '关闭 AI 学灵助手' : '打开 AI 学灵助手'"
+      :aria-expanded="isOpen"
     >
       <div class="fab-content">
         <div class="fab-icon" :class="{ 'icon-active': !isOpen, 'icon-hidden': isOpen }">
-          <Vue3Lottie 
-            :animationLink="robotAnimationUrl" 
-            :height="55" 
-            :width="55" 
-            :loop="true"
-            :autoPlay="true"
-          />
+          <span aria-hidden="true">AI</span>
         </div>
         <div class="fab-icon-close" :class="{ 'icon-active': isOpen, 'icon-hidden': !isOpen }">
           <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -210,7 +203,7 @@ const getMockAIResponse = (query: string): string => {
           </svg>
         </div>
       </div>
-    </div>
+    </button>
   </div>
 </template>
 
@@ -220,24 +213,25 @@ const getMockAIResponse = (query: string): string => {
   /* bottom: 30px; */
   /* right: 30px; */
   z-index: 9999;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--xl-font-body);
   user-select: none;
   touch-action: none;
 }
 
 /* 悬浮球样式 */
 .fab-button {
-  width: 60px;
-  height: 60px;
+  width: 52px;
+  height: 52px;
+  border: 1px solid #254b33;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--xl-brand);
   color: white;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer; /* 或者是 grab */
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 16px rgba(36, 59, 45, 0.18);
   position: relative;
   user-select: none;
   overflow: hidden;
@@ -264,7 +258,8 @@ const getMockAIResponse = (query: string): string => {
 
 .fab-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(118, 75, 162, 0.4);
+  background: var(--xl-brand-hover);
+  box-shadow: 0 8px 22px rgba(36, 59, 45, 0.22);
 }
 
 .fab-button.is-open {
@@ -283,6 +278,7 @@ const getMockAIResponse = (query: string): string => {
   justify-content: center;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+.fab-icon span { font: 800 16px var(--xl-font-display); letter-spacing: .04em; }
 
 .fab-icon.icon-active {
   opacity: 1;
@@ -334,7 +330,7 @@ const getMockAIResponse = (query: string): string => {
 
 .chat-header {
   padding: 15px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--xl-brand);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -406,7 +402,7 @@ const getMockAIResponse = (query: string): string => {
 }
 
 .message-user .message-bubble {
-  background-color: #667eea;
+  background-color: var(--xl-brand);
   color: white;
   border-bottom-right-radius: 2px;
 }
@@ -439,11 +435,11 @@ const getMockAIResponse = (query: string): string => {
 }
 
 .chat-input-area input:focus {
-  border-color: #667eea;
+  border-color: var(--xl-brand);
 }
 
 .chat-input-area button {
-  background-color: #667eea;
+  background-color: var(--xl-brand);
   border: none;
   width: 36px;
   height: 36px;
@@ -457,7 +453,7 @@ const getMockAIResponse = (query: string): string => {
 }
 
 .chat-input-area button:hover:not(:disabled) {
-  background-color: #764ba2;
+  background-color: var(--xl-brand-hover);
 }
 
 .chat-input-area button:disabled {

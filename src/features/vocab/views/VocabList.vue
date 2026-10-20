@@ -68,10 +68,10 @@
                 <span class="book-count">{{ book.wordCount }} 词</span>
               </div>
               <div class="progress-label">
-                <span>已学习 {{ book.learnedCount ?? 0 }} / {{ book.wordCount }}</span>
-                <strong>{{ book.mastery }}%</strong>
+                <span>学习覆盖率 · 已学习 {{ book.learnedCount ?? 0 }} / {{ book.wordCount }}</span>
+                <strong :aria-label="'学习覆盖率 ' + book.mastery + '%'">{{ book.mastery }}%</strong>
               </div>
-              <div class="progress-track" role="progressbar" :aria-valuenow="Math.min(100, Math.max(0, book.mastery))" aria-valuemin="0" aria-valuemax="100" :aria-label="book.name + ' 已学比例'">
+              <div class="progress-track" role="progressbar" :aria-valuenow="Math.min(100, Math.max(0, book.mastery))" aria-valuemin="0" aria-valuemax="100" :aria-label="book.name + ' 学习覆盖率'">
                 <span :style="{ width: Math.min(100, Math.max(0, book.mastery)) + '%' }"></span>
               </div>
               <div class="book-actions">

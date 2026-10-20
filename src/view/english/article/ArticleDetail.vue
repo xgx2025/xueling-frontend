@@ -23,12 +23,8 @@ import { getArticlesByCategory, getArticleReadingStatus } from '@/api/article'
  * @returns 有效的图片URL
  */
 const getValidImageUrl = (imageUrl: string | null | undefined): string => {
-  // 默认图片URL
-  const defaultImageUrl = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
-  
-  // 检查图片URL是否有效
   if (!imageUrl || imageUrl.trim() === '' || imageUrl === 'null' || imageUrl === 'undefined') {
-    return defaultImageUrl
+    return ''
   }
   
   // 修复URL中的空格问题
@@ -43,7 +39,7 @@ const getValidImageUrl = (imageUrl: string | null | undefined): string => {
     return processedUrl
   } catch (error) {
     console.warn('无效的图片URL:', imageUrl, '处理后URL:', processedUrl, '使用默认图片')
-    return defaultImageUrl
+    return ''
   }
 }
 
@@ -65,6 +61,12 @@ const articleId = computed(() => {
   return raw ? parseInt(raw, 10) : 0
 })
 
+const categoryId = computed(() => {
+  const raw = Array.isArray(route.query.categoryId) ? route.query.categoryId[0] : route.query.categoryId
+  const parsed = Number(raw)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
+})
+
 /**
  * 初始化页面 - 获取文章详情
  */
@@ -74,7 +76,7 @@ const initArticle = async () => {
     loading.value = true
 
     // 从 API 获取文章列表
-    const response = await getArticlesByCategory(1) // 获取分类1下的所有文章
+    const response = await getArticlesByCategory(categoryId.value)
     console.log('API响应状态码:', response.code)
     console.log('API响应数据:', response.data)
     
