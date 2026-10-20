@@ -106,7 +106,8 @@ export interface StudyStats {
   todayNew: number
   learnedWords: number
   dueCount: number
-  dueRecallRate: number
+  dueRecallAttempts: number
+  dueRecallRate: number | null
 }
 
 export interface StudyReviewResult {

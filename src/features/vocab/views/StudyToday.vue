@@ -23,6 +23,16 @@
       </section>
 
       <div v-if="loading" class="state-panel">正在整理今天的单词…</div>
+      <section v-else-if="pendingReview" class="state-panel" aria-label="待确认的评分">
+        <h2>{{ saving ? '正在确认评分…' : '上次评分尚未确认' }}</h2>
+        <p>{{ saveError || '正在用原请求确认保存结果，请稍候。' }}</p>
+        <div class="complete-actions">
+          <button class="primary-button" type="button" :disabled="saving" @click="sendReview(pendingReview)">
+            {{ saving ? '正在确认…' : '重试确认本次评分' }}
+          </button>
+          <button class="text-button" type="button" :disabled="saving" @click="refreshAfterConflict">放弃待确认评分并刷新</button>
+        </div>
+      </section>
       <div v-else-if="loadError" class="state-panel">
         <h2>暂时无法读取学习计划</h2>
         <p>{{ loadError }}</p>
@@ -54,13 +64,6 @@
 
         <div class="study-actions">
           <button v-if="!revealed" class="reveal-button" type="button" @click="reveal">显示答案 <span>↗</span></button>
-          <template v-else-if="pendingReview">
-            <p class="save-error">{{ saveError }}</p>
-            <button class="primary-button" type="button" :disabled="saving" @click="sendReview(pendingReview)">
-              {{ saving ? '正在保存…' : '重试保存本次评分' }}
-            </button>
-            <button class="text-button" type="button" :disabled="saving" @click="refreshAfterConflict">刷新学习计划</button>
-          </template>
           <template v-else>
             <p class="rate-prompt">刚才回忆得怎么样？</p>
             <div class="rating-grid">
@@ -108,8 +111,11 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getStudySettings, getTodayStudy, submitStudyReview, updateStudySettings } from '@/features/vocab/api'
 import type { StudyQueueCard, StudySettings, SubmitStudyReview, TodayStudy } from '@/features/vocab/types'
+import { clearPendingReview, persistPendingReview, restorePendingReview } from '@/features/vocab/pendingReview'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 const today = ref<TodayStudy | null>(null)
 const loading = ref(true)
 const loadError = ref('')
@@ -144,8 +150,6 @@ async function loadToday() {
     const response = await getTodayStudy()
     today.value = response.data
     revealed.value = false
-    pendingReview.value = null
-    saveError.value = ''
     shownAt.value = Date.now()
   } catch (error: any) {
     loadError.value = error?.msg || '请检查网络后重试。'
@@ -175,6 +179,7 @@ function rate(rating: 1 | 2 | 3 | 4) {
     elapsedMs: Math.min(600_000, Date.now() - shownAt.value)
   }
   pendingReview.value = review
+  persistPendingReview(userStore.userInfo?.id, review)
   void sendReview(review)
 }
 
@@ -184,7 +189,9 @@ async function sendReview(review: SubmitStudyReview) {
   saveError.value = ''
   try {
     await submitStudyReview(review)
+    clearPendingReview(userStore.userInfo?.id)
     pendingReview.value = null
+    saveError.value = ''
     await loadToday()
   } catch (error: any) {
     saveError.value = error?.msg || '评分未确认保存，请使用同一个请求重试。'
@@ -193,7 +200,12 @@ async function sendReview(review: SubmitStudyReview) {
   }
 }
 
-function refreshAfterConflict() { void loadToday() }
+function refreshAfterConflict() {
+  clearPendingReview(userStore.userInfo?.id)
+  pendingReview.value = null
+  saveError.value = ''
+  void loadToday()
+}
 
 async function openSettings() {
   try {
@@ -226,8 +238,10 @@ function formatDue(value: string) {
   return new Intl.DateTimeFormat('zh-CN', { timeZone: timeZone.value, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
-onMounted(() => {
-  void loadToday()
+onMounted(async () => {
+  pendingReview.value = restorePendingReview(userStore.userInfo?.id)
+  await loadToday()
+  if (pendingReview.value) void sendReview(pendingReview.value)
   void getStudySettings().then(response => { timeZone.value = response.data.timeZone }).catch(() => {})
 })
 onUnmounted(() => { window.speechSynthesis?.cancel() })
