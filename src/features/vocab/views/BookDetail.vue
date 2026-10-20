@@ -12,8 +12,8 @@
         <template #extra>
           <div class="header-actions">
             <!-- 主要操作移至右侧栏，这里保留添加 -->
-            <el-button v-if="bookType !== 'SYSTEM'" circle @click="dialogVisible = true">
-              <el-icon><Plus /></el-icon>
+            <el-button v-if="bookType !== 'SYSTEM'" @click="dialogVisible = true">
+              <el-icon><Plus /></el-icon> 添加单词
             </el-button>
           </div>
         </template>
@@ -29,19 +29,34 @@
              <div class="left-tools">
                 <el-input 
                   v-model="searchQuery" 
-                  placeholder="搜索单词..." 
+                  placeholder="搜索单词或中文释义"
                   prefix-icon="Search"
                   class="search-input"
+                  clearable
+                  aria-label="搜索单词或中文释义"
                 />
              </div>
              <div class="right-tools">
-                <span class="total-count">共 {{ filteredWords.length }} 个</span>
+                <span class="total-count">{{ searchQuery ? '找到 ' + filteredWords.length + ' 个' : '共 ' + words.length + ' 个单词' }}</span>
              </div>
           </div>
 
+          <div class="mobile-quick-actions">
+            <button type="button" @click="router.push('/english/vocab/study')">今日学习 ↗</button>
+            <button type="button" :disabled="selectedRows.length < 5" @click="startReview">
+              {{ selectedRows.length < 5 ? '再选 ' + (5 - selectedRows.length) + ' 词开始练习' : '练习已选 ' + selectedRows.length + ' 词' }}
+            </button>
+          </div>
+
           <el-card shadow="never" class="table-card" :body-style="{ padding: '0' }">
+            <div v-if="loadingDetail" class="empty-state" role="status"><p class="empty-text">正在加载单词…</p></div>
+            <div v-else-if="detailError" class="empty-state" role="alert">
+              <p class="empty-text">{{ detailError }}</p>
+              <el-button type="primary" plain @click="loadData">重新加载</el-button>
+            </div>
             <el-table 
-              v-if="words.length > 0"
+              v-else-if="filteredWords.length > 0"
+              class="desktop-word-table"
               :data="filteredWords" 
               style="width: 100%" 
               :header-cell-style="{ background: '#fff', color: '#909399', fontWeight: '500', borderBottom: '1px solid #f0f2f5' }"
@@ -53,7 +68,7 @@
                 <template #default="scope">
                   <div class="word-cell">
                     <span class="word-text">{{ scope.row.word }}</span>
-                    <el-button link type="primary" size="small" class="pronounce-btn">
+                    <el-button link type="primary" size="small" class="pronounce-btn" :aria-label="'播放 ' + scope.row.word + ' 的读音'" @click="playWordAudio(scope.row.word)">
                       <el-icon><Microphone /></el-icon>
                     </el-button>
                   </div>
@@ -84,13 +99,23 @@
 
             <!-- 空状态 -->
             <div v-else class="empty-state">
-              <Vue3Lottie
-                  animationLink="https://assets3.lottiefiles.com/packages/lf20_s8pbrcfw.json"
-                  :height="200"
-                  :width="200"
-                />
-                <p class="empty-text">这里空空如也，快去添加新单词吧！</p>
-                <el-button v-if="bookType !== 'SYSTEM'" type="primary" plain @click="dialogVisible = true">立即添加</el-button>
+                <span class="empty-icon" aria-hidden="true">{{ searchQuery ? '⌕' : '＋' }}</span>
+                <h3>{{ searchQuery ? '没有找到匹配的单词' : '这本词书还没有单词' }}</h3>
+                <p class="empty-text">{{ searchQuery ? '换个拼写或释义试试。' : '添加想记住的单词，开始积累自己的词库。' }}</p>
+                <el-button v-if="searchQuery" plain @click="searchQuery = ''">清除搜索</el-button>
+                <el-button v-else-if="bookType !== 'SYSTEM'" type="primary" plain @click="dialogVisible = true">添加单词</el-button>
+            </div>
+            <div v-if="!loadingDetail && !detailError && filteredWords.length > 0" class="mobile-word-list" aria-label="单词列表">
+              <div v-for="word in filteredWords" :key="word.id" class="mobile-word-card">
+                <div class="mobile-word-top">
+                  <el-checkbox :model-value="selectedRows.some(item => item.id === word.id)" :disabled="selectedRows.length >= 10 && !selectedRows.some(item => item.id === word.id)" :aria-label="'选择 ' + word.word + ' 进行自由练习'" @change="toggleMobileSelection(word)" />
+                  <strong>{{ word.word }}</strong>
+                  <button type="button" :aria-label="'播放 ' + word.word + ' 的读音'" @click="playWordAudio(word.word)">♫</button>
+                </div>
+                <p v-if="word.phonetic" class="mobile-phonetic">/{{ word.phonetic }}/</p>
+                <p class="mobile-meaning">{{ word.meaning }}</p>
+                <button v-if="bookType !== 'SYSTEM'" type="button" class="mobile-delete" @click="deleteWord(word)">移除单词</button>
+              </div>
             </div>
           </el-card>
         </div>
@@ -126,7 +151,7 @@
                 </div>
                 <div class="action-area">
                    <el-button type="success" class="start-btn" size="large" @click="router.push('/english/vocab/study')" round>进入今日学习</el-button>
-                   <el-button class="start-btn" size="large" @click="togglePlan" round>{{ studyEnabled ? '移出学习计划' : '加入学习计划' }}</el-button>
+                   <el-button class="start-btn" size="large" :loading="updatingPlan" @click="togglePlan" round>{{ studyEnabled ? '移出学习计划' : '加入学习计划' }}</el-button>
                    <el-button type="primary" class="start-btn" size="large" @click="startReview" round>
                       <el-icon class="mr-2"><VideoPlay /></el-icon> 自由练习（不计入计划）
                    </el-button>
@@ -312,10 +337,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Plus, VideoPlay, Edit, Delete, Microphone, Search, DataLine, Trophy, MagicStick, Check, RefreshLeft, ArrowRight, Collection, Lock, InfoFilled, EditPen, ArrowLeft, Mouse } from '@element-plus/icons-vue'
-import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { matchWords, getWordBookDetail, addWordsToBook, removeWordsFromBook, setStudyBookEnabled } from '@/features/vocab/api'
 import type { WordDictionary, WordVO } from '@/features/vocab/types'
@@ -334,10 +358,19 @@ const learnedCount = ref(0)
 const studyEnabled = ref(false)
 const bookType = ref<'SYSTEM' | 'USER'>('USER')
 const words = ref<WordVO[]>([])
+const loadingDetail = ref(true)
+const detailError = ref('')
+const updatingPlan = ref(false)
 const selectedRows = ref<WordVO[]>([])
 
 const handleSelectionChange = (val: WordVO[]) => {
   selectedRows.value = val
+}
+
+function toggleMobileSelection(word: WordVO) {
+  const selected = selectedRows.value.some(item => item.id === word.id)
+  if (selected) selectedRows.value = selectedRows.value.filter(item => item.id !== word.id)
+  else if (selectedRows.value.length < 10) selectedRows.value = [...selectedRows.value, word]
 }
 
 const checkSelectable = (row: WordVO) => {
@@ -365,6 +398,8 @@ const filteredWords = computed(() => {
 
 const loadData = async () => {
   if (!bookId) return
+  loadingDetail.value = true
+  detailError.value = ''
   try {
     const res = await getWordBookDetail(bookId as string)
     if (res.code === 0 && res.data) {
@@ -376,10 +411,14 @@ const loadData = async () => {
       if (res.data.wordList) {
         words.value = res.data.wordList
       }
+    } else {
+      throw new Error(res.msg || '请稍后重试。')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('获取详情失败', error)
-    ElMessage.error('获取单词本详情失败')
+    detailError.value = error?.msg || error?.message || '获取单词本详情失败，请检查网络后重试。'
+  } finally {
+    loadingDetail.value = false
   }
 }
 
@@ -388,14 +427,31 @@ onMounted(() => {
 })
 
 const togglePlan = async () => {
+  if (updatingPlan.value) return
+  updatingPlan.value = true
   try {
     await setStudyBookEnabled(String(bookId), !studyEnabled.value)
     studyEnabled.value = !studyEnabled.value
     ElMessage.success(studyEnabled.value ? '已加入学习计划' : '已移出学习计划')
   } catch (error: any) {
     ElMessage.error(error?.msg || '更新学习计划失败')
+  } finally {
+    updatingPlan.value = false
   }
 }
+
+function playWordAudio(word: string) {
+  if (!('speechSynthesis' in window)) {
+    ElMessage.warning('当前浏览器不支持语音播放')
+    return
+  }
+  window.speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(word)
+  utterance.lang = 'en-US'
+  utterance.rate = 0.85
+  window.speechSynthesis.speak(utterance)
+}
+onUnmounted(() => window.speechSynthesis?.cancel())
 
 // 批量添加相关
 const batchInput = ref('')
@@ -673,14 +729,12 @@ const resetDialog = () => {
 }
 
 .pronounce-btn {
-  opacity: 0;
-  transform: translateX(-5px);
+  opacity: 1;
   transition: all 0.3s ease;
 }
 
-.word-cell:hover .pronounce-btn {
-  opacity: 1;
-  transform: translateX(0);
+.word-cell:hover .pronounce-btn, .pronounce-btn:focus-visible {
+  color: #315b40;
 }
 
 .phonetic-text {
@@ -1139,6 +1193,30 @@ const resetDialog = () => {
   justify-content: center;
   align-items: center;
   padding: 80px 0;
+}
+.empty-icon { display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%; background: #eaf1e8; color: #315b40; font-size: 30px; }
+.empty-state h3 { margin-top: 16px; color: #263d2e; }
+.mobile-word-list { display: none; }
+.mobile-quick-actions { display: none; }
+@media (max-width: 640px) {
+  .book-detail-page { padding: 12px; }
+  .header-section { padding: 16px; }
+  .header-title-area { flex-wrap: wrap; gap: 6px; }
+  .action-toolbar { gap: 12px; flex-wrap: wrap; }
+  .left-tools, .search-input { width: 100%; }
+  .desktop-word-table { display: none; }
+  .mobile-quick-actions { display: flex; gap: 8px; margin: 0 0 12px; }
+  .mobile-quick-actions button { flex: 1; min-height: 44px; border: 0; border-radius: 8px; background: #315b40; color: #fff; font-weight: 700; font-size: 12px; }
+  .mobile-quick-actions button + button { background: #e5efe3; color: #315b40; }
+  .mobile-quick-actions button:disabled { opacity: .55; }
+  .mobile-word-list { display: grid; gap: 1px; background: #e5eae2; }
+  .mobile-word-card { background: #fffefa; padding: 16px; }
+  .mobile-word-top { display: flex; align-items: center; gap: 10px; color: #254330; }
+  .mobile-word-top strong { font: 600 21px Georgia, serif; flex: 1; overflow-wrap: anywhere; }
+  .mobile-word-top button { width: 40px; height: 40px; border: 1px solid #cbdacb; color: #315b40; background: #f0f6ef; border-radius: 50%; }
+  .mobile-phonetic { color: #738577; font-size: 13px; margin: 4px 0 8px 35px; }
+  .mobile-meaning { line-height: 1.6; color: #3a4b3d; margin-left: 35px; white-space: pre-line; }
+  .mobile-delete { margin: 12px 0 0 35px; border: 0; color: #ac564c; background: transparent; }
 }
 
 .empty-text {

@@ -34,18 +34,30 @@
     </div>
 
     <!-- 卡片区域 -->
-    <div class="card-container" v-if="currentCard">
+    <div v-if="isLoading" class="review-state glass-panel" role="status">正在准备练习卡片…</div>
+    <div v-else-if="loadError" class="review-state glass-panel" role="alert">
+      <h2>暂时无法开始练习</h2>
+      <p>{{ loadError }}</p>
+      <el-button type="primary" @click="loadData">重新加载</el-button>
+      <el-button @click="router.push('/english/vocab/book/' + route.params.id)">返回词书</el-button>
+    </div>
+    <div class="card-container" v-else-if="currentCard">
       <div class="card-wrapper">
         <div 
           class="flashcard" 
           :class="{ flipped: isFlipped }" 
-          @click="isFlipped = !isFlipped"
+          @click="flipCard"
+          @keydown.enter.space.prevent="handleCardKeydown"
+          role="button"
+          tabindex="0"
+          :aria-label="isFlipped ? '查看 ' + currentCard.word + ' 的单词正面' : '揭晓 ' + currentCard.word + ' 的中文释义'"
+          :aria-pressed="isFlipped"
         >
           <!-- 正面 -->
-          <div class="card-face card-front">
-            <div class="voice-icon-wrapper" @click.stop="playAudio(currentCard.word)">
+          <div class="card-face card-front" :aria-hidden="isFlipped">
+            <button type="button" class="voice-icon-wrapper" :tabindex="isFlipped ? -1 : 0" :aria-label="'播放 ' + currentCard.word + ' 的读音'" @click.stop="playAudio(currentCard.word)">
                  <el-icon><Microphone /></el-icon>
-            </div>
+            </button>
             
             <div class="card-image-box" v-if="currentCard.imageUrl">
                <img :src="currentCard.imageUrl" :alt="currentCard.word" />
@@ -58,17 +70,17 @@
               </span>
             </div>
             <div class="card-hint">
-              <span>点击翻转</span>
+              <span>点击卡片或按回车，先回忆再看答案</span>
             </div>
           </div>
 
           <!-- 背面 -->
-          <div class="card-face card-back">
+          <div class="card-face card-back" :aria-hidden="!isFlipped">
             <div class="card-content-scroll">
               <div class="meaning-wrapper">
                  <h3 class="meaning">{{ currentCard.meaning }}</h3>
               </div>
-              <div class="example-box">
+              <div v-if="currentCard.exampleEn || currentCard.exampleCn" class="example-box">
                 <div class="example-item">
                     <p class="example-en">{{ currentCard.exampleEn }}</p>
                     <p class="example-cn">{{ currentCard.exampleCn }}</p>
@@ -80,21 +92,22 @@
       </div>
 
       <!-- 底部操作按钮 -->
-      <div class="actions">
-        <button class="action-btn forget" @click.stop="handleResult('forget')">
+      <div class="actions" v-if="isFlipped">
+        <button class="action-btn forget" type="button" :disabled="advancing" @click.stop="handleResult('forget')">
             <div class="btn-content">
                 <el-icon><Close /></el-icon>
                 <span>不认识</span>
             </div>
         </button>
         
-        <button class="action-btn remember" @click.stop="handleResult('remember')">
+        <button class="action-btn remember" type="button" :disabled="advancing" @click.stop="handleResult('remember')">
             <div class="btn-content">
                 <el-icon><Check /></el-icon>
                 <span>认识</span>
             </div>
         </button>
       </div>
+      <p v-else class="reveal-guidance">先试着回忆释义，翻面后再判断是否认识。</p>
     </div>
 
     <!-- 完成状态 -->
@@ -106,6 +119,7 @@
             </div>
             <h2>自由练习完成</h2>
             <p>本次练习不会改变今日计划或下次复习时间</p>
+            <p class="result-summary">认识 {{ rememberedCount }} 词 · 还需巩固 {{ forgottenCount }} 词</p>
             
             <div class="completion-actions">
                 <el-button size="large" round class="back-btn" @click="router.back()">
@@ -285,6 +299,11 @@ const currentBookName = ref(reviewStore.bookName || 'CET-4 核心词')
 const isFlipped = ref(false)
 const currentIndex = ref(0) // 当前索引，从 0 开始
 const isLoading = ref(false)
+const loadError = ref('')
+const advancing = ref(false)
+const rememberedCount = ref(0)
+const forgottenCount = ref(0)
+let advanceTimer: ReturnType<typeof setTimeout> | undefined
 
 // AI 巩固相关状态
 const showConsolidation = ref(false)
@@ -490,6 +509,7 @@ const handleWordClick = (e: MouseEvent) => {
 
 onUnmounted(() => {
     cancelAudio()
+    if (advanceTimer) clearTimeout(advanceTimer)
 })
 
 interface ReviewCard {
@@ -525,6 +545,12 @@ const fetchMindMapData = async () => {
 }
 
 const loadData = async () => {
+  loadError.value = ''
+  cards.value = []
+  currentIndex.value = 0
+  isFlipped.value = false
+  rememberedCount.value = 0
+  forgottenCount.value = 0
   // 优先从 store 获取 IDs，兼容旧的 URL query 方式（可选）
   const ids = reviewStore.reviewIds.length > 0 ? reviewStore.reviewIds.join(',') : (route.query.ids as string)
   
@@ -532,77 +558,30 @@ const loadData = async () => {
     isLoading.value = true
     try {
       const res = await getWordsByIds(ids)
-      if (res.code === 0 && res.data) {
+      if (res.code === 0 && res.data?.length) {
         cards.value = res.data.map(item => ({
             id: item.id,
             word: item.word,
             phonetic: item.phonetic,
             meaning: item.meaning,
-            exampleEn: item.example || 'Example sentences coming soon.',
-            exampleCn: item.exampleTranslation || '暂无例句',
-            imageUrl: item.imageUrl || `https://picsum.photos/seed/${item.id}/400/300`
+            exampleEn: item.example || '',
+            exampleCn: item.exampleTranslation || '',
+            imageUrl: item.imageUrl || undefined
         }))
         
         // 自动获取脑图数据
         fetchMindMapData()
       } else {
-        ElMessage.warning(res.msg || '获取数据失败')
+        loadError.value = res.msg || '没有读取到练习单词，请重试。'
       }
     } catch (error) {
        console.error(error)
-       ElMessage.error('网络请求失败')
+       loadError.value = '网络请求失败，请检查连接后重试。'
     } finally {
        isLoading.value = false
     }
   } else {
-    // 模拟数据 (Fallback)
-    cards.value = [
-      { 
-        id: '1', 
-        word: 'Ambiguous', 
-        phonetic: 'æmbɪɡjuəs', 
-        meaning: 'adj. 模棱两可的；含糊不清的', 
-        exampleEn: 'The instructions were ambiguous.', 
-        exampleCn: '说明书写得模棱两可。',
-        imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&auto=format&fit=crop&q=60'
-      },
-      { 
-        id: '2', 
-        word: 'Benevolent', 
-        phonetic: 'bənevələnt', 
-        meaning: 'adj. 仁慈的；慈善的', 
-        exampleEn: 'A benevolent donor gave us money.', 
-        exampleCn: '一位仁慈的捐赠者给了我们钱。',
-        imageUrl: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=500&auto=format&fit=crop&q=60'
-      },
-      { 
-        id: '3', 
-        word: 'Comprehensive', 
-        phonetic: 'kɒmprɪhensɪv', 
-        meaning: 'adj. 全面的；综合的', 
-        exampleEn: 'We offer comprehensive training.', 
-        exampleCn: '我们提供全面的培训。',
-        imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&auto=format&fit=crop&q=60'
-      },
-      { 
-        id: '4', 
-        word: 'Diligence', 
-        phonetic: 'dɪlɪdʒəns', 
-        meaning: 'n. 勤奋，勤勉', 
-        exampleEn: 'Success requires diligence and hard work.', 
-        exampleCn: '成功需要勤奋和努力。',
-        imageUrl: 'https://images.unsplash.com/photo-1503428593586-e225b476b52c?w=500&auto=format&fit=crop&q=60'
-      },
-      { 
-        id: '5', 
-        word: 'Eloquent', 
-        phonetic: 'eləkwənt', 
-        meaning: 'adj. 雄辩的；有口才的', 
-        exampleEn: 'He gave an eloquent speech.', 
-        exampleCn: '他发表了雄辩的演说。',
-        imageUrl: 'https://images.unsplash.com/photo-1475721027785-f7a944c6ddef?w=500&auto=format&fit=crop&q=60'
-      },
-    ]
+    loadError.value = '还没有选择练习单词，请返回词书选择 5–10 个单词。'
   }
 }
 
@@ -761,20 +740,33 @@ const playAudio = (text: string) => {
 }
 
 const handleResult = (result: 'forget' | 'remember') => {
+    if (!isFlipped.value || advancing.value) return
+    advancing.value = true
+    if (result === 'remember') rememberedCount.value++
+    else forgottenCount.value++
     // 自动翻回正面
     if (isFlipped.value) {
         isFlipped.value = false;
         // 等待翻转动画一半时间后切换数据，体验更顺滑
-        setTimeout(() => {
+        advanceTimer = setTimeout(() => {
             if (currentIndex.value < cards.value.length) {
               currentIndex.value++;
             }
+            advancing.value = false
         }, 300)
     } else {
         if (currentIndex.value < cards.value.length) {
           currentIndex.value++;
         }
     }
+}
+
+function flipCard() {
+  if (!advancing.value) isFlipped.value = !isFlipped.value
+}
+
+function handleCardKeydown(event: KeyboardEvent) {
+  if (event.target === event.currentTarget) flipCard()
 }
 </script>
 
@@ -788,9 +780,15 @@ const handleResult = (result: 'forget' | 'remember') => {
   align-items: center;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #f4f3ea;
   box-sizing: border-box;
 }
+.review-state { margin: auto; text-align: center; color: #244332; line-height: 1.7; }
+.review-state h2 { margin-bottom: 10px; }.review-state p { margin-bottom: 20px; }
+.reveal-guidance { color: #5d715f; font-size: 13px; padding: 12px; text-align: center; }
+.result-summary { color: #315b40; font-weight: 700; margin-top: 8px; }
+.flashcard:focus-visible, .voice-icon-wrapper:focus-visible, .action-btn:focus-visible { outline: 3px solid #d5a44e; outline-offset: 4px; }
+.action-btn:disabled { opacity: .55; cursor: wait; }
 
 /* 装饰背景 */
 .background-shape {
@@ -1537,5 +1535,52 @@ const handleResult = (result: 'forget' | 'remember') => {
 .consolidate-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(118, 75, 162, 0.4);
+}
+.review-header { background: #fffefa; border: 1px solid #dce5d8; box-shadow: none; }
+.review-header :deep(.el-progress-bar__inner) { background-color: #648969 !important; }
+.header-title, .progress-badge { color: #294733; }
+.progress-badge { background: #eaf0e7; }
+.card-face { background: #fffefa; border: 1px solid #e0e6db; box-shadow: 0 16px 38px #29463112; }
+.card-front { background: #fffefa; }
+.word { background: none; -webkit-text-fill-color: #244b35; color: #244b35; font-family: Georgia, serif; overflow-wrap: anywhere; text-align: center; }
+.voice-icon-wrapper { border: 0; background: #eaf1e8; color: #315b40; }
+.action-btn.forget { background: #f8ede8; color: #a65843; }
+.action-btn.remember { background: #e8f1e6; color: #315b40; }
+.consolidate-btn { background: #315b40; box-shadow: none; }
+@media (max-width: 680px) {
+  .review-page { height: auto; min-height: 100vh; overflow: visible; padding: 14px 14px 38px; }
+  .background-shape { display: none; }
+  .review-header { margin-bottom: 20px; padding: 15px; }
+  .header-title { font-size: 14px; }
+  .card-container { flex: none; justify-content: flex-start; }
+  .card-wrapper { height: min(58vh, 460px); min-height: 320px; margin-bottom: 17px; }
+  .card-face { padding: 20px; border-radius: 18px; }
+  .card-back { padding-top: 38px; }
+  .card-image-box { height: 130px; margin-bottom: 15px; }
+  .word { font-size: clamp(32px, 8vw, 52px); }
+  .phonetic { font-size: 17px; }
+  .actions { gap: 10px; padding: 0; }
+  .action-btn { min-height: 52px; height: auto; border-radius: 10px; }
+  .meaning { font-size: 21px; }
+  .example-box { padding: 14px; }
+  .completion-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+  .completion-actions .el-button { width: 100%; margin: 0; }
+  .consolidation-overlay { height: 100dvh; }
+  .cons-content-wrapper { flex-direction: column; overflow-y: auto; padding: 12px; gap: 12px; }
+  .cons-left-panel { flex: none; padding: 0; overflow: visible; }
+  .story-scroll-container { max-width: none; overflow: visible; padding: 0; }
+  .story-hero-image { height: 160px; margin-bottom: 12px; }
+  .story-text-body { padding: 20px; font-size: 17px; }
+  .cons-right-panel { width: 100%; padding: 15px; flex: none; }
+  .overlay-header { padding: 0 12px; gap: 10px; }
+  .story-title-mini { font-size: 13px; }
+}
+@media (min-width: 681px) and (max-height: 760px) {
+  .review-page { min-height: 100vh; height: auto; overflow: visible; }
+  .card-wrapper { height: 440px; margin-bottom: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flashcard, .action-btn, .fade-slide-enter-active, .fade-slide-leave-active { transition: none; }
+  .feedback-msg, .word-tooltip { animation: none; }
 }
 </style>

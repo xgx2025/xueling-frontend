@@ -22,7 +22,7 @@
         <div class="metric"><span>今日已完成</span><strong>{{ today?.todayReviewed ?? '—' }}</strong></div>
       </section>
 
-      <div v-if="loading" class="state-panel">正在整理今天的单词…</div>
+      <div v-if="loading" class="state-panel" role="status">正在整理今天的单词…</div>
       <section v-else-if="pendingReview" class="state-panel" aria-label="待确认的评分">
         <h2>{{ saving ? '正在确认评分…' : '上次评分尚未确认' }}</h2>
         <p>{{ saveError || '正在用原请求确认保存结果，请稍候。' }}</p>
@@ -39,17 +39,17 @@
         <button class="primary-button" type="button" @click="loadToday">重新加载</button>
       </div>
 
-      <section v-else-if="currentCard" class="session" aria-label="学习卡片">
+      <section v-else-if="currentCard" class="session" aria-label="学习卡片" aria-live="polite">
         <div class="session-meta">
           <span class="pill">{{ currentCard.newCard ? '新词' : '到期复习' }}</span>
-          <span>完成一张，保存一张</span>
+          <span>本次第 {{ today!.todayReviewed + 1 }} 次回忆 · 完成一张，保存一张</span>
         </div>
         <div class="flashcard" :class="{ revealed }">
           <div class="card-topline"><span>ENGLISH → 中文</span><span>NO. {{ today!.todayReviewed + 1 }}</span></div>
           <div class="word-content">
             <h2>{{ currentCard.word }}</h2>
             <p v-if="currentCard.phonetic" class="phonetic">/{{ currentCard.phonetic }}/</p>
-            <button class="audio-button" type="button" aria-label="播放读音" @click="playAudio(currentCard.word)">♫ 听发音</button>
+            <button class="audio-button" type="button" :aria-label="'播放 ' + currentCard.word + ' 的读音'" @click="playAudio(currentCard.word)">♫ 听发音</button>
           </div>
           <div v-if="revealed" class="answer">
             <span class="answer-label">答案</span>
@@ -65,15 +65,16 @@
         <div class="study-actions">
           <button v-if="!revealed" class="reveal-button" type="button" @click="reveal">显示答案 <span>↗</span></button>
           <template v-else>
-            <p class="rate-prompt">刚才回忆得怎么样？</p>
+            <p class="rate-prompt">{{ saving ? '正在保存本次评分…' : '刚才回忆得怎么样？' }}</p>
             <div class="rating-grid">
               <button v-for="option in ratingOptions" :key="option.value" type="button" :disabled="saving"
                 :class="['rating-button', option.className]" @click="rate(option.value)">
-                <strong>{{ option.label }}</strong><span>{{ option.hint }}</span>
+                <strong>{{ option.label }}</strong><span>{{ option.hint }}</span><kbd>{{ option.value }}</kbd>
               </button>
             </div>
-            <p class="rating-note">没有想起来请选“忘记了”；“困难”表示最终想起来了。</p>
+            <p class="rating-note">没有想起来请选“忘记了”；“困难”表示最终想起来了。键盘可按 1–4 评分。</p>
           </template>
+          <p v-if="!revealed" class="shortcut-note">按空格键也可以揭晓答案</p>
         </div>
       </section>
 
@@ -160,6 +161,20 @@ async function loadToday() {
 
 function reveal() { revealed.value = true }
 
+function handleKeydown(event: KeyboardEvent) {
+  if (event.altKey || event.ctrlKey || event.metaKey || settingsOpen.value || loading.value || pendingReview.value) return
+  const target = event.target
+  if (target instanceof HTMLElement && (target.closest('button, input, textarea, select, [contenteditable="true"]'))) return
+  if (!currentCard.value) return
+  if (!revealed.value && event.code === 'Space') {
+    event.preventDefault()
+    reveal()
+  } else if (revealed.value && !saving.value && /^[1-4]$/.test(event.key)) {
+    event.preventDefault()
+    rate(Number(event.key) as 1 | 2 | 3 | 4)
+  }
+}
+
 function playAudio(word: string) {
   if (!('speechSynthesis' in window)) return ElMessage.warning('当前浏览器不支持语音播放')
   window.speechSynthesis.cancel()
@@ -239,12 +254,16 @@ function formatDue(value: string) {
 }
 
 onMounted(async () => {
+  window.addEventListener('keydown', handleKeydown)
   pendingReview.value = restorePendingReview(userStore.userInfo?.id)
   await loadToday()
   if (pendingReview.value) void sendReview(pendingReview.value)
   void getStudySettings().then(response => { timeZone.value = response.data.timeZone }).catch(() => {})
 })
-onUnmounted(() => { window.speechSynthesis?.cancel() })
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+  window.speechSynthesis?.cancel()
+})
 </script>
 
 <style scoped>
@@ -273,6 +292,10 @@ button { cursor: pointer; font: inherit; }
 .recall-hint { text-align: center; color: #a2afa1; border-top: 1px solid #e8eee5; padding-top: 20px; }
 .answer { border-top: 1px solid #e5ebe1; padding-top: 20px; animation: reveal-in .25s ease both; }.answer-label { color: #759477; font-size: 12px; font-weight: 800; letter-spacing: .14em; }.meaning { font-size: 22px; line-height: 1.6; margin: 8px 0; white-space: pre-line; }.example { color: #6c7b70; border-left: 3px solid #d5e5d2; padding-left: 14px; line-height: 1.5; }.example p { margin: 5px 0; }
 .study-actions { text-align: center; padding: 24px 0; }.reveal-button, .primary-button { border: 0; color: #fff; background: #285a3e; border-radius: 14px; padding: 14px 27px; font-weight: 800; transition: transform .15s, background .15s; }.reveal-button { min-width: 235px; display: inline-flex; justify-content: space-between; }.reveal-button:hover, .primary-button:hover { transform: translateY(-2px); background: #1d492f; }.primary-button:disabled { opacity: .6; cursor: wait; }.rate-prompt { margin: 0 0 13px; font-weight: 700; }.rating-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }.rating-button { display: flex; flex-direction: column; gap: 4px; border: 1px solid #dce3d6; background: #fffef9; border-radius: 14px; padding: 14px 6px; color: #244330; transition: transform .15s, box-shadow .15s; }.rating-button:hover { transform: translateY(-3px); box-shadow: 0 10px 20px #37543d20; }.rating-button span { font-size: 12px; color: #869488; }.rating-button.again { border-color: #e8c7b9; background: #fff6f1; }.rating-button.easy { border-color: #bddbc7; background: #f3faf3; }.rating-note { font-size: 12px; color: #91a092; margin-top: 15px; }.save-error { color: #b34f36; }.state-panel { max-width: 800px; margin: 0 auto; text-align: center; background: #fffef9; border-radius: 26px; padding: 70px 25px; border: 1px solid #e2e5d9; }.state-panel h2 { font-family: Georgia, 'Songti SC', serif; font-size: 32px; margin: 10px 0; }.state-panel p { color: #738477; }.complete-mark { width: 64px; height: 64px; border-radius: 50%; background: #dbead9; color: #336c43; display: grid; place-items: center; font-size: 32px; margin: auto; }.complete-actions { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 26px; }
+.shortcut-note { color: #7d8e7d; font-size: 12px; margin-top: 12px; }
+.rating-button kbd { align-self: center; font: 700 11px Georgia, serif; color: #667e68; border: 1px solid #d2ddcf; border-radius: 4px; padding: 2px 6px; margin-top: 4px; }
+button:focus-visible { outline: 3px solid #d6a24d; outline-offset: 3px; }
 @keyframes reveal-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 640px) { .study-page { padding: 18px 14px 60px; }.eyebrow { display: none; }.intro { align-items: start; flex-direction: column; gap: 12px; }.metrics { margin-bottom: 18px; }.metric { padding: 16px 10px; text-align: center; }.metric strong { font-size: 27px; }.flashcard { min-height: 330px; padding: 22px 18px; }.rating-grid { grid-template-columns: repeat(2, 1fr); }.meaning { font-size: 19px; } }
+@media (prefers-reduced-motion: reduce) { .answer { animation: none; }.reveal-button, .primary-button, .rating-button { transition: none; }.reveal-button:hover, .primary-button:hover, .rating-button:hover { transform: none; } }
 </style>

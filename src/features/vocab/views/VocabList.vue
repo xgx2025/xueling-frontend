@@ -1,222 +1,189 @@
 <template>
-  <div class="vocab-list-page">
-    <div class="vocab-content">
+  <main class="vocab-page">
+    <div class="vocab-shell">
       <header class="page-header">
-        <el-page-header @back="router.back()" content="我的单词本" />
-        <el-button type="primary" @click="dialogVisible = true" size="large" round>
-          <el-icon class="mr-1"><Plus /></el-icon> 新建单词本
-        </el-button>
+        <button class="back-link" type="button" @click="router.push('/english')">← 英语学习中心</button>
+        <button class="header-create" type="button" @click="dialogVisible = true">＋ 新建单词本</button>
       </header>
 
-      <section class="today-entry" @click="router.push('/english/vocab/study')">
+      <section class="page-intro" aria-labelledby="vocab-title">
         <div>
-          <span class="today-kicker">DAILY STUDY · 今日计划</span>
-          <h2>先复习，再认识新单词</h2>
-          <p>待复习 {{ today?.dueCount ?? '—' }} · 可学新词 {{ today?.newRemaining ?? '—' }} · 今日已完成 {{ today?.todayReviewed ?? '—' }}</p>
+          <p class="eyebrow">YOUR WORD COLLECTION / 单词学习</p>
+          <h1 id="vocab-title">把每个单词，<br /><em>慢慢记牢。</em></h1>
+          <p class="intro-copy">从今天该复习的词开始，再认识一点新词。每次学习都有清楚的下一步。</p>
         </div>
-        <button type="button" class="today-start" @click.stop="router.push('/english/vocab/study')">开始今日学习 ↗</button>
+        <div class="intro-mark" aria-hidden="true"><span>W</span><small>WORDS<br />& MEMORY</small></div>
       </section>
 
-      <!-- Hero Section with Lottie -->
-      <div class="hero-section">
-        <div class="hero-content">
-          <h1>让记忆更轻松</h1>
-          <p>科学记忆曲线，智能复习算法，助你高效攻克词汇难关。</p>
-          <div class="stats-row">
-            <div class="stat-item">
-                <span class="stat-num">{{ wordBooks.reduce((acc, cur) => acc + cur.wordCount, 0) }}</span>
-                <span class="stat-label">词书收录量</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-num">{{ wordBooks.length }}</span>
-                <span class="stat-label">正在学习</span>
-            </div>
-          </div>
+      <section class="today-panel" aria-labelledby="today-title">
+        <div class="today-main">
+          <p class="panel-kicker">TODAY'S FOCUS · 今日计划</p>
+          <h2 id="today-title">{{ todayHeading }}</h2>
+          <p>{{ todayCopy }}</p>
+          <button class="today-start" type="button" @click="router.push('/english/vocab/study')">
+            进入今日学习 <span aria-hidden="true">↗</span>
+          </button>
         </div>
-        <div class="hero-animation">
-          <Vue3Lottie
-              :animationLink="animationLink"
-              :height="280"
-              :width="280"
-            />
+        <div class="today-metrics" aria-label="今日学习数据">
+          <div><strong>{{ today?.dueCount ?? '—' }}</strong><span>待复习</span></div>
+          <div><strong>{{ today?.newRemaining ?? '—' }}</strong><span>可学新词</span></div>
+          <div><strong>{{ today?.todayReviewed ?? '—' }}</strong><span>今日已完成</span></div>
         </div>
-      </div>
+      </section>
 
-      <div class="section-title">
-          <h2>正在学习</h2>
-          <span class="subtitle">Keep going!</span>
-      </div>
-
-      <div class="book-grid" v-loading="loadingBooks">
-        <div v-for="book in wordBooks" :key="book.id" class="book-card" @click="handleBookClick(book.id)">
-          <div class="book-cover" :style="{ background: book.color }">
-            <span class="book-icon">{{ book.icon }}</span>
-            <div class="book-overlay">
-                <el-button round size="small" class="start-btn">查看词书</el-button>
-            </div>
+      <section class="collection" aria-labelledby="collection-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">YOUR LIBRARY</p>
+            <h2 id="collection-title">我的词书 <span>{{ wordBooks.length }}</span></h2>
           </div>
-          <div class="book-info">
-            <div class="info-header">
-              <h3>{{ book.name }}</h3>
-              <span class="word-count-badge">{{ book.wordCount }} 词</span>
+          <p>选择词书管理单词，或将它加入每日学习计划。</p>
+        </div>
+
+        <div v-if="loadingBooks" class="book-grid" aria-label="正在加载词书">
+          <div v-for="index in 3" :key="index" class="book-skeleton" aria-hidden="true"></div>
+        </div>
+        <div v-else-if="booksError" class="collection-state" role="alert">
+          <span class="state-symbol" aria-hidden="true">↻</span>
+          <h3>词书暂时没有加载出来</h3>
+          <p>{{ booksError }}</p>
+          <button type="button" @click="fetchWordBooks">重新加载</button>
+        </div>
+        <div v-else-if="wordBooks.length === 0" class="collection-state">
+          <span class="state-symbol" aria-hidden="true">＋</span>
+          <h3>从第一本词书开始</h3>
+          <p>创建自己的词书，收集想记住的单词。</p>
+          <button type="button" @click="dialogVisible = true">创建单词本</button>
+        </div>
+        <div v-else class="book-grid">
+          <article v-for="(book, index) in wordBooks" :key="book.id" class="book-card">
+            <div class="book-cover" :style="{ background: book.color }">
+              <span class="cover-index">COLLECTION / {{ String(index + 1).padStart(2, '0') }}</span>
+              <span class="book-icon" aria-hidden="true">{{ book.icon }}</span>
+              <span class="cover-bottom">XUELING · VOCABULARY</span>
             </div>
-            <div class="progress-container">
-              <div class="progress-info">
-                  <span>已学习 {{ book.learnedCount ?? 0 }} 词</span>
-                  <span class="progress-val">{{ book.mastery }}%</span>
+            <div class="book-body">
+              <div class="book-title-row">
+                <h3>{{ book.name }}</h3>
+                <span class="book-count">{{ book.wordCount }} 词</span>
               </div>
-              <el-progress 
-                  :percentage="book.mastery" 
-                  :show-text="false" 
-                  :stroke-width="6" 
-                  color="#626aef" 
-                  :duration="10"
-                  indeterminate
-              />
-              <button type="button" class="book-plan-toggle" :disabled="busyBookId === book.id"
-                @click.stop="toggleBook(book)">
-                {{ book.studyEnabled ? '已加入计划 · 点击移出' : '加入今日学习计划' }}
-              </button>
+              <div class="progress-label">
+                <span>已学习 {{ book.learnedCount ?? 0 }} / {{ book.wordCount }}</span>
+                <strong>{{ book.mastery }}%</strong>
+              </div>
+              <div class="progress-track" role="progressbar" :aria-valuenow="Math.min(100, Math.max(0, book.mastery))" aria-valuemin="0" aria-valuemax="100" :aria-label="book.name + ' 已学比例'">
+                <span :style="{ width: Math.min(100, Math.max(0, book.mastery)) + '%' }"></span>
+              </div>
+              <div class="book-actions">
+                <button class="open-book" type="button" @click="handleBookClick(book.id)">查看词书 <span aria-hidden="true">↗</span></button>
+                <button class="plan-toggle" :class="{ enabled: book.studyEnabled }" type="button" :disabled="busyBookId === book.id" :aria-pressed="!!book.studyEnabled" @click="toggleBook(book)">
+                  {{ busyBookId === book.id ? '更新中…' : book.studyEnabled ? '✓ 已加入计划' : '＋ 加入计划' }}
+                </button>
+              </div>
             </div>
-          </div>
+          </article>
         </div>
-      </div>
+      </section>
     </div>
 
-    <!-- 新建单词本弹窗 -->
-    <el-dialog v-model="dialogVisible" title="新建单词本" width="450px" class="create-book-dialog" align-center>
-      <el-form label-position="top">
-        <el-form-item label="名称">
-          <el-input v-model="newBookForm.name" placeholder="例如：四级核心词汇" class="custom-input"/>
+    <el-dialog v-model="dialogVisible" title="新建单词本" width="min(92vw, 480px)" align-center>
+      <el-form label-position="top" @submit.prevent="createBook">
+        <el-form-item label="词书名称">
+          <el-input v-model="newBookForm.name" maxlength="30" show-word-limit placeholder="例如：四级核心词汇" />
         </el-form-item>
-        
-        <el-form-item label="封面风格">
-          <div class="color-options">
-            <div 
-              v-for="(color, index) in presetColors" 
-              :key="index"
-              class="color-circle"
-              :style="{ background: color }"
-              :class="{ active: newBookForm.color === color }"
-              @click="newBookForm.color = color"
-            >
-               <el-icon v-if="newBookForm.color === color" class="check-icon"><Check /></el-icon>
-            </div>
+        <el-form-item label="封面颜色">
+          <div class="color-options" role="group" aria-label="选择封面颜色">
+            <button v-for="(color, index) in presetColors" :key="color" class="color-circle" :class="{ active: newBookForm.color === color }" :style="{ background: color }" type="button" :aria-label="'封面颜色 ' + (index + 1)" :aria-pressed="newBookForm.color === color" @click="newBookForm.color = color">
+              <span v-if="newBookForm.color === color" aria-hidden="true">✓</span>
+            </button>
           </div>
         </el-form-item>
-
-        <el-form-item label="图标">
-           <div class="icon-options">
-              <div 
-                v-for="(icon, index) in presetIcons" 
-                :key="index"
-                class="icon-item"
-                :class="{ active: newBookForm.icon === icon }"
-                @click="newBookForm.icon = icon"
-              >
-                {{ icon }}
-              </div>
-           </div>
+        <el-form-item label="封面图标">
+          <div class="icon-options" role="group" aria-label="选择封面图标">
+            <button v-for="(icon, index) in presetIcons" :key="index" class="icon-item" :class="{ active: newBookForm.icon === icon }" type="button" :aria-label="'封面图标 ' + icon" :aria-pressed="newBookForm.icon === icon" @click="newBookForm.icon = icon">{{ icon }}</button>
+          </div>
         </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
+        <div class="dialog-actions">
           <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="createBook" :loading="loading">立即创建</el-button>
-        </span>
-      </template>
+          <el-button type="primary" native-type="submit" :loading="creatingBook" :disabled="!newBookForm.name.trim()" @click="createBook">创建词书</el-button>
+        </div>
+      </el-form>
     </el-dialog>
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Check } from '@element-plus/icons-vue'
-import { Vue3Lottie } from 'vue3-lottie'
 import { ElMessage } from 'element-plus'
-import { createWordBook, getWordBooks, getTodayStudy, setStudyBookEnabled } from '@/features/vocab/api'
+import { createWordBook, getTodayStudy, getWordBooks, setStudyBookEnabled } from '@/features/vocab/api'
 import type { TodayStudy, WordBookVo } from '@/features/vocab/types'
+
+type DisplayBook = WordBookVo & { color: string; icon: string }
 
 const router = useRouter()
 const dialogVisible = ref(false)
-
-const presetColors = [
-  'linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%)',
-  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-  'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
-  'linear-gradient(120deg, #f6d365 0%, #fda085 100%)',
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(120deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)'
-]
-
-const presetIcons = ['📘', '📖', '📚', '📕', '📗', '📙', '🎓', '🗣️', '📝', '🧠', '🌟', '🔥']
-
-const newBookForm = ref({
-  name: '',
-  color: presetColors[0],
-  icon: presetIcons[0]
-})
-
-const loading = ref(false)
-const loadingBooks = ref(false)
+const creatingBook = ref(false)
+const loadingBooks = ref(true)
+const booksError = ref('')
 const today = ref<TodayStudy | null>(null)
 const busyBookId = ref<string | null>(null)
-// 这是一个学习场景的 Lottie 动画链接
-const animationLink = 'https://assets5.lottiefiles.com/packages/lf20_1a8sx7oe.json' 
-
-// 预设颜色和图标（用于前端展示）
-const presetColorsForDisplay = [
-  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-  'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
-  'linear-gradient(120deg, #f6d365 0%, #fda085 100%)',
-  'linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%)',
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(120deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)'
+const wordBooks = ref<DisplayBook[]>([])
+const presetColors = [
+  'linear-gradient(145deg, #355e49, #78917b)',
+  'linear-gradient(145deg, #8b513f, #c98f71)',
+  'linear-gradient(145deg, #555e75, #8d9bb0)',
+  'linear-gradient(145deg, #937947, #c8ac70)',
+  'linear-gradient(145deg, #775c72, #b494aa)',
+  'linear-gradient(145deg, #536c71, #92aaab)'
 ]
+const presetIcons = ['📘', '📖', '📚', '📕', '📗', '📙', '🎓', '🗣️', '📝', '🧠', '🌟', '🔥']
+const newBookForm = ref({ name: '', color: presetColors[0]!, icon: presetIcons[0]! })
 
-const presetIconsForDisplay = ['📘', '📖', '📚', '📕', '📗', '📙', '🎓', '🗣️', '📝', '🧠', '🌟', '🔥']
+const todayHeading = computed(() => {
+  if (!today.value) return '先从今天的单词开始'
+  if (today.value.dueCount > 0) return '有单词等你再见一面'
+  if (today.value.newRemaining > 0) return '今天可以认识一些新词'
+  return '今天的学习已完成'
+})
+const todayCopy = computed(() => {
+  if (!today.value) return '打开学习计划，看看今天有哪些任务。'
+  if (today.value.dueCount > 0) return '先回忆到期单词，再学习新词，会记得更稳。'
+  if (today.value.newRemaining > 0) return '到期复习已完成，接下来学习几个新单词。'
+  return '做得好。可以查看计划，或整理你的词书。'
+})
 
-// 单词本列表（从后端获取）
-const wordBooks = ref<Array<WordBookVo & { color: string; icon: string }>>([])
-
-// 获取单词本列表
-const fetchWordBooks = async () => {
+async function fetchWordBooks() {
+  loadingBooks.value = true
+  booksError.value = ''
   try {
-    loadingBooks.value = true
     const response = await getWordBooks()
-    
-    if (response.code === 0 && response.data) {
-      // 为每个单词本分配颜色和图标（如果后端未返回）
-      wordBooks.value = response.data.map((book, index) => ({
-        ...book,
-        color: book.color || presetColorsForDisplay[index % presetColorsForDisplay.length] || '',
-        icon: book.icon || presetIconsForDisplay[index % presetIconsForDisplay.length] || ''
-      }))
-    } else {
-      ElMessage.error(response.msg || '获取单词本列表失败')
-    }
+    if (response.code !== 0 || !response.data) throw new Error(response.msg || '请稍后重试。')
+    wordBooks.value = response.data.map((book, index) => ({
+      ...book,
+      color: book.color || presetColors[index % presetColors.length]!,
+      icon: book.icon || presetIcons[index % presetIcons.length]!
+    }))
   } catch (error: any) {
-    console.error('获取单词本列表失败:', error)
-    ElMessage.error(error.message || '获取单词本列表失败，请稍后重试')
+    booksError.value = error?.msg || error?.message || '请检查网络后重试。'
   } finally {
     loadingBooks.value = false
   }
 }
 
-// 组件挂载时获取数据
-onMounted(async () => {
-  try { today.value = (await getTodayStudy()).data } catch (error) { console.error('读取今日任务失败', error) }
-  await fetchWordBooks()
-})
+async function fetchToday() {
+  try { today.value = (await getTodayStudy()).data }
+  catch { today.value = null }
+}
 
-const toggleBook = async (book: WordBookVo) => {
+async function toggleBook(book: DisplayBook) {
+  if (busyBookId.value) return
   busyBookId.value = book.id
   try {
     await setStudyBookEnabled(book.id, !book.studyEnabled)
-    today.value = (await getTodayStudy()).data
-    await fetchWordBooks()
-    ElMessage.success(book.studyEnabled ? '已移出学习计划' : '已加入学习计划')
+    book.studyEnabled = !book.studyEnabled
+    await fetchToday()
+    ElMessage.success(book.studyEnabled ? '已加入学习计划' : '已移出学习计划')
   } catch (error: any) {
     ElMessage.error(error?.msg || '更新学习计划失败')
   } finally {
@@ -224,376 +191,57 @@ const toggleBook = async (book: WordBookVo) => {
   }
 }
 
-const handleBookClick = (id: string) => {
-  router.push(`/english/vocab/book/${id}`)
+function handleBookClick(id: string) { void router.push('/english/vocab/book/' + id) }
+
+async function createBook() {
+  const name = newBookForm.value.name.trim()
+  if (!name || creatingBook.value) return
+  creatingBook.value = true
+  try {
+    const response = await createWordBook({ ...newBookForm.value, name })
+    if (response.code !== 0) throw new Error(response.msg || '创建失败')
+    dialogVisible.value = false
+    newBookForm.value = { name: '', color: presetColors[0]!, icon: presetIcons[0]! }
+    await fetchWordBooks()
+    ElMessage.success('词书已创建')
+  } catch (error: any) {
+    ElMessage.error(error?.msg || error?.message || '创建失败，请稍后重试')
+  } finally {
+    creatingBook.value = false
+  }
 }
 
-const createBook = async () => {
-  if (!newBookForm.value.name.trim()) {
-    ElMessage.warning('请输入单词本名称')
-    return
-  }
-  
-  try {
-    loading.value = true
-    
-    // 构建 DTO 对象
-    const dto = {
-      name: newBookForm.value.name,
-      color: newBookForm.value.color || '',
-      icon: newBookForm.value.icon || ''
-    }
-    
-    console.log('准备创建单词本，数据:', dto)
-    
-    // 传递完整的 DTO 对象（包含 name, color, icon）
-    const response = await createWordBook(dto)
-    
-    if (response.code === 0) {
-      ElMessage.success(response.msg || '单词本创建成功')
-      
-      // 创建成功后重新获取列表
-      await fetchWordBooks()
-      
-      dialogVisible.value = false
-      newBookForm.value = {
-        name: '',
-        color: presetColors[0],
-        icon: presetIcons[0]
-      }
-    } else {
-      ElMessage.error(response.msg || '创建失败')
-    }
-  } catch (error: any) {
-    console.error('创建单词本失败:', error)
-    ElMessage.error(error.message || '创建失败，请稍后重试')
-  } finally {
-    loading.value = false
-  }
-}
+onMounted(() => { void fetchToday(); void fetchWordBooks() })
 </script>
 
 <style scoped>
-.today-entry { display: flex; justify-content: space-between; align-items: center; gap: 24px; color: #f5f7ed; padding: 30px 38px; margin: 3px 0 24px; border-radius: 22px; background: #244e36; cursor: pointer; box-shadow: 0 18px 35px #244e3625; }
-.today-kicker { color: #b6d0ae; font-size: 11px; font-weight: 800; letter-spacing: .16em; }
-.today-entry h2 { font-family: Georgia, 'Songti SC', serif; font-size: 28px; margin: 9px 0; }.today-entry p { color: #d1dfd0; margin: 0; }
-.today-start { border: 0; border-radius: 12px; background: #ebbe70; color: #263f2d; padding: 13px 20px; font-weight: 800; white-space: nowrap; cursor: pointer; }
-.book-plan-toggle { width: 100%; margin-top: 12px; padding: 9px 12px; border: 1px solid #cbded0; border-radius: 9px; color: #2e6645; background: #f5faf5; font-weight: 700; cursor: pointer; }.book-plan-toggle:disabled { opacity: .55; cursor: wait; }
-@media (max-width: 650px) { .vocab-content { padding: 16px; }.today-entry { flex-direction: column; align-items: stretch; padding: 25px; }.today-start { width: 100%; } }
-.vocab-list-page {
-  min-height: 100vh;
-  background-color: #f8fafc;
-  width: 100%;
-}
-
-.vocab-content {
-  padding: 20px 40px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  /* background: white; */
-  padding: 10px 0;
-  /* border-radius: 8px; */
-  /* box-shadow: 0 4px 12px rgba(0,0,0,0.05); */
-}
-
-/* Hero Section */
-.hero-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #fff;
-    border-radius: 24px;
-    padding: 40px 60px;
-    margin-bottom: 40px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-    position: relative;
-    overflow: hidden;
-}
-
-.hero-content {
-    flex: 1;
-    z-index: 2;
-}
-
-.hero-content h1 {
-    font-size: 2.5rem;
-    color: #2c3e50;
-    margin-bottom: 15px;
-    font-weight: 800;
-    letter-spacing: -1px;
-}
-
-.hero-content p {
-    font-size: 1.1rem;
-    color: #7f8c8d;
-    margin-bottom: 30px;
-    max-width: 500px;
-    line-height: 1.6;
-}
-
-.stats-row {
-    display: flex;
-    gap: 40px;
-}
-
-.stat-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.stat-num {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #626aef;
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    color: #9aa8b9;
-    margin-top: 5px;
-}
-
-.section-title {
-    margin-bottom: 25px;
-    display: flex;
-    align-items: baseline;
-    gap: 15px;
-}
-.section-title h2 {
-    font-size: 1.5rem;
-    color: #333;
-    margin: 0;
-}
-.section-title .subtitle {
-    color: #999;
-    font-weight: 500;
-    font-family: 'Comic Sans MS', cursive, sans-serif;
-}
-
-
-.book-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 25px;
-}
-
-.book-card {
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  border: 1px solid rgba(0,0,0,0.02);
-  display: flex;
-  flex-direction: column;
-}
-
-.book-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-}
-
-.book-cover {
-  height: 140px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  transition: clip-path 0.4s;
-}
-/* 给封面加点纹理 */
-.book-cover::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background-image: radial-gradient(rgba(255,255,255,0.2) 2px, transparent 2px);
-    background-size: 20px 20px;
-    opacity: 0.3;
-}
-
-.book-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255,255,255,0.2);
-    backdrop-filter: blur(2px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: all 0.3s;
-}
-
-.book-card:hover .book-overlay {
-    opacity: 1;
-}
-
-.start-btn {
-    transform: translateY(20px);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
-
-.book-card:hover .start-btn {
-    transform: translateY(0);
-}
-
-.book-icon {
-  font-size: 3.5rem;
-  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
-  transition: transform 0.4s;
-}
-.book-card:hover .book-icon {
-    transform: scale(1.1) rotate(5deg);
-}
-
-.book-info {
-  padding: 20px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.info-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-}
-
-.book-info h3 {
-  margin: 0;
-  font-size: 1.15rem;
-  color: #2c3e50;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.word-count-badge {
-    background: #f0f2f5;
-    color: #606266;
-    font-size: 0.75rem;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.progress-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.progress-info {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: #909399;
-    font-weight: 500;
-}
-.progress-val {
-    color: #2c3e50;
-    font-weight: 700;
-}
-
-/* Create Dialog Styles */
-.create-book-dialog :deep(.el-dialog__title) {
-  font-weight: 600;
-}
-
-.custom-input :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #e4e7ed inset;
-}
-
-.color-options {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.color-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 2px solid transparent;
-}
-
-.color-circle:hover {
-  transform: scale(1.1);
-}
-
-.color-circle.active {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  border-color: #fff;
-}
-
-.color-circle.active::after {
-  content: '';
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
-  border-radius: 50%;
-  border: 2px solid #409EFF;
-}
-
-.check-icon {
-  color: white;
-  font-size: 18px;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-}
-
-.icon-options {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 4px;
-}
-
-.icon-item {
-  font-size: 24px;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: #f5f7fa;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid transparent;
-}
-
-.icon-item:hover {
-  background: #ecf5ff;
-}
-
-.icon-item.active {
-  background: #ecf5ff;
-  border-color: #409EFF;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
-}
+.vocab-page { --ink: #243b2d; --muted: #667469; --line: #dce2d7; min-height: 100vh; background: #f5f5ee; color: var(--ink); font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif; }
+.vocab-shell { max-width: 1180px; margin: 0 auto; padding: 24px 30px 88px; }
+button { font: inherit; cursor: pointer; }
+.page-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.back-link { border: 0; background: none; color: #4c6853; padding: 9px 0; font-weight: 650; }
+.header-create { border: 1px solid #315b3f; color: #315b3f; background: transparent; border-radius: 9px; padding: 10px 16px; font-weight: 700; }
+.header-create:hover, .header-create:focus-visible { background: #e8efe6; }
+.page-intro { display: flex; justify-content: space-between; gap: 36px; align-items: end; padding: 55px 4px 45px; }
+.eyebrow, .panel-kicker { font-size: 11px; letter-spacing: .19em; font-weight: 800; color: #66816a; }
+.page-intro h1 { font-family: Georgia, 'Songti SC', serif; font-size: clamp(43px, 6vw, 76px); line-height: 1.14; letter-spacing: -.04em; margin: 15px 0 20px; }
+.page-intro em { color: #69806a; font-style: normal; }
+.intro-copy { max-width: 510px; color: var(--muted); font-size: 16px; line-height: 1.8; }
+.intro-mark { width: 220px; height: 220px; flex: none; border: 1px solid #cbd8ca; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; transform: rotate(-9deg); color: #a2b29c; }
+.intro-mark span { font: italic 112px/.9 Georgia, serif; }.intro-mark small { margin-top: 12px; text-align: center; font: 700 9px/1.5 Georgia, serif; letter-spacing: .22em; }
+.today-panel { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr); gap: 34px; background: #244b35; color: #f7f5e8; border-radius: 18px; padding: 38px 45px; overflow: hidden; position: relative; }
+.today-panel::after { content: ''; position: absolute; width: 280px; height: 280px; border: 1px solid #ffffff20; border-radius: 50%; right: -100px; top: -130px; pointer-events: none; }
+.panel-kicker { color: #bad0ac; margin-bottom: 12px; }.today-panel h2 { font: 600 clamp(25px, 3vw, 35px)/1.25 Georgia, 'Songti SC', serif; margin: 0 0 12px; }.today-panel p:not(.panel-kicker) { color: #d6e1d3; line-height: 1.7; }
+.today-start { margin-top: 24px; background: #edc982; color: #26402c; border: 0; border-radius: 9px; padding: 13px 18px; font-weight: 800; min-height: 46px; }.today-start span { margin-left: 16px; }.today-start:hover { background: #f5dba6; }
+.today-metrics { display: grid; grid-template-columns: repeat(3, 1fr); align-self: center; border-left: 1px solid #ffffff35; padding-left: 30px; }.today-metrics div { display: flex; flex-direction: column; gap: 8px; text-align: center; }.today-metrics strong { font: 500 clamp(29px, 3.5vw, 46px)/1 Georgia, serif; }.today-metrics span { font-size: 12px; color: #d3dfd0; white-space: nowrap; }
+.collection { margin-top: 62px; }.section-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 23px; }.section-heading h2 { font: 600 31px/1.2 Georgia, 'Songti SC', serif; margin: 8px 0 0; }.section-heading h2 span { color: #91a58e; font: 500 17px Georgia, serif; vertical-align: top; margin-left: 6px; }.section-heading > p { color: var(--muted); font-size: 13px; }
+.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 20px; }.book-card { background: #fffefa; border: 1px solid #e4e8dc; border-radius: 13px; overflow: hidden; transition: transform .2s, box-shadow .2s; }.book-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px #29463113; }
+.book-cover { height: 155px; display: flex; flex-direction: column; justify-content: space-between; padding: 16px 19px; color: white; position: relative; }.book-cover::after { content: ''; position: absolute; width: 185px; height: 185px; border: 1px solid #ffffff55; border-radius: 50%; right: -28px; top: -65px; }.cover-index, .cover-bottom { font: 700 9px Georgia, serif; letter-spacing: .16em; opacity: .85; }.book-icon { font-size: 46px; align-self: center; line-height: 1; filter: drop-shadow(0 5px 10px #0003); }
+.book-body { padding: 19px; }.book-title-row { display: flex; align-items: start; justify-content: space-between; gap: 8px; min-height: 56px; }.book-title-row h3 { font-size: 17px; line-height: 1.45; overflow-wrap: anywhere; }.book-count { white-space: nowrap; font-size: 12px; color: #607360; background: #eaf0e8; border-radius: 5px; padding: 5px 7px; }.progress-label { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin: 4px 0 10px; }.progress-label strong { color: var(--ink); }.progress-track { background: #e8ede5; height: 6px; border-radius: 99px; overflow: hidden; }.progress-track span { display: block; background: #638c69; height: 100%; border-radius: inherit; }.book-actions { display: flex; gap: 8px; margin-top: 19px; }.book-actions button { min-height: 42px; border-radius: 7px; font-size: 12px; font-weight: 750; }.open-book { flex: 1; border: 0; background: #315b40; color: white; text-align: left; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; }.open-book:hover { background: #224a32; }.plan-toggle { border: 1px solid #c8d5c8; background: transparent; color: #3a6346; padding: 0 10px; }.plan-toggle.enabled { background: #eaf1e8; }.plan-toggle:hover { background: #eaf1e8; }.plan-toggle:disabled { opacity: .55; cursor: wait; }
+.collection-state { background: #fffefa; border: 1px dashed #c9d4c5; text-align: center; padding: 54px 18px; border-radius: 13px; }.state-symbol { display: inline-grid; place-items: center; width: 62px; height: 62px; border-radius: 50%; color: #497252; background: #eaf1e8; font-size: 30px; }.collection-state h3 { margin: 16px 0 7px; font: 600 23px Georgia, 'Songti SC', serif; }.collection-state p { color: var(--muted); margin-bottom: 20px; }.collection-state button { border: 0; color: white; background: #315b40; padding: 11px 19px; border-radius: 7px; }.book-skeleton { height: 345px; border-radius: 13px; background: linear-gradient(100deg, #e8ede5 20%, #f8faf5 40%, #e8ede5 60%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; }@keyframes shimmer { to { background-position-x: -200%; } }
+.color-options, .icon-options { display: flex; flex-wrap: wrap; gap: 10px; }.color-circle, .icon-item { width: 43px; height: 43px; display: grid; place-items: center; border: 2px solid transparent; border-radius: 8px; }.color-circle.active, .icon-item.active { outline: 2px solid #345f43; outline-offset: 2px; }.color-circle span { color: white; font-weight: 900; }.icon-item { font-size: 23px; background: #eef2eb; }.dialog-actions { display: flex; justify-content: end; gap: 8px; margin-top: 20px; }
+button:focus-visible { outline: 3px solid #dbaa53; outline-offset: 3px; }
+@media (max-width: 760px) { .vocab-shell { padding: 16px 16px 60px; }.page-intro { padding: 38px 0 32px; }.intro-mark { display: none; }.today-panel { grid-template-columns: 1fr; padding: 28px 25px; gap: 28px; }.today-metrics { padding: 20px 0 0; border-left: 0; border-top: 1px solid #ffffff35; }.section-heading { align-items: start; flex-direction: column; }.collection { margin-top: 44px; } }
+@media (max-width: 440px) { .header-create { padding: 9px 10px; font-size: 12px; }.page-intro h1 { font-size: 43px; }.book-grid { grid-template-columns: 1fr; }.today-metrics strong { font-size: 29px; } }
+@media (prefers-reduced-motion: reduce) { .book-card { transition: none; }.book-card:hover { transform: none; }.book-skeleton { animation: none; } }
 </style>
