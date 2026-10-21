@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { getStudyHistory, getStudyReviewCounts } from '@/features/vocab/api'
 import type { StudyDayStats, StudyReviewCount } from '@/features/vocab/types'
 import PageHeading from '@/components/PageHeading.vue'
+import FamiliarityPanel from './FamiliarityPanel.vue'
 
 const days = ref<7 | 30>(7)
 const rows = ref<StudyDayStats[]>([])
@@ -17,6 +18,8 @@ const totalTime = computed(() => rows.value.reduce((sum, row) => sum + row.study
 const recallSamples = computed(() => rows.value.reduce((sum, row) => sum + row.dueRecallAttempts, 0))
 const recallRate = computed(() => recallSamples.value === 0 ? null
   : rows.value.reduce((sum, row) => sum + (row.dueRecallRate ?? 0) * row.dueRecallAttempts, 0) / recallSamples.value)
+const goodOrEasyRate = computed(() => recallSamples.value === 0 ? null
+  : rows.value.reduce((sum, row) => sum + (row.goodOrEasyRate ?? 0) * row.dueRecallAttempts, 0) / recallSamples.value)
 const maxReviews = computed(() => Math.max(1, ...rows.value.map(row => row.reviewCount)))
 const latestFirst = computed(() => [...rows.value].reverse())
 
@@ -35,7 +38,7 @@ async function loadHistory(value: 7 | 30 = days.value) {
     if (requestId === latestHistoryRequest) rows.value = response.data ?? []
   } catch (cause: any) {
     if (requestId === latestHistoryRequest) {
-      error.value = cause?.msg || '学习记录暂时无法读取，请稍后重试。'
+      error.value = cause?.msg || '学习进度暂时无法读取，请稍后重试。'
     }
   } finally {
     if (requestId === latestHistoryRequest) loading.value = false
@@ -61,20 +64,23 @@ onMounted(() => {
   <main class="insights-page">
     <div class="insights-shell xl-page-shell">
       <PageHeading
-        :items="[{ label: '首页', to: '/' }, { label: '英语学习', to: '/english' }, { label: '今日学习', to: '/english/vocab/study' }, { label: '学习记录' }]"
-        title="学习记录"
-        description="回顾学习节奏，了解自己的到期回忆表现。"
-      >
-        <template #actions>
-          <div class="range-switch" role="group" aria-label="统计时间范围">
-            <button v-for="value in [7, 30] as const" :key="value" type="button"
-              :class="{ active: days === value }" :aria-pressed="days === value"
-              @click="loadHistory(value)">近 {{ value }} 天</button>
-          </div>
-        </template>
-      </PageHeading>
+        :items="[{ label: '首页', to: '/' }, { label: '英语学习', to: '/english' }, { label: '学习进度' }]"
+        title="学习进度"
+        description="看清哪些单词需要巩固，回顾每天的学习节奏。"
+      />
 
-      <div v-if="loading" class="state-panel" role="status">正在整理学习记录…</div>
+      <FamiliarityPanel />
+
+      <div class="history-heading">
+        <div><span>STUDY RHYTHM / 学习节奏</span><h2>近 {{ days }} 天回顾</h2></div>
+        <div class="range-switch" role="group" aria-label="统计时间范围">
+          <button v-for="value in [7, 30] as const" :key="value" type="button"
+            :class="{ active: days === value }" :aria-pressed="days === value"
+            @click="loadHistory(value)">近 {{ value }} 天</button>
+        </div>
+      </div>
+
+      <div v-if="loading" class="state-panel" role="status">正在整理学习进度…</div>
       <div v-else-if="error" class="state-panel" role="alert">
         <p>{{ error }}</p><button type="button" @click="loadHistory()">重新加载</button>
       </div>
@@ -83,13 +89,13 @@ onMounted(() => {
           <div><span>回忆次数</span><strong>{{ totalReviews }}</strong></div>
           <div><span>新学单词</span><strong>{{ totalNew }}</strong></div>
           <div><span>学习用时</span><strong>{{ formatTime(totalTime) }}</strong></div>
-          <div><span>到期回忆率</span><strong>{{ recallRate === null ? '—' : `${Math.round(recallRate * 100)}%` }}</strong><small>样本 {{ recallSamples }} 次</small></div>
+          <div><span>到期回忆率</span><strong>{{ recallRate === null ? '—' : `${Math.round(recallRate * 100)}%` }}</strong><small>样本 {{ recallSamples }} 次 · 记得或容易 {{ goodOrEasyRate === null ? '—' : `${Math.round(goodOrEasyRate * 100)}%` }}</small><small v-if="recallSamples > 0 && recallSamples < 20">样本较少，仅供参考</small></div>
         </section>
 
         <section class="history" aria-labelledby="history-title">
           <div class="section-heading">
             <h2 id="history-title">每日记录</h2>
-            <p>积压为当日结束时待复习数；今天显示当前数。</p>
+            <p>每日记录汇总全部词书；积压为当日结束时待复习数，今天显示当前数。</p>
           </div>
           <p v-if="totalReviews === 0" class="empty-note">这段时间还没有评分记录。完成一次今日学习后，记录会出现在这里。</p>
           <div v-for="row in latestFirst" :key="row.date" class="day-row">
@@ -124,6 +130,7 @@ onMounted(() => {
 
 <style scoped>
 .insights-page { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
+.history-heading { display:flex; align-items:end; justify-content:space-between; gap:16px; margin-top:44px; }.history-heading span { color:#65836c; font-size:11px; font-weight:800; letter-spacing:.13em; }.history-heading h2 { margin:6px 0 0; font:650 27px/1.2 var(--xl-font-display); }
 .section-heading p { color: var(--xl-ink-soft); }
 .range-switch { display: inline-flex; gap: 6px; padding: 5px; border: 1px solid var(--xl-border); border-radius: 12px; background: var(--xl-surface); }
 .range-switch button { border: 0; border-radius: 8px; padding: 9px 18px; background: transparent; color: var(--xl-ink-soft); cursor: pointer; }
@@ -132,7 +139,7 @@ onMounted(() => {
 .range-switch button:hover:not(.active) { background: #edf3e9; color: var(--xl-brand); }
 .range-switch button.active { box-shadow: 0 2px 0 #1f422d; }
 .range-switch button:active { transform: translateY(1px); box-shadow: none; }
-.summary { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--xl-border); border-radius: 14px; background: var(--xl-surface); }
+.summary { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 16px; border: 1px solid var(--xl-border); border-radius: 14px; background: var(--xl-surface); }
 .summary > div { display: flex; flex-direction: column; gap: 8px; min-height: 130px; padding: 24px; border-right: 1px solid var(--xl-border); }
 .summary > div:last-child { border-right: 0; }
 .summary span, .summary small, .day-row > span { color: var(--xl-ink-soft); font-size: 12px; }
@@ -158,6 +165,7 @@ onMounted(() => {
 .state-panel button:hover { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
 .state-panel button:active { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
 @media (max-width: 850px) {
+  .history-heading { align-items:start; flex-direction:column; }
   .summary { grid-template-columns: repeat(2, 1fr); }
   .distribution-grid { grid-template-columns: repeat(2, 1fr); }
   .summary > div:nth-child(2) { border-right: 0; }

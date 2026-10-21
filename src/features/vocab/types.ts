@@ -119,7 +119,35 @@ export interface StudyDayStats {
   studyTimeMs: number
   dueRecallAttempts: number
   dueRecallRate: number | null
+  goodOrEasyRate: number | null
   dueBacklog: number
+}
+
+export type FamiliarityStage = 'ALL' | 'LEARNING' | 'CONSOLIDATING' | 'STABLE'
+
+export interface StudyFamiliarityWord {
+  wordId: string
+  word: string
+  meaning: string
+  stage: Exclude<FamiliarityStage, 'ALL'>
+  due: boolean
+  dueAt: string
+  lapseCount: number
+  lastRating: number | null
+  stabilityDays: number | null
+}
+
+export interface StudyFamiliarity {
+  learnedCount: number
+  learningCount: number
+  consolidatingCount: number
+  stableCount: number
+  dueCount: number
+  wordCount: number
+  page: number
+  pageSize: number
+  words: StudyFamiliarityWord[]
+  attentionWords: StudyFamiliarityWord[]
 }
 
 export interface StudyReviewCount {

@@ -5,7 +5,7 @@
 
 import request from '@/utils/request'
 import type { ApiResponse } from '@/types/auth'
-import type { CreateWordBookDTO, WordDictionary, WordVO, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO, WordFamilyNodeVO, TodayStudy, StudySettings, StudyStats, StudyDayStats, StudyReviewCount, StudyReviewResult, SubmitStudyReview } from '@/features/vocab/types'
+import type { CreateWordBookDTO, WordDictionary, WordVO, WordBookVo, WordBookDetailVO, AddWordsToWordBookDTO, RemoveWordsFromWordBookDTO, WordFamilyNodeVO, TodayStudy, StudySettings, StudyStats, StudyDayStats, StudyReviewCount, StudyReviewResult, SubmitStudyReview, StudyFamiliarity, FamiliarityStage } from '@/features/vocab/types'
 
 export const getTodayStudy = (): Promise<ApiResponse<TodayStudy>> => request.get('/study/today')
 export const submitStudyReview = (data: SubmitStudyReview): Promise<ApiResponse<StudyReviewResult>> =>
@@ -15,6 +15,8 @@ export const getStudyHistory = (days: 7 | 30): Promise<ApiResponse<StudyDayStats
   request.get('/study/history', { params: { days } })
 export const getStudyReviewCounts = (): Promise<ApiResponse<StudyReviewCount>> =>
   request.get('/study/review-counts')
+export const getStudyFamiliarity = (params: { bookId?: string; stage: FamiliarityStage; page: number }): Promise<ApiResponse<StudyFamiliarity>> =>
+  request.get('/study/familiarity', { params })
 export const getStudySettings = (): Promise<ApiResponse<StudySettings>> => request.get('/study/settings')
 export const updateStudySettings = (data: StudySettings): Promise<ApiResponse<StudySettings>> =>
   request.put('/study/settings', data)

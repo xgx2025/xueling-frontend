@@ -16,7 +16,7 @@ describe('study insights', () => {
     api.getStudyHistory.mockImplementation((days: number) => Promise.resolve({ data: [{
       date: '2026-10-20', reviewCount: days === 7 ? 0 : 4,
       newWords: 1, studyTimeMs: 60000, dueRecallAttempts: days === 7 ? 0 : 2,
-      dueRecallRate: days === 7 ? null : 0.5, dueBacklog: 3
+      dueRecallRate: days === 7 ? null : 0.5, goodOrEasyRate: days === 7 ? null : 0.5, dueBacklog: 3
     }] }))
     api.getStudyReviewCounts.mockResolvedValue({ data: {
       once: 1, twice: 2, threeToFive: 3, sixOrMore: 4
@@ -24,7 +24,7 @@ describe('study insights', () => {
   })
 
   it('shows no recall rate without samples and updates the selected range', async () => {
-    const wrapper = mount(StudyInsights)
+    const wrapper = mount(StudyInsights, { global: { stubs: { FamiliarityPanel: true } } })
     await flushPromises()
     expect(wrapper.text()).toContain('样本 0 次')
     expect(wrapper.text()).toContain('每词回忆次数')
@@ -43,13 +43,13 @@ describe('study insights', () => {
     const seven = new Promise(resolve => { resolveSeven = resolve })
     const thirty = new Promise(resolve => { resolveThirty = resolve })
     api.getStudyHistory.mockImplementation((value: number) => value === 7 ? seven : thirty)
-    const wrapper = mount(StudyInsights)
+    const wrapper = mount(StudyInsights, { global: { stubs: { FamiliarityPanel: true } } })
     await wrapper.findAll('.range-switch button')[1]!.trigger('click')
     resolveThirty({ data: [{ date: '2026-10-20', reviewCount: 30, newWords: 0,
-      studyTimeMs: 0, dueRecallAttempts: 0, dueRecallRate: null, dueBacklog: 0 }] })
+      studyTimeMs: 0, dueRecallAttempts: 0, dueRecallRate: null, goodOrEasyRate: null, dueBacklog: 0 }] })
     await flushPromises()
     resolveSeven({ data: [{ date: '2026-10-20', reviewCount: 7, newWords: 0,
-      studyTimeMs: 0, dueRecallAttempts: 0, dueRecallRate: null, dueBacklog: 0 }] })
+      studyTimeMs: 0, dueRecallAttempts: 0, dueRecallRate: null, goodOrEasyRate: null, dueBacklog: 0 }] })
     await flushPromises()
     expect(wrapper.text()).toContain('30 次')
     expect(wrapper.text()).not.toContain('7 次')

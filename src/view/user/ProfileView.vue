@@ -164,7 +164,7 @@ onMounted(async () => {
                 <p class="eyebrow">TODAY'S LEARNING</p>
                 <h2 id="overview-title">今日学习概览</h2>
               </div>
-              <router-link to="/english/vocab/insights">查看学习记录 ↗</router-link>
+              <router-link to="/english/vocab/insights">查看学习进度 ↗</router-link>
             </div>
             <p v-if="statsLoading" class="overview-state" role="status">正在读取学习数据…</p>
             <p v-else-if="statsError" class="overview-state" role="status">暂时无法读取学习数据，仍可继续学习。</p>

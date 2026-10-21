@@ -7,7 +7,10 @@
         :description="loadingBooks ? '选择词书，安排每天的学习。' : `共 ${wordBooks.length} 本词书，安排每天的学习。`"
       >
         <template #actions>
-          <button class="header-create" type="button" @click="dialogVisible = true">＋ 新建词书</button>
+          <div class="header-actions">
+            <router-link class="header-progress" to="/english/vocab/insights">学习进度 <span aria-hidden="true">↗</span></router-link>
+            <button class="header-create" type="button" @click="dialogVisible = true">＋ 新建词书</button>
+          </div>
         </template>
       </PageHeading>
 
@@ -170,6 +173,11 @@ onMounted(() => { void fetchWordBooks() })
 <style scoped>
 .vocab-page { --ink: #243b2d; --muted: #667469; --line: #dce2d7; min-height: 100vh; background: #f5f5ee; color: var(--ink); font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif; }
 button { font: inherit; cursor: pointer; }
+.header-actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.header-progress { display:inline-flex; align-items:center; gap:12px; min-height:var(--xl-button-height); padding:0 15px; border:1px solid #b8cbb9; border-radius:var(--xl-button-radius); background:var(--xl-surface); color:var(--xl-brand); font-size:13px; font-weight:800; text-decoration:none; box-shadow:var(--xl-outline-shadow); transition:background-color .18s, border-color .18s, transform .18s, box-shadow .18s; }
+.header-progress:hover { background:#edf3e9; border-color:#8eae93; transform:translateY(-2px); box-shadow:0 4px 0 #d7e2d5; }
+.header-progress:active { transform:translateY(1px); box-shadow:none; }
+.header-progress:focus-visible { outline:3px solid #dbaa53; outline-offset:3px; }
 .header-create { border: 1px solid #315b3f; color: #315b3f; background: transparent; border-radius: 9px; padding: 10px 16px; font-weight: 700; }
 .header-create:hover, .header-create:focus-visible { background: #e8efe6; }
 .collection { margin-top: 0; }
@@ -186,6 +194,6 @@ button { font: inherit; cursor: pointer; }
 .header-create:active, .book-actions button:active:not(:disabled), .collection-state button:active { transform: translateY(1px); box-shadow: none; }
 .book-actions button:disabled { box-shadow: none; transform: none; }
 button:focus-visible { outline: 3px solid #dbaa53; outline-offset: 3px; }
-@media (max-width: 440px) { .header-create { padding: 9px 10px; font-size: 12px; }.book-grid { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { .book-card, .header-create, .book-actions button, .collection-state button { transition: none; }.book-card:hover, .header-create:hover, .book-actions button:hover, .book-actions button:active, .collection-state button:hover { transform: none; }.book-skeleton { animation: none; } }
+@media (max-width: 440px) { .header-create { padding: 9px 10px; font-size: 12px; }.header-progress { padding:0 10px; font-size:12px; }.book-grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .book-card, .header-create, .header-progress, .book-actions button, .collection-state button { transition: none; }.book-card:hover, .header-create:hover, .header-progress:hover, .header-progress:active, .book-actions button:hover, .book-actions button:active, .collection-state button:hover { transform: none; }.book-skeleton { animation: none; } }
 </style>

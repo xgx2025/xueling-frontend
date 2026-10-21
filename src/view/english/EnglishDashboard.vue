@@ -11,6 +11,11 @@ const focusTitle = computed(() => {
   if (studyStats.value.dueCount > 0) return '先完成到期复习'
   return studyStats.value.todayReviewed > 0 ? '复习已完成' : '今日单词'
 })
+const focusDescription = computed(() => {
+  if (!studyStats.value) return '先回忆，再揭晓答案，按计划稳步积累。'
+  if (studyStats.value.dueCount > 0) return `有 ${studyStats.value.dueCount} 个词已到期，先巩固再学习新词。`
+  return studyStats.value.todayReviewed > 0 ? '当前到期任务已完成，稍后再来看看。' : '现在没有到期单词，可以从新词开始。'
+})
 
 onMounted(async () => {
   try {
@@ -38,9 +43,15 @@ onMounted(async () => {
           <div class="focus-copy">
             <p class="section-label"><span class="label-line" aria-hidden="true"></span> 今日任务</p>
             <h2 id="daily-focus-title">{{ focusTitle }}</h2>
-            <router-link to="/english/vocab/study" class="focus-action">
-              开始学习 <span aria-hidden="true">↗</span>
-            </router-link>
+            <p class="focus-description">{{ focusDescription }}</p>
+            <div class="focus-actions">
+              <router-link to="/english/vocab/study" class="focus-action">
+                开始学习 <span aria-hidden="true">↗</span>
+              </router-link>
+              <router-link to="/english/vocab/insights" class="progress-action">
+                查看学习进度 <span aria-hidden="true">↗</span>
+              </router-link>
+            </div>
           </div>
           <div class="focus-illustration" aria-hidden="true">
             <span class="study-card study-card-back"></span>
@@ -91,9 +102,16 @@ onMounted(async () => {
 .section-label { display: flex; align-items: center; gap: 9px; color: #4d7055; font-size: 12px; font-weight: 800; }
 .label-line { width: 18px; height: 2px; border-radius: 2px; background: var(--xl-brand); }
 .daily-focus h2 { max-width: 600px; margin: 14px 0 6px; font: 700 clamp(25px, 3vw, 34px)/1.3 var(--xl-font-display); letter-spacing: -.025em; }
-.focus-action { width: fit-content; min-height: 48px; display: inline-flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 24px; padding: 0 18px; border-radius: var(--xl-button-radius); background: var(--xl-brand); color: white; font-size: 14px; font-weight: 800; text-decoration: none; box-shadow: var(--xl-button-shadow); transition: background-color .18s, transform .18s, box-shadow .18s; }
+.focus-description { margin:0; color:#4d7055; font-size:13px; line-height:1.6; }
+.focus-actions { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:24px; }
+.focus-action, .progress-action { width:fit-content; min-height:48px; display:inline-flex; align-items:center; justify-content:space-between; gap:24px; padding:0 18px; border-radius:var(--xl-button-radius); font-size:14px; font-weight:800; text-decoration:none; transition:background-color .18s, border-color .18s, transform .18s, box-shadow .18s; }
+.focus-action { background: var(--xl-brand); color: white; box-shadow: var(--xl-button-shadow); }
 .focus-action:hover { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
 .focus-action:active { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
+.progress-action { border:1px solid #a7c0a9; background:#f7faf4; color:var(--xl-brand); box-shadow:var(--xl-outline-shadow); }
+.progress-action:hover { border-color:#7fa286; background:#eef5eb; transform:translateY(-2px); box-shadow:0 4px 0 #d7e2d5; }
+.progress-action:active { transform:translateY(1px); box-shadow:none; }
+.focus-action:focus-visible, .progress-action:focus-visible { outline:3px solid #dbaa53; outline-offset:3px; }
 .focus-illustration { position: relative; flex: none; width: 225px; height: 185px; margin: 0 28px; }
 .focus-illustration::before { content: ''; position: absolute; inset: -28px 6px -26px; border: 1px solid #c4d7c2; border-radius: 50%; }
 .study-card { position: absolute; width: 122px; height: 150px; border-radius: 12px; }
@@ -133,7 +151,8 @@ onMounted(async () => {
 }
 @media (max-width: 420px) {
   .focus-main { padding: 24px 20px 26px; }
-  .focus-action { width: 100%; }
+  .focus-actions { align-items:stretch; flex-direction:column; }
+  .focus-action, .progress-action { width:100%; }
   .today-stats .stat-item { padding-inline: 10px; }
   .stat-item span, .stat-item small { font-size: 11px; }
   .module-card { grid-template-columns: 48px 1fr; gap: 12px; padding: 18px; }
@@ -141,5 +160,5 @@ onMounted(async () => {
   .module-icon svg { width: 29px; height: 29px; }
   .module-body h3 { font-size: 19px; }
 }
-@media (prefers-reduced-motion: reduce) { .focus-action:hover, .focus-action:active { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .focus-action:hover, .focus-action:active, .progress-action:hover, .progress-action:active { transform: none; } }
 </style>
