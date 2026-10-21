@@ -6,13 +6,10 @@ import type { StudyStats } from '@/features/vocab/types'
 const studyStats = ref<StudyStats | null>(null)
 const statsError = ref(false)
 const focusTitle = computed(() => {
-  if (!studyStats.value) return '从今天的单词开始'
-  if (studyStats.value.dueCount > 0) return `先复习 ${studyStats.value.dueCount} 张卡片`
-  return studyStats.value.todayReviewed > 0 ? '今天的复习已完成' : '准备好开始今天的学习了吗？'
+  if (!studyStats.value) return '今日单词'
+  if (studyStats.value.dueCount > 0) return '先完成到期复习'
+  return studyStats.value.todayReviewed > 0 ? '复习已完成' : '今日单词'
 })
-const focusCopy = computed(() => studyStats.value?.dueCount
-  ? '先回忆到期单词，再认识新词。'
-  : '打开今日学习，按自己的节奏继续。')
 
 onMounted(async () => {
   try {
@@ -28,13 +25,17 @@ onMounted(async () => {
   <main class="english-dashboard">
     <div class="dashboard-shell">
       <header class="dashboard-header">
-        <router-link to="/" class="back-link"><span aria-hidden="true">←</span> 返回首页</router-link>
+        <router-link to="/" class="back-link">
+          <span class="back-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M19 12H5m0 0 6-6m-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span>返回首页</span>
+        </router-link>
         <div class="header-copy">
           <div class="header-icon" aria-hidden="true">A<span>a</span></div>
           <div>
-            <p class="eyebrow">ENGLISH / 英语空间</p>
+            <p class="eyebrow">英语 / 学习概览</p>
             <h1>英语学习</h1>
-            <p class="header-subtitle">每天一点单词和阅读，稳稳向前。</p>
           </div>
         </div>
       </header>
@@ -42,11 +43,10 @@ onMounted(async () => {
       <section class="daily-focus" aria-labelledby="daily-focus-title">
         <div class="focus-main">
           <div class="focus-copy">
-            <p class="section-label"><span class="label-line" aria-hidden="true"></span> 今日重点</p>
+            <p class="section-label"><span class="label-line" aria-hidden="true"></span> 今日任务</p>
             <h2 id="daily-focus-title">{{ focusTitle }}</h2>
-            <p class="focus-description">{{ focusCopy }}</p>
             <router-link to="/english/vocab/study" class="focus-action">
-              进入今日学习 <span aria-hidden="true">↗</span>
+              开始学习 <span aria-hidden="true">↗</span>
             </router-link>
           </div>
           <div class="focus-illustration" aria-hidden="true">
@@ -62,22 +62,15 @@ onMounted(async () => {
       </section>
       <p v-if="statsError" class="stats-note" role="status">学习数据暂时无法读取，仍可继续学习。</p>
 
-      <section class="learning-modules" aria-labelledby="modules-title">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">EXPLORE / 自主学习</p>
-            <h2 id="modules-title">按你的节奏继续</h2>
-          </div>
-          <p>选一个方向，随时开始。</p>
-        </div>
+      <section class="learning-modules" aria-label="更多学习入口">
         <div class="module-grid">
           <article class="module-card vocab-card">
             <div class="module-icon" aria-hidden="true">
               <svg viewBox="0 0 48 48" fill="none"><path d="M9 12.5A3.5 3.5 0 0 1 12.5 9H37v29H13a4 4 0 0 0-4 4V12.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 38a4 4 0 0 1 4-4h24M18 18h11M18 24h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             </div>
             <div class="module-body">
-              <h3>词书与计划</h3>
-              <p>选择词书，安排适合自己的单词学习。</p>
+              <h3>词书管理</h3>
+              <p>选择词书，调整学习计划。</p>
             </div>
             <router-link class="module-link" to="/english/vocab">管理词书 <span aria-hidden="true">↗</span></router-link>
           </article>
@@ -87,7 +80,7 @@ onMounted(async () => {
             </div>
             <div class="module-body">
               <h3>英语阅读</h3>
-              <p>在文章中理解词句，积累真实语境。</p>
+              <p>选择文章，在语境中学习。</p>
             </div>
             <router-link class="module-link" to="/english/articles">浏览文章 <span aria-hidden="true">↗</span></router-link>
           </article>
@@ -100,21 +93,23 @@ onMounted(async () => {
 <style scoped>
 .english-dashboard { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
 .dashboard-shell { max-width: 1060px; margin: auto; padding: 24px 30px 80px; }
-.back-link { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; color: var(--xl-brand); text-decoration: none; font-size: 13px; font-weight: 750; }
-.back-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.back-link { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 14px 4px 4px; border: 1px solid var(--xl-border); border-radius: 12px; background: var(--xl-surface); color: var(--xl-brand); text-decoration: none; font-size: 13px; font-weight: 750; box-shadow: 0 2px 0 #dce6d9; transition: background-color .18s, border-color .18s, box-shadow .18s, transform .18s; }
+.back-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; background: #e7efe4; }
+.back-icon svg { width: 18px; height: 18px; transition: transform .18s; }
+.back-link:hover { background: #f0f5ed; border-color: #a8bfa9; box-shadow: 0 3px 0 #c9d9c9; }
+.back-link:hover .back-icon svg { transform: translateX(-2px); }
+.back-link:active { transform: translateY(1px); box-shadow: none; }
 .header-copy { display: flex; align-items: center; gap: 18px; margin: 26px 0 30px; }
 .header-icon { flex: none; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 16px; background: #e3ecdf; color: var(--xl-brand); font: 700 33px/1 var(--xl-font-display); letter-spacing: -.1em; }
 .header-icon span { align-self: center; margin: 11px 0 0 1px; font-size: 21px; }
 .eyebrow { color: #66816a; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
 .dashboard-header h1 { margin: 4px 0 3px; font: 700 clamp(27px, 3vw, 35px)/1.2 var(--xl-font-display); letter-spacing: -.025em; }
-.header-subtitle { color: var(--xl-ink-soft); font-size: 13px; line-height: 1.5; }
 .daily-focus { overflow: hidden; border: 1px solid #cad9c8; border-radius: var(--xl-radius-lg); background: #eaf1e7; }
-.focus-main { position: relative; min-height: 238px; display: flex; align-items: center; justify-content: space-between; padding: 34px 42px; overflow: hidden; }
+.focus-main { position: relative; min-height: 214px; display: flex; align-items: center; justify-content: space-between; padding: 30px 42px; overflow: hidden; }
 .focus-copy { position: relative; z-index: 1; flex: 1; min-width: 0; }
 .section-label { display: flex; align-items: center; gap: 9px; color: #4d7055; font-size: 12px; font-weight: 800; }
 .label-line { width: 18px; height: 2px; border-radius: 2px; background: var(--xl-brand); }
 .daily-focus h2 { max-width: 600px; margin: 14px 0 6px; font: 700 clamp(25px, 3vw, 34px)/1.3 var(--xl-font-display); letter-spacing: -.025em; }
-.focus-description { color: var(--xl-ink-soft); font-size: 14px; line-height: 1.6; }
 .focus-action { width: fit-content; min-height: 48px; display: inline-flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 24px; padding: 0 18px; border-radius: var(--xl-button-radius); background: var(--xl-brand); color: white; font-size: 14px; font-weight: 800; text-decoration: none; box-shadow: var(--xl-button-shadow); transition: background-color .18s, transform .18s, box-shadow .18s; }
 .focus-action:hover { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
 .focus-action:active { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
@@ -133,10 +128,7 @@ onMounted(async () => {
 .stat-item strong { color: var(--xl-brand); font: 700 28px/1.2 var(--xl-font-display); font-variant-numeric: tabular-nums; }
 .stat-item small { color: var(--xl-ink-soft); font-size: 12px; }
 .stats-note { margin-top: 10px; color: #8b6430; font-size: 12px; }
-.learning-modules { margin-top: 48px; }
-.section-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 18px; }
-.section-heading h2 { margin-top: 6px; font: 700 clamp(22px, 2.4vw, 27px)/1.3 var(--xl-font-display); }
-.section-heading > p { color: var(--xl-ink-soft); font-size: 13px; }
+.learning-modules { margin-top: 24px; }
 .module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .module-card { min-width: 0; min-height: 202px; display: grid; grid-template-columns: 56px 1fr; grid-template-rows: 1fr auto; column-gap: 18px; padding: 26px; border: 1px solid var(--xl-border); border-radius: var(--xl-radius-md); background: var(--xl-surface); transition: border-color .18s, box-shadow .18s; }
 .module-card:hover { border-color: #a9bda7; box-shadow: var(--xl-shadow-card); }
@@ -152,14 +144,13 @@ onMounted(async () => {
   .header-copy { gap: 13px; margin: 17px 0 24px; }
   .header-icon { width: 52px; height: 52px; border-radius: 13px; font-size: 27px; }
   .header-icon span { margin-top: 8px; font-size: 17px; }
-  .header-subtitle { font-size: 12px; }
   .focus-main { min-height: 0; padding: 26px 24px 28px; }
   .focus-illustration { display: none; }
   .daily-focus h2 { font-size: clamp(23px, 6vw, 29px); }
   .today-stats .stat-item { min-height: 80px; flex-wrap: wrap; gap: 2px 4px; padding: 13px 14px; }
   .stat-item span { flex-basis: 100%; }
   .stat-item strong { font-size: 25px; }
-  .learning-modules { margin-top: 38px; }
+  .learning-modules { margin-top: 16px; }
   .module-grid { grid-template-columns: 1fr; gap: 12px; }
   .module-card { min-height: 0; padding: 20px; }
 }
@@ -167,7 +158,6 @@ onMounted(async () => {
   .dashboard-shell { padding-inline: 14px; }
   .focus-main { padding: 24px 20px 26px; }
   .focus-action { width: 100%; }
-  .section-heading > p { display: none; }
   .today-stats .stat-item { padding-inline: 10px; }
   .stat-item span, .stat-item small { font-size: 11px; }
   .module-card { grid-template-columns: 48px 1fr; gap: 12px; padding: 18px; }
@@ -175,5 +165,5 @@ onMounted(async () => {
   .module-icon svg { width: 29px; height: 29px; }
   .module-body h3 { font-size: 19px; }
 }
-@media (prefers-reduced-motion: reduce) { .focus-action:hover, .focus-action:active { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .back-link:hover .back-icon svg, .back-link:active, .focus-action:hover, .focus-action:active { transform: none; } }
 </style>

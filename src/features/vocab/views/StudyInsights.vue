@@ -63,12 +63,10 @@ onMounted(() => {
     <div class="insights-shell">
       <header class="page-header">
         <button type="button" class="back-link" @click="router.push('/english/vocab/study')">← 今日学习</button>
-        <span class="eyebrow">WORD MEMORY / LEARNING RECORD</span>
       </header>
       <section class="intro">
-        <p class="eyebrow">每一次回忆，都有迹可循</p>
-        <h1>学习记录<span>.</span></h1>
-        <p>看看你学了多久、记住了多少，以及还有多少单词等待复习。</p>
+        <p class="eyebrow">单词 / 学习记录</p>
+        <h1>学习记录</h1>
         <div class="range-switch" role="group" aria-label="统计时间范围">
           <button v-for="value in [7, 30] as const" :key="value" type="button"
             :class="{ active: days === value }" :aria-pressed="days === value"
@@ -128,13 +126,13 @@ onMounted(() => {
 .insights-page { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
 .insights-shell { max-width: 1100px; margin: auto; padding: 26px 30px 80px; }
 .page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.back-link { border: 0; background: none; color: var(--xl-brand); font-weight: 700; cursor: pointer; }
+.back-link { min-height: 44px; padding: 0 12px; border: 1px solid var(--xl-border); border-radius: 10px; background: var(--xl-surface); color: var(--xl-brand); font-size: 13px; font-weight: 750; cursor: pointer; }
+.back-link:hover { background: #edf3e9; border-color: #a8bfa9; }
 .eyebrow { color: #6b846e; font-size: 11px; font-weight: 800; letter-spacing: .15em; }
-.intro { margin: 64px 0 30px; }
-.intro h1 { margin: 8px 0; font: 700 clamp(40px, 5vw, 64px)/1.1 var(--xl-font-display); }
-.intro h1 span { color: var(--xl-accent); }
+.intro { margin: 30px 0 24px; }
+.intro h1 { margin: 8px 0; font: 700 clamp(30px, 4vw, 40px)/1.2 var(--xl-font-display); }
 .intro > p:not(.eyebrow), .section-heading p { color: var(--xl-ink-soft); }
-.range-switch { display: inline-flex; gap: 6px; margin-top: 28px; padding: 5px; border: 1px solid var(--xl-border); border-radius: 12px; background: var(--xl-surface); }
+.range-switch { display: inline-flex; gap: 6px; margin-top: 16px; padding: 5px; border: 1px solid var(--xl-border); border-radius: 12px; background: var(--xl-surface); }
 .range-switch button { border: 0; border-radius: 8px; padding: 9px 18px; background: transparent; color: var(--xl-ink-soft); cursor: pointer; }
 .range-switch button.active { background: var(--xl-brand); color: white; }
 .range-switch button { min-height: 40px; font-weight: 750; transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease; }

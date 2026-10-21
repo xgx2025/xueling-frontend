@@ -11,7 +11,7 @@ const errorMessage = ref('')
 const brokenImageIds = ref(new Set<number>())
 
 function getSummary(content: string): string {
-  if (!content) return '打开文章，开始阅读。'
+  if (!content) return ''
   let text = content
   try {
     const parsed = JSON.parse(content) as { blocks?: { sentences?: unknown[] }[] }
@@ -21,7 +21,7 @@ function getSummary(content: string): string {
     // 旧文章使用 ##、换行和 & 分隔内容。
   }
   const normalized = text.replace(/##/g, ' ').replace(/&/g, ' ').replace(/\s+/g, ' ').trim()
-  return normalized.length > 112 ? `${normalized.slice(0, 112)}…` : normalized
+  return normalized.length > 76 ? `${normalized.slice(0, 76)}…` : normalized
 }
 
 function formatDate(value: string): string {
@@ -69,16 +69,14 @@ onMounted(async () => {
   <main class="article-list-page">
     <div class="article-shell">
       <header class="page-header">
-        <router-link to="/english" class="back-link">← 英语学习中心</router-link>
-        <p class="eyebrow">READ A LITTLE, SEE FURTHER</p>
-        <h1>英语悦读<span>.</span></h1>
-        <p class="intro-copy">选一篇感兴趣的文章，在完整语境里读懂词句。</p>
+        <router-link to="/english" class="back-link">← 英语学习</router-link>
+        <p class="eyebrow">英语 / 阅读</p>
+        <h1>英语阅读</h1>
       </header>
 
       <section class="article-section" aria-label="文章列表">
         <div class="section-topline">
-          <h2>文章精选</h2>
-          <span v-if="!loading && !errorMessage">共 {{ articles.length }} 篇</span>
+          <span v-if="!loading && !errorMessage">共 {{ articles.length }} 篇文章</span>
         </div>
         <div class="filters" role="group" aria-label="文章分类">
           <button type="button" :aria-pressed="selectedCategory === null" @click="loadArticles(null)">全部</button>
@@ -105,8 +103,8 @@ onMounted(async () => {
               <p class="article-meta"><span>{{ formatDate(article.createTime) }}</span><span v-if="article.author">{{ article.author }}</span></p>
               <h3>{{ article.title }}</h3>
               <p v-if="article.chineseTitle" class="chinese-title">{{ article.chineseTitle }}</p>
-              <p class="summary">{{ getSummary(article.content) }}</p>
-              <span class="read-link">阅读文章 <span aria-hidden="true">↗</span></span>
+              <p v-if="getSummary(article.content)" class="summary">{{ getSummary(article.content) }}</p>
+              <span class="read-link">阅读 <span aria-hidden="true">↗</span></span>
             </div>
             <div class="article-image" aria-hidden="true">
               <img v-if="article.imageUrl && !brokenImageIds.has(article.id)" :src="article.imageUrl" alt="" @error="brokenImageIds.add(article.id)" />
@@ -122,18 +120,15 @@ onMounted(async () => {
 <style scoped>
 .article-list-page { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
 .article-shell { max-width: 1100px; margin: auto; padding: 24px 30px 88px; }
-.page-header { padding-bottom: 36px; border-bottom: 1px solid var(--xl-border); }
-.back-link { display: inline-block; color: var(--xl-brand); text-decoration: none; font-size: 13px; font-weight: 700; padding: 9px 0; }
-.back-link:hover { text-decoration: underline; }
-.eyebrow { margin-top: 42px; color: #66816a; font-size: 11px; font-weight: 800; letter-spacing: .18em; }
-.page-header h1 { margin: 12px 0 15px; font: 700 clamp(44px, 6vw, 76px)/1.08 var(--xl-font-display); letter-spacing: -.04em; }
-.page-header h1 span { color: var(--xl-accent); }
-.intro-copy { color: var(--xl-ink-soft); font-size: 16px; line-height: 1.75; }
-.article-section { padding-top: 40px; }
+.page-header { padding-bottom: 24px; border-bottom: 1px solid var(--xl-border); }
+.back-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border: 1px solid var(--xl-border); border-radius: 10px; background: var(--xl-surface); color: var(--xl-brand); text-decoration: none; font-size: 13px; font-weight: 750; }
+.back-link:hover { background: #edf3e9; border-color: #a8bfa9; }
+.eyebrow { margin-top: 22px; color: #66816a; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.page-header h1 { margin: 8px 0 0; font: 700 clamp(30px, 4vw, 40px)/1.2 var(--xl-font-display); }
+.article-section { padding-top: 20px; }
 .section-topline { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; }
-.section-topline h2 { font: 650 30px/1.2 var(--xl-font-display); }
 .section-topline span { color: var(--xl-ink-soft); font-size: 12px; }
-.filters { display: flex; gap: 9px; flex-wrap: wrap; margin: 23px 0 27px; }
+.filters { display: flex; gap: 9px; flex-wrap: wrap; margin: 14px 0 22px; }
 .filters button { cursor: pointer; border: 1px solid var(--xl-border); background: var(--xl-surface); color: var(--xl-ink-soft); border-radius: 99px; min-height: 38px; padding: 0 16px; font-size: 13px; font-weight: 700; }
 .filters button:hover { border-color: #9bb39e; color: var(--xl-brand); }
 .filters button[aria-pressed='true'] { background: var(--xl-brand); color: white; border-color: var(--xl-brand); }
@@ -162,7 +157,7 @@ onMounted(async () => {
 .list-state button:active { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
 @media (max-width: 760px) {
   .article-shell { padding: 16px 16px 60px; }
-  .eyebrow { margin-top: 30px; }
+  .eyebrow { margin-top: 18px; }
   .article-card { grid-template-columns: minmax(0, 1fr) 92px; gap: 16px; align-items: start; }
   .article-card h3 { margin-top: 10px; }
   .article-image { min-height: 92px; height: 92px; font-size: 28px; }

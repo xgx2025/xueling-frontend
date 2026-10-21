@@ -2,17 +2,17 @@
   <main class="study-page">
     <div class="study-shell">
       <header class="study-header">
-        <button class="back-link" type="button" @click="router.push('/english/vocab')">← 返回词书</button>
-        <span class="eyebrow">XUELING · DAILY STUDY</span>
-        <button class="settings-link" type="button" @click="router.push('/english/vocab/insights')">学习记录</button>
-        <button class="settings-link" type="button" @click="openSettings">学习设置</button>
+        <button class="back-link" type="button" @click="router.push('/english')">← 英语学习</button>
+        <div class="header-actions">
+          <button class="settings-link" type="button" @click="router.push('/english/vocab/insights')">学习记录</button>
+          <button class="settings-link" type="button" @click="openSettings">设置</button>
+        </div>
       </header>
 
       <section class="intro">
         <div>
-          <p class="section-kicker">专注回忆 · 一次一词</p>
-          <h1>今日学习<span class="title-dot">.</span></h1>
-          <p class="intro-copy">看词 → 回忆释义 → 核对答案 → 如实评分</p>
+          <p class="section-kicker">单词 / 每日计划</p>
+          <h1>今日学习</h1>
         </div>
         <div class="today-date">{{ dateLabel }}</div>
       </section>
@@ -71,15 +71,14 @@
                 <kbd>{{ option.value }}</kbd><strong>{{ option.label }}</strong><span>{{ option.hint }}</span>
               </button>
             </div>
-            <p class="rating-note">按揭晓前的状态评分，不以看完释义和例句后的感觉评分。键盘可按 1–4。</p>
+            <p class="rating-note">按揭晓前的回忆评分 · 键盘 1–4</p>
           </template>
-          <p v-if="!revealed" class="shortcut-note">{{ currentCard.newCard ? '第一次见到也可以直接揭晓，再按实际情况评分。' : '想好后点击按钮，或按空格键揭晓。' }}</p>
+          <p v-if="!revealed && currentCard.newCard" class="shortcut-note">新词可以直接揭晓。</p>
         </div>
       </section>
 
       <section v-else class="state-panel complete-panel">
         <div class="complete-mark">✓</div>
-        <p class="section-kicker">STUDY SESSION</p>
         <h2>当前任务完成</h2>
         <p v-if="today?.nextDueAt">下一张卡片预计在 {{ formatDue(today.nextDueAt) }} 到期。</p>
         <p v-else-if="today?.newRemaining && today.newRemaining > 0">当前启用的词书没有更多未学单词。</p>
@@ -281,14 +280,15 @@ onUnmounted(() => {
 .study-page { min-height: 100vh; color: #20372b; background: #f4f3ea; font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif; padding: 30px 24px 80px; }
 .study-shell { max-width: 1020px; margin: auto; }
 .study-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid #d9dfd5; padding-bottom: 18px; }
+.header-actions { display: flex; align-items: center; gap: 18px; }
 button { cursor: pointer; font: inherit; }
 .back-link, .settings-link, .text-button { border: 0; background: transparent; color: #315c49; font-weight: 700; }
-.back-link:hover, .settings-link:hover, .text-button:hover { text-decoration: underline; }
+.back-link { min-height: 44px; padding: 0 12px; border: 1px solid #d9dfd5; border-radius: 10px; background: #fffef9; font-size: 13px; }
+.back-link:hover { background: #edf3e9; border-color: #a8bfa9; }
+.settings-link:hover, .text-button:hover { text-decoration: underline; }
 .eyebrow, .section-kicker { letter-spacing: .19em; font-size: 12px; font-weight: 800; color: #6d8f75; }
 .intro { display: flex; justify-content: space-between; align-items: end; padding: 28px 0 24px; }
 .intro h1 { font-family: Georgia, 'Songti SC', serif; font-size: clamp(40px, 6vw, 60px); line-height: 1.05; margin: 8px 0 12px; font-weight: 700; }
-.title-dot { color: #e0a646; }
-.intro-copy { color: #66766a; margin: 0; }
 .today-date { color: #7b8b7e; font-size: 14px; white-space: nowrap; }
 .metrics { max-width: 800px; display: grid; grid-template-columns: repeat(3, 1fr); background: #e7ebe0; border: 1px solid #dce3d6; border-radius: 16px; margin: 30px auto 0; overflow: hidden; }
 .metric { display: flex; flex-direction: column; gap: 6px; padding: 15px 24px; border-right: 1px solid #d2dcce; }
@@ -333,7 +333,6 @@ button { cursor: pointer; font: inherit; }
 .study-header { padding-bottom: 12px; }
 .intro { padding: 20px 0 22px; }
 .intro h1 { font-size: clamp(32px, 4.5vw, 43px); margin: 6px 0 8px; }
-.intro-copy { font-size: 13px; }
 .today-date { font-size: 12px; }
 .session { max-width: 760px; }
 .session-meta { margin-bottom: 10px; }
