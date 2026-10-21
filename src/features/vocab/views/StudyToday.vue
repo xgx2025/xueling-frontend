@@ -118,6 +118,7 @@ import { ElMessage } from 'element-plus'
 import { getStudySettings, getTodayStudy, submitStudyReview, updateStudySettings } from '@/features/vocab/api'
 import type { StudyQueueCard, StudySettings, SubmitStudyReview, TodayStudy } from '@/features/vocab/types'
 import { clearPendingReview, persistPendingReview, restorePendingReview } from '@/features/vocab/pendingReview'
+import { createReviewRequestId } from '@/features/vocab/requestId'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -196,7 +197,7 @@ function rate(rating: 1 | 2 | 3 | 4) {
     wordId: currentCard.value.wordId,
     rating,
     expectedVersion: currentCard.value.version,
-    requestId: crypto.randomUUID(),
+    requestId: createReviewRequestId(),
     elapsedMs: Math.min(600_000, Date.now() - shownAt.value)
   }
   pendingReview.value = review

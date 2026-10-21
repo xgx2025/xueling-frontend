@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { flushPromises, shallowMount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import StudyToday from './StudyToday.vue'
 
 const api = vi.hoisted(() => ({
@@ -27,6 +27,8 @@ function mountStudy() {
 }
 
 describe('today study review recovery', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
   beforeEach(() => {
     vi.clearAllMocks()
     sessionStorage.clear()
@@ -83,6 +85,23 @@ describe('today study review recovery', () => {
     expect(sessionStorage.getItem('study.pending-review.7')).toBeNull()
     expect(api.getTodayStudy).toHaveBeenCalledTimes(3)
     second.unmount()
+  })
+
+  it('submits a rating on an HTTP LAN page without crypto.randomUUID', async () => {
+    const getRandomValues = globalThis.crypto.getRandomValues.bind(globalThis.crypto)
+    vi.stubGlobal('crypto', { getRandomValues })
+    api.submitStudyReview.mockResolvedValue({ code: 0, data: { wordId: '123', version: 1 } })
+
+    const wrapper = mountStudy()
+    await flushPromises()
+    await wrapper.find('.reveal-button').trigger('click')
+    await wrapper.findAll('.rating-button')[2]!.trigger('click')
+    await flushPromises()
+
+    expect(api.submitStudyReview).toHaveBeenCalledTimes(1)
+    expect(api.submitStudyReview.mock.calls[0]![0].requestId)
+      .toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+    wrapper.unmount()
   })
 
   it('offers a fresh queue after a confirmed stale-card rejection', async () => {
