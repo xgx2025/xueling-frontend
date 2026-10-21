@@ -1547,6 +1547,15 @@ function handleCardKeydown(event: KeyboardEvent) {
 .action-btn.forget { background: #f8ede8; color: #a65843; }
 .action-btn.remember { background: #e8f1e6; color: #315b40; }
 .consolidate-btn { background: #315b40; box-shadow: none; }
+.action-btn { min-height: 56px; border-radius: var(--xl-button-radius); font-weight: 800; transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease; }
+.action-btn.forget { border: 1px solid #d9ae9e; background: #fff7f2; color: #9e523d; box-shadow: 0 2px 0 #ead1c7; }
+.action-btn.forget:hover:not(:disabled) { background: #fbece4; transform: translateY(-2px); box-shadow: 0 4px 0 #ead1c7; }
+.action-btn.remember { border: 1px solid #254c35; background: var(--xl-brand); color: white; box-shadow: var(--xl-button-shadow); }
+.action-btn.remember:hover:not(:disabled) { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
+.action-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.back-btn { border: 1px solid #b8cbb9; background: var(--xl-surface); color: var(--xl-brand); box-shadow: var(--xl-outline-shadow); }
+.consolidate-btn { border: 1px solid #254c35; background: var(--xl-brand); color: white; box-shadow: var(--xl-button-shadow); }
+.consolidate-btn:hover { background: var(--xl-brand-hover); box-shadow: var(--xl-button-shadow-hover); }
 @media (max-width: 680px) {
   .review-page { height: auto; min-height: 100vh; overflow: visible; padding: 14px 14px 38px; }
   .background-shape { display: none; }

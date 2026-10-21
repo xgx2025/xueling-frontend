@@ -749,6 +749,10 @@ const navigateToRegister = () => {
 .login-form :deep(.el-input__wrapper.is-focus) { box-shadow: 0 0 0 1px var(--xl-brand) inset; }
 .login-button { background: var(--xl-brand); box-shadow: none; }
 .login-button:hover { background: var(--xl-brand-hover); box-shadow: var(--xl-shadow-card); }
+.login-button { min-height: 50px; border: 1px solid #254c35; border-radius: var(--xl-button-radius); font-weight: 800; box-shadow: var(--xl-button-shadow); transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease; }
+.login-button:hover:not(.is-disabled) { transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
+.login-button:active:not(.is-disabled) { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
+.login-button.is-disabled { box-shadow: none; }
 .login-footer { border-color: var(--xl-border); }
 .auth-footer { color: var(--xl-ink-soft); }
 </style>

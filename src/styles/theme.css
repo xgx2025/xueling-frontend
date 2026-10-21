@@ -13,6 +13,13 @@
   --xl-radius-md: 14px;
   --xl-radius-lg: 20px;
   --xl-shadow-card: 0 14px 30px rgba(36, 59, 45, 0.06);
+  --xl-button-height: 46px;
+  --xl-button-radius: 10px;
+  --xl-button-shadow: 0 2px 0 #1f422d, 0 8px 16px rgba(31, 66, 45, 0.12);
+  --xl-button-shadow-hover: 0 4px 0 #1f422d, 0 12px 20px rgba(31, 66, 45, 0.16);
+  --xl-button-shadow-pressed: 0 1px 0 #1f422d;
+  --xl-outline-shadow: 0 2px 0 #d7e2d5;
+  --xl-gold-shadow: 0 2px 0 #b48543, 0 8px 16px rgba(20, 38, 27, 0.16);
   --xl-font-body: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
   --xl-font-display: Georgia, 'Songti SC', serif;
 
@@ -54,7 +61,28 @@ a:focus-visible,
 }
 
 .el-button {
-  font-weight: 650;
+  font-weight: 750;
+}
+
+.el-button:not(.is-circle, .is-link, .is-text, .is-round) {
+  min-height: 42px;
+  padding-inline: 18px;
+  border-radius: var(--xl-button-radius);
+  transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.el-button--primary:not(.is-circle, .is-link, .is-text, .is-round, .is-disabled) {
+  box-shadow: var(--xl-button-shadow);
+}
+
+.el-button--primary:not(.is-circle, .is-link, .is-text, .is-round, .is-disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--xl-button-shadow-hover);
+}
+
+.el-button--primary:not(.is-circle, .is-link, .is-text, .is-round, .is-disabled):active {
+  transform: translateY(1px);
+  box-shadow: var(--xl-button-shadow-pressed);
 }
 
 .el-card {

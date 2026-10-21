@@ -1345,3 +1345,50 @@
     max-height: none;
   }
 }
+
+/* 阅读流程的操作层级 */
+.toolbar-button, .toolbar-action, .difficulty-btn {
+  min-height: 38px;
+  border: 1px solid #c5d3c2;
+  border-radius: 9px;
+  background: #fffefa;
+  color: var(--xl-brand);
+  font-weight: 750;
+  transition: background-color .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.toolbar-button:hover, .toolbar-action:hover, .difficulty-btn:hover:not(.active) {
+  background: #edf3e9;
+  border-color: #8eae93;
+  color: var(--xl-brand-hover);
+}
+.difficulty-btn.active {
+  border-color: #254c35;
+  background: var(--xl-brand);
+  color: white;
+  box-shadow: 0 2px 0 #1f422d;
+}
+.finish-button, .generate-quiz-btn, .submit-quiz-btn {
+  min-height: var(--xl-button-height);
+  border: 1px solid #254c35;
+  border-radius: var(--xl-button-radius);
+  background: var(--xl-brand);
+  color: white;
+  font-size: .875rem;
+  font-weight: 800;
+  box-shadow: var(--xl-button-shadow);
+  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+.finish-button:hover, .generate-quiz-btn:hover:not(:disabled), .submit-quiz-btn:hover:not(:disabled) {
+  background: var(--xl-brand-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--xl-button-shadow-hover);
+}
+.finish-button:active, .generate-quiz-btn:active:not(:disabled), .submit-quiz-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--xl-button-shadow-pressed);
+}
+.generate-quiz-btn:disabled, .submit-quiz-btn:disabled { opacity: .58; box-shadow: none; cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) {
+  .toolbar-button, .toolbar-action, .difficulty-btn, .finish-button, .generate-quiz-btn, .submit-quiz-btn { transition: none; }
+  .finish-button:hover, .generate-quiz-btn:hover, .submit-quiz-btn:hover, .finish-button:active, .generate-quiz-btn:active, .submit-quiz-btn:active { transform: none; }
+}

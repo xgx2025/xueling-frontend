@@ -500,6 +500,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid #bd914d; outline-
 .clear-selection { color: #e6f0e3; background: transparent; border: 0; padding: 10px; }
 .begin-practice { color: #26402c; background: #edc982; border: 0; border-radius: 8px; padding: 11px 15px; font-weight: 800; white-space: nowrap; }
 .begin-practice:hover:not(:disabled) { background: #f4d99e; }
+.primary-action, .add-button, .content-state button, .pagination button, .begin-practice { min-height: var(--xl-button-height); border-radius: var(--xl-button-radius); font-weight: 800; transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease; }
+.primary-action { border: 1px solid #254c35; background: var(--xl-brand); color: white; box-shadow: var(--xl-button-shadow); }
+.primary-action:hover:not(:disabled) { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
+.add-button, .content-state button, .pagination button { background: var(--xl-surface); border: 1px solid #b8cbb9; color: var(--xl-brand); box-shadow: var(--xl-outline-shadow); }
+.add-button:hover, .content-state button:hover, .pagination button:hover:not(:disabled) { background: #edf3e9; border-color: #8eae93; transform: translateY(-2px); box-shadow: 0 4px 0 #d7e2d5; }
+.begin-practice { border: 1px solid #d7ae68; box-shadow: var(--xl-gold-shadow); }
+.begin-practice:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 0 #b48543, 0 12px 20px rgba(20, 38, 27, .2); }
+.primary-action:active:not(:disabled), .add-button:active, .content-state button:active, .pagination button:active:not(:disabled), .begin-practice:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.primary-action:disabled, .pagination button:disabled, .begin-practice:disabled { box-shadow: none; transform: none; }
 .batch-step > p { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 14px; }
 .input-count { display: block; text-align: right; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .batch-step .input-error { margin: 8px 0 0; color: #a34e43; }

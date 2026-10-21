@@ -10,21 +10,15 @@
 
       <section class="intro">
         <div>
-          <p class="section-kicker">每日一点，记得更久</p>
+          <p class="section-kicker">专注回忆 · 一次一词</p>
           <h1>今日学习<span class="title-dot">.</span></h1>
-          <p class="intro-copy">先回忆，再看答案。每一次回答都会决定下次见面的时间。</p>
+          <p class="intro-copy">看词 → 回忆释义 → 核对答案 → 如实评分</p>
         </div>
         <div class="today-date">{{ dateLabel }}</div>
       </section>
 
-      <section class="metrics" aria-label="今日学习概览">
-        <div class="metric"><span>待复习</span><strong>{{ today?.dueCount ?? '—' }}</strong></div>
-        <div class="metric"><span>可学新词</span><strong>{{ today?.newRemaining ?? '—' }}</strong></div>
-        <div class="metric"><span>今日已完成</span><strong>{{ today?.todayReviewed ?? '—' }}</strong></div>
-      </section>
-
       <div v-if="loading" class="state-panel" role="status">正在整理今天的单词…</div>
-      <section v-else-if="pendingReview" class="state-panel" aria-label="待确认的评分">
+      <section v-else-if="pendingReview" class="state-panel attention-panel" aria-label="待确认的评分" role="alert">
         <h2>{{ saving ? '正在确认评分…' : canRefreshAfterError ? '当前卡片已变化' : '上次评分尚未确认' }}</h2>
         <p>{{ saveError || '正在用原请求确认保存结果，请稍候。' }}</p>
         <div class="complete-actions">
@@ -43,39 +37,43 @@
       <section v-else-if="currentCard" class="session" aria-label="学习卡片" aria-live="polite">
         <div class="session-meta">
           <span class="pill">{{ currentCard.newCard ? '新词' : '到期复习' }}</span>
-          <span>本次第 {{ today!.todayReviewed + 1 }} 次回忆 · 完成一张，保存一张</span>
+          <span>今日已完成 {{ today!.todayReviewed }} 次</span>
         </div>
         <div class="flashcard" :class="{ revealed }">
-          <div class="card-topline"><span>ENGLISH → 中文</span><span>NO. {{ today!.todayReviewed + 1 }}</span></div>
+          <p class="card-guidance">{{ revealed ? '对照刚才在心里给出的答案' : '只看英文，先独立想出中文释义' }}</p>
           <div class="word-content">
             <h2>{{ currentCard.word }}</h2>
-            <p v-if="currentCard.phonetic" class="phonetic">/{{ currentCard.phonetic }}/</p>
-            <button class="audio-button" type="button" :aria-label="'播放 ' + currentCard.word + ' 的读音'" @click="playAudio(currentCard.word)">♫ 听发音</button>
           </div>
           <div v-if="revealed" class="answer">
-            <span class="answer-label">答案</span>
+            <span class="answer-label">中文释义</span>
             <p class="meaning">{{ currentCard.meaning }}</p>
-            <div v-if="currentCard.example" class="example">
-              <p>{{ currentCard.example }}</p>
-              <p v-if="currentCard.exampleTranslation">{{ currentCard.exampleTranslation }}</p>
+            <div class="answer-tools">
+              <span v-if="currentCard.phonetic" class="phonetic">/{{ currentCard.phonetic }}/</span>
+              <button class="audio-button" type="button" :aria-label="'播放 ' + currentCard.word + ' 的读音'" @click="playAudio(currentCard.word)">♫ 听发音</button>
             </div>
+            <details v-if="currentCard.example" class="example-disclosure">
+              <summary>查看例句与译文</summary>
+              <div class="example">
+                <p>{{ currentCard.example }}</p>
+                <p v-if="currentCard.exampleTranslation">{{ currentCard.exampleTranslation }}</p>
+              </div>
+            </details>
           </div>
-          <div v-else class="recall-hint">先在心里说出释义，再揭晓答案。</div>
         </div>
 
         <div class="study-actions">
-          <button v-if="!revealed" class="reveal-button" type="button" @click="reveal">显示答案 <span>↗</span></button>
+          <button v-if="!revealed" class="reveal-button" type="button" @click="reveal">已回忆，查看答案 <span aria-hidden="true">↗</span></button>
           <template v-else>
-            <p class="rate-prompt">{{ saving ? '正在保存本次评分…' : '刚才回忆得怎么样？' }}</p>
+            <p class="rate-prompt">{{ saving ? '正在保存本次评分…' : '揭晓前，你回忆得怎么样？' }}</p>
             <div class="rating-grid">
               <button v-for="option in ratingOptions" :key="option.value" type="button" :disabled="saving"
                 :class="['rating-button', option.className]" @click="rate(option.value)">
-                <strong>{{ option.label }}</strong><span>{{ option.hint }}</span><kbd>{{ option.value }}</kbd>
+                <kbd>{{ option.value }}</kbd><strong>{{ option.label }}</strong><span>{{ option.hint }}</span>
               </button>
             </div>
-            <p class="rating-note">没有想起来请选“忘记了”；“困难”表示最终想起来了。键盘可按 1–4 评分。</p>
+            <p class="rating-note">按揭晓前的状态评分，不以看完释义和例句后的感觉评分。键盘可按 1–4。</p>
           </template>
-          <p v-if="!revealed" class="shortcut-note">按空格键也可以揭晓答案</p>
+          <p v-if="!revealed" class="shortcut-note">{{ currentCard.newCard ? '第一次见到也可以直接揭晓，再按实际情况评分。' : '想好后点击按钮，或按空格键揭晓。' }}</p>
         </div>
       </section>
 
@@ -90,6 +88,12 @@
           <button class="primary-button" type="button" @click="loadToday">检查新任务</button>
           <button class="text-button" type="button" @click="router.push('/english/vocab')">管理词书</button>
         </div>
+      </section>
+
+      <section v-if="today && !loading && !loadError && !currentCard && !pendingReview" class="metrics" aria-label="今日学习概览">
+        <div class="metric"><span>待复习</span><strong>{{ today.dueCount }}</strong></div>
+        <div class="metric"><span>可学新词</span><strong>{{ today.newRemaining }}</strong></div>
+        <div class="metric"><span>今日已完成</span><strong>{{ today.todayReviewed }}</strong></div>
       </section>
     </div>
 
@@ -140,10 +144,10 @@ const dateLabel = computed(() => new Intl.DateTimeFormat('zh-CN', {
   timeZone: timeZone.value, month: 'long', day: 'numeric', weekday: 'long'
 }).format(new Date()))
 const ratingOptions = [
-  { value: 1, label: '忘记了', hint: '完全没想起', className: 'again' },
-  { value: 2, label: '很困难', hint: '费力想起来', className: 'hard' },
-  { value: 3, label: '记得', hint: '稍想就记得', className: 'good' },
-  { value: 4, label: '很容易', hint: '立刻想起来', className: 'easy' }
+  { value: 1, label: '忘记了', hint: '没想起或答错', className: 'again' },
+  { value: 2, label: '很困难', hint: '费力但想对', className: 'hard' },
+  { value: 3, label: '记得', hint: '独立想起释义', className: 'good' },
+  { value: 4, label: '很容易', hint: '立刻准确想起', className: 'easy' }
 ] as const
 
 async function loadToday() {
@@ -280,18 +284,18 @@ button { cursor: pointer; font: inherit; }
 .back-link, .settings-link, .text-button { border: 0; background: transparent; color: #315c49; font-weight: 700; }
 .back-link:hover, .settings-link:hover, .text-button:hover { text-decoration: underline; }
 .eyebrow, .section-kicker { letter-spacing: .19em; font-size: 12px; font-weight: 800; color: #6d8f75; }
-.intro { display: flex; justify-content: space-between; align-items: end; padding: 38px 0 30px; }
-.intro h1 { font-family: Georgia, 'Songti SC', serif; font-size: clamp(42px, 7vw, 72px); line-height: 1.05; margin: 8px 0 15px; font-weight: 700; }
+.intro { display: flex; justify-content: space-between; align-items: end; padding: 28px 0 24px; }
+.intro h1 { font-family: Georgia, 'Songti SC', serif; font-size: clamp(40px, 6vw, 60px); line-height: 1.05; margin: 8px 0 12px; font-weight: 700; }
 .title-dot { color: #e0a646; }
 .intro-copy { color: #66766a; margin: 0; }
 .today-date { color: #7b8b7e; font-size: 14px; white-space: nowrap; }
-.metrics { display: grid; grid-template-columns: repeat(3, 1fr); background: #e7ebe0; border: 1px solid #dce3d6; border-radius: 20px; margin-bottom: 26px; overflow: hidden; }
-.metric { display: flex; flex-direction: column; gap: 6px; padding: 19px 30px; border-right: 1px solid #d2dcce; }
+.metrics { max-width: 800px; display: grid; grid-template-columns: repeat(3, 1fr); background: #e7ebe0; border: 1px solid #dce3d6; border-radius: 16px; margin: 30px auto 0; overflow: hidden; }
+.metric { display: flex; flex-direction: column; gap: 6px; padding: 15px 24px; border-right: 1px solid #d2dcce; }
 .metric:last-child { border-right: 0; }
-.metric span { color: #617263; font-size: 13px; }.metric strong { font-size: 31px; line-height: 1; font-family: Georgia, serif; }
+.metric span { color: #617263; font-size: 12px; }.metric strong { font-size: 25px; line-height: 1; font-family: Georgia, serif; }
 .session { max-width: 800px; margin: 0 auto; }.session-meta { display: flex; justify-content: space-between; align-items: center; color: #7c8d7f; font-size: 13px; margin-bottom: 13px; }
 .pill { background: #dbe7da; color: #326348; border-radius: 99px; padding: 6px 12px; font-weight: 800; }
-.flashcard { background: #fffef9; min-height: 350px; border-radius: 26px; border: 1px solid #e2e5d9; box-shadow: 0 22px 48px rgba(50, 74, 47, .08); padding: 28px 34px; display: flex; flex-direction: column; transition: border-color .25s, transform .25s; }
+.flashcard { background: #fffef9; min-height: 330px; border-radius: 24px; border: 1px solid #d5e1d1; box-shadow: 0 16px 36px rgba(50, 74, 47, .08); padding: 28px 34px; display: flex; flex-direction: column; transition: border-color .25s, transform .25s; }
 .flashcard.revealed { border-color: #a6c0a7; }.card-topline { display: flex; justify-content: space-between; color: #9aab97; letter-spacing: .14em; font-size: 11px; font-weight: 800; }
 .word-content { text-align: center; margin: auto 0 20px; }.word-content h2 { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(48px, 9vw, 84px); font-weight: 500; letter-spacing: -.035em; margin: 18px 0 3px; color: #1d3e2e; overflow-wrap: anywhere; }.phonetic { color: #829486; margin: 0 0 16px; }
 .audio-button { border: 1px solid #d9e3d8; background: #f1f6ef; color: #3f6a4f; border-radius: 99px; padding: 8px 14px; font-size: 13px; }
@@ -300,8 +304,65 @@ button { cursor: pointer; font: inherit; }
 .study-actions { text-align: center; padding: 24px 0; }.reveal-button, .primary-button { border: 0; color: #fff; background: #285a3e; border-radius: 14px; padding: 14px 27px; font-weight: 800; transition: transform .15s, background .15s; }.reveal-button { min-width: 235px; display: inline-flex; justify-content: space-between; }.reveal-button:hover, .primary-button:hover { transform: translateY(-2px); background: #1d492f; }.primary-button:disabled { opacity: .6; cursor: wait; }.rate-prompt { margin: 0 0 13px; font-weight: 700; }.rating-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }.rating-button { display: flex; flex-direction: column; gap: 4px; border: 1px solid #dce3d6; background: #fffef9; border-radius: 14px; padding: 14px 6px; color: #244330; transition: transform .15s, box-shadow .15s; }.rating-button:hover { transform: translateY(-3px); box-shadow: 0 10px 20px #37543d20; }.rating-button span { font-size: 12px; color: #869488; }.rating-button.again { border-color: #e8c7b9; background: #fff6f1; }.rating-button.easy { border-color: #bddbc7; background: #f3faf3; }.rating-note { font-size: 12px; color: #91a092; margin-top: 15px; }.save-error { color: #b34f36; }.state-panel { max-width: 800px; margin: 0 auto; text-align: center; background: #fffef9; border-radius: 26px; padding: 70px 25px; border: 1px solid #e2e5d9; }.state-panel h2 { font-family: Georgia, 'Songti SC', serif; font-size: 32px; margin: 10px 0; }.state-panel p { color: #738477; }.complete-mark { width: 64px; height: 64px; border-radius: 50%; background: #dbead9; color: #336c43; display: grid; place-items: center; font-size: 32px; margin: auto; }.complete-actions { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 26px; }
 .shortcut-note { color: #7d8e7d; font-size: 12px; margin-top: 12px; }
 .rating-button kbd { align-self: center; font: 700 11px Georgia, serif; color: #667e68; border: 1px solid #d2ddcf; border-radius: 4px; padding: 2px 6px; margin-top: 4px; }
+.rating-button strong { font-size: 16px; }
+.rating-button.hard { border-color: #dfca9d; background: #fffaf0; }
+.rating-button.good { border-color: #abc6ad; background: #f2f8f1; }
+.rating-button:focus-visible { outline: 3px solid #d6a24d; outline-offset: 2px; }
+.attention-panel { border-color: #d8a67e; background: #fffaf3; }
+.reveal-button, .primary-button, .text-button, .audio-button, .rating-button { transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease; }
+.reveal-button, .primary-button { min-height: 50px; border: 1px solid #254c35; border-radius: var(--xl-button-radius); background: var(--xl-brand); box-shadow: var(--xl-button-shadow); font-size: 14px; letter-spacing: .01em; }
+.reveal-button:hover:not(:disabled), .primary-button:hover:not(:disabled) { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
+.reveal-button:active:not(:disabled), .primary-button:active:not(:disabled) { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
+.text-button { min-height: 44px; padding: 0 16px; border: 1px solid #b8cbb9; border-radius: var(--xl-button-radius); background: #fffefa; box-shadow: var(--xl-outline-shadow); }
+.text-button:hover:not(:disabled) { background: #edf3e9; border-color: #8eae93; text-decoration: none; transform: translateY(-2px); box-shadow: 0 4px 0 #d7e2d5; }
+.text-button:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.audio-button { min-height: 40px; border-color: #b8cbb9; border-radius: var(--xl-button-radius); background: #f7faf4; font-weight: 750; }
+.audio-button:hover { background: #e8f1e7; border-color: #8eae93; }
+.rating-button { min-height: 98px; padding: 14px 10px; border-width: 1px; border-bottom-width: 3px; border-radius: var(--xl-button-radius); box-shadow: 0 4px 12px #2946310d; }
+.rating-button.again { border-bottom-color: #b66b50; }
+.rating-button.hard { border-bottom-color: #b58b3f; }
+.rating-button.good { border-bottom-color: #5d8b64; }
+.rating-button.easy { border-bottom-color: #397955; }
+.rating-button:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 9px 18px #2946311f; }
+.rating-button:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.rating-button:disabled, .text-button:disabled { opacity: .58; cursor: wait; box-shadow: none; transform: none; }
+/* 回忆阶段只保留目标词；核对阶段再呈现辅助信息。 */
+.study-page { padding-top: 20px; }
+.study-shell { max-width: 920px; }
+.study-header { padding-bottom: 12px; }
+.intro { padding: 20px 0 22px; }
+.intro h1 { font-size: clamp(32px, 4.5vw, 43px); margin: 6px 0 8px; }
+.intro-copy { font-size: 13px; }
+.today-date { font-size: 12px; }
+.session { max-width: 760px; }
+.session-meta { margin-bottom: 10px; }
+.flashcard { min-height: 280px; padding: 25px 32px; border-radius: 18px; box-shadow: 0 10px 26px rgba(50, 74, 47, .06); }
+.flashcard.revealed { min-height: 0; }
+.card-guidance { color: #637869; font-size: 13px; font-weight: 700; letter-spacing: .02em; text-align: center; }
+.word-content { margin: auto 0; }
+.word-content h2 { font-size: clamp(46px, 8vw, 76px); margin: 28px 0; }
+.flashcard.revealed .word-content { margin: 8px 0 14px; }
+.flashcard.revealed .word-content h2 { margin: 8px 0 10px; font-size: clamp(40px, 7vw, 64px); }
+.answer { max-width: 610px; width: 100%; margin: 0 auto; padding-top: 18px; text-align: center; }
+.answer-label { color: #617e64; }
+.meaning { margin: 8px 0 12px; color: #243b2d; font-size: clamp(21px, 2.8vw, 26px); font-weight: 650; }
+.answer-tools { display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap; }
+.phonetic { margin: 0; color: #607466; font-size: 14px; }
+.example-disclosure { margin-top: 18px; border-top: 1px solid #e5ebe1; padding-top: 14px; text-align: left; }
+.example-disclosure summary { width: fit-content; margin: auto; color: var(--xl-brand); font-size: 13px; font-weight: 750; cursor: pointer; }
+.example-disclosure summary:hover { text-decoration: underline; }
+.example { margin-top: 14px; color: #526958; font-size: 14px; }
+.study-actions { padding: 20px 0 8px; }
+.reveal-button { min-width: 260px; justify-content: center; gap: 24px; }
+.rate-prompt { font-size: 17px; margin-bottom: 15px; }
+.rating-button, .rating-button.again, .rating-button.hard, .rating-button.good, .rating-button.easy { min-height: 98px; align-items: flex-start; border: 1px solid #c8d7c8; border-bottom: 2px solid #b8cbb9; background: #fffefa; color: var(--xl-ink); box-shadow: 0 2px 0 #e3ebe0; text-align: left; }
+.rating-button:hover:not(:disabled) { background: #f2f7ef; border-color: #8eae93; transform: translateY(-2px); box-shadow: 0 4px 0 #d7e2d5; }
+.rating-button:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.rating-button kbd { align-self: flex-start; margin: 0 0 4px; background: #eaf1e8; border-color: #d2ddcf; }
+.rating-button span { color: #607466; }
+.rating-note { color: #667b6b; line-height: 1.5; }
 button:focus-visible { outline: 3px solid #d6a24d; outline-offset: 3px; }
 @keyframes reveal-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 640px) { .study-page { padding: 18px 14px 60px; }.eyebrow { display: none; }.intro { align-items: start; flex-direction: column; gap: 12px; }.metrics { margin-bottom: 18px; }.metric { padding: 16px 10px; text-align: center; }.metric strong { font-size: 27px; }.flashcard { min-height: 330px; padding: 22px 18px; }.rating-grid { grid-template-columns: repeat(2, 1fr); }.meaning { font-size: 19px; } }
-@media (prefers-reduced-motion: reduce) { .answer { animation: none; }.reveal-button, .primary-button, .rating-button { transition: none; }.reveal-button:hover, .primary-button:hover, .rating-button:hover { transform: none; } }
+@media (max-width: 640px) { .study-page { padding: 14px 14px 60px; }.eyebrow { display: none; }.intro { align-items: start; flex-direction: column; gap: 6px; padding: 18px 0; }.metrics { margin-top: 22px; }.metric { padding: 16px 10px; text-align: center; }.metric strong { font-size: 23px; }.flashcard { min-height: 270px; padding: 20px 18px; }.rating-grid { grid-template-columns: repeat(2, 1fr); }.meaning { font-size: 21px; }.word-content h2 { margin: 20px 0; }.session-meta { font-size: 12px; } }
+@media (prefers-reduced-motion: reduce) { .answer { animation: none; }.reveal-button, .primary-button, .text-button, .audio-button, .rating-button { transition: none; }.reveal-button:hover, .primary-button:hover, .text-button:hover, .rating-button:hover, .reveal-button:active, .primary-button:active, .text-button:active, .rating-button:active { transform: none; } }
 </style>

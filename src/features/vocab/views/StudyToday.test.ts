@@ -38,6 +38,28 @@ describe('today study review recovery', () => {
     } })
   })
 
+  it('keeps pronunciation and examples behind the answer until recall is attempted', async () => {
+    api.getTodayStudy.mockResolvedValueOnce({ code: 0, data: {
+      dueCount: 1, newRemaining: 0, todayReviewed: 0, todayNew: 0,
+      cards: [{ ...card, newCard: false, phonetic: 'həˈləʊ', example: 'Hello, world.', exampleTranslation: '你好，世界。' }]
+    } })
+    const wrapper = mountStudy()
+    await flushPromises()
+
+    expect(wrapper.find('.phonetic').exists()).toBe(false)
+    expect(wrapper.find('.audio-button').exists()).toBe(false)
+    expect(wrapper.find('.example-disclosure').exists()).toBe(false)
+    expect(wrapper.find('.reveal-button').text()).toContain('已回忆，查看答案')
+
+    await wrapper.find('.reveal-button').trigger('click')
+    expect(wrapper.find('.meaning').text()).toBe('你好')
+    expect(wrapper.find('.phonetic').exists()).toBe(true)
+    expect(wrapper.find('.audio-button').exists()).toBe(true)
+    expect(wrapper.find('.example-disclosure').attributes('open')).toBeUndefined()
+    expect(wrapper.findAll('.rating-button')).toHaveLength(4)
+    wrapper.unmount()
+  })
+
   it('replays the same rating after refresh and then reloads server progress', async () => {
     api.submitStudyReview.mockRejectedValueOnce(new Error('network interrupted'))
       .mockResolvedValueOnce({ code: 0, data: { wordId: '123', version: 1 } })

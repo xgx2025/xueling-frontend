@@ -137,6 +137,10 @@ onMounted(() => {
 .range-switch { display: inline-flex; gap: 6px; margin-top: 28px; padding: 5px; border: 1px solid var(--xl-border); border-radius: 12px; background: var(--xl-surface); }
 .range-switch button { border: 0; border-radius: 8px; padding: 9px 18px; background: transparent; color: var(--xl-ink-soft); cursor: pointer; }
 .range-switch button.active { background: var(--xl-brand); color: white; }
+.range-switch button { min-height: 40px; font-weight: 750; transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.range-switch button:hover:not(.active) { background: #edf3e9; color: var(--xl-brand); }
+.range-switch button.active { box-shadow: 0 2px 0 #1f422d; }
+.range-switch button:active { transform: translateY(1px); box-shadow: none; }
 .summary { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--xl-border); border-radius: 14px; background: var(--xl-surface); }
 .summary > div { display: flex; flex-direction: column; gap: 8px; min-height: 130px; padding: 24px; border-right: 1px solid var(--xl-border); }
 .summary > div:last-child { border-right: 0; }
@@ -159,6 +163,9 @@ onMounted(() => {
 .bar span { display: block; height: 100%; background: var(--xl-brand); border-radius: 5px; }
 .empty-note, .state-panel { padding: 28px; border: 1px solid var(--xl-border); border-radius: 12px; background: var(--xl-surface); color: var(--xl-ink-soft); }
 .state-panel button { margin-top: 12px; border: 0; background: var(--xl-brand); color: white; border-radius: 8px; padding: 10px 16px; cursor: pointer; }
+.state-panel button { min-height: var(--xl-button-height); padding: 0 18px; border: 1px solid #254c35; border-radius: var(--xl-button-radius); font-weight: 800; box-shadow: var(--xl-button-shadow); transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease; }
+.state-panel button:hover { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
+.state-panel button:active { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
 @media (max-width: 850px) {
   .insights-shell { padding: 18px 16px 60px; }
   .intro { margin-top: 45px; }

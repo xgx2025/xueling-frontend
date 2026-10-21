@@ -930,6 +930,12 @@ onUnmounted(() => {
 .code-button:not(:disabled):hover { background: #dce9db; color: var(--xl-brand-hover); border-color: #a9bda7; box-shadow: none; }
 .register-button { background: var(--xl-brand); box-shadow: none; }
 .register-button:hover { background: var(--xl-brand-hover); box-shadow: var(--xl-shadow-card); }
+.register-button { min-height: 50px; border: 1px solid #254c35; border-radius: var(--xl-button-radius); font-weight: 800; box-shadow: var(--xl-button-shadow); transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease; }
+.register-button:hover:not(.is-disabled) { transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
+.register-button:active:not(.is-disabled) { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
+.register-button.is-disabled { box-shadow: none; }
+.code-button { min-height: 42px; border-radius: var(--xl-button-radius); box-shadow: var(--xl-outline-shadow); font-weight: 750; }
+.code-button:hover:not(.is-disabled) { transform: translateY(-1px); box-shadow: 0 3px 0 #d7e2d5; }
 .register-footer { border-color: var(--xl-border); }
 .auth-footer { color: var(--xl-ink-soft); }
 </style>

@@ -152,11 +152,22 @@ onMounted(async () => {
 .list-state { border: 1px dashed #c8d5c8; border-radius: var(--xl-radius-md); background: var(--xl-surface); text-align: center; padding: 55px 20px; color: var(--xl-ink-soft); }
 .list-state h3 { color: var(--xl-ink); margin-bottom: 8px; font: 650 23px var(--xl-font-display); }
 .list-state button { margin-top: 20px; border: 0; border-radius: var(--xl-radius-sm); background: var(--xl-brand); color: white; cursor: pointer; padding: 11px 18px; font-weight: 750; }
+.filters button { min-height: 42px; padding-inline: 17px; border-radius: var(--xl-button-radius); font-weight: 750; transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.filters button:hover { background: #edf3e9; transform: translateY(-1px); }
+.filters button[aria-pressed='true'] { box-shadow: 0 2px 0 #1f422d; }
+.filters button[aria-pressed='true']:hover { background: var(--xl-brand-hover); }
+.filters button:active { transform: translateY(1px); box-shadow: none; }
+.list-state button { min-height: var(--xl-button-height); padding: 0 20px; border: 1px solid #254c35; border-radius: var(--xl-button-radius); box-shadow: var(--xl-button-shadow); transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease; }
+.list-state button:hover { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
+.list-state button:active { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
 @media (max-width: 760px) {
   .article-shell { padding: 16px 16px 60px; }
   .eyebrow { margin-top: 30px; }
-  .article-card { grid-template-columns: 1fr; gap: 17px; }
-  .article-image { grid-row: 1; min-height: 190px; }
+  .article-card { grid-template-columns: minmax(0, 1fr) 92px; gap: 16px; align-items: start; }
+  .article-card h3 { margin-top: 10px; }
+  .article-image { min-height: 92px; height: 92px; font-size: 28px; }
+  .summary { margin: 12px 0; }
 }
-@media (prefers-reduced-motion: reduce) { .article-card:hover { transform: none; } }
+@media (max-width: 430px) { .article-card { grid-template-columns: minmax(0, 1fr) 72px; gap: 12px; padding: 16px; }.article-image { height: 72px; min-height: 72px; font-size: 23px; } }
+@media (prefers-reduced-motion: reduce) { .article-card:hover, .filters button:hover, .filters button:active, .list-state button:hover, .list-state button:active { transform: none; } }
 </style>
