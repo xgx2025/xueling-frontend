@@ -5,7 +5,7 @@ import AIAssistant from '@/components/AIAssistant.vue'
 import TranslateDrawer from '@/components/TranslateDrawer.vue'
 
 const route = useRoute()
-const focusedRoutes = new Set(['english-vocab-study', 'english-vocab-review', 'english-article-detail'])
+const focusedRoutes = new Set(['english', 'english-vocab-study', 'english-vocab-review', 'english-article-detail'])
 const showUtilities = computed(() => !focusedRoutes.has(String(route.name)))
 </script>
 

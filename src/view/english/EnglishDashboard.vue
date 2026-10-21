@@ -6,13 +6,13 @@ import type { StudyStats } from '@/features/vocab/types'
 const studyStats = ref<StudyStats | null>(null)
 const statsError = ref(false)
 const focusTitle = computed(() => {
-  if (!studyStats.value) return '从今天的学习开始'
-  if (studyStats.value.dueCount > 0) return `${studyStats.value.dueCount} 张卡片等你复习`
-  return studyStats.value.todayReviewed > 0 ? '到期复习已清空' : '看看今天的学习计划'
+  if (!studyStats.value) return '从今天的单词开始'
+  if (studyStats.value.dueCount > 0) return `先复习 ${studyStats.value.dueCount} 张卡片`
+  return studyStats.value.todayReviewed > 0 ? '今天的复习已完成' : '准备好开始今天的学习了吗？'
 })
 const focusCopy = computed(() => studyStats.value?.dueCount
   ? '先回忆到期单词，再认识新词。'
-  : '进入今日学习，看看接下来可以学什么。')
+  : '打开今日学习，按自己的节奏继续。')
 
 onMounted(async () => {
   try {
@@ -28,56 +28,68 @@ onMounted(async () => {
   <main class="english-dashboard">
     <div class="dashboard-shell">
       <header class="dashboard-header">
-        <router-link to="/" class="back-link">← 返回首页</router-link>
-        <p class="eyebrow">YOUR ENGLISH SPACE</p>
-        <h1>英语学习<span class="title-dot">.</span></h1>
-        <p class="header-subtitle">先回忆，再理解。让单词和阅读一起成为每天的小习惯。</p>
+        <router-link to="/" class="back-link"><span aria-hidden="true">←</span> 返回首页</router-link>
+        <div class="header-copy">
+          <div class="header-icon" aria-hidden="true">A<span>a</span></div>
+          <div>
+            <p class="eyebrow">ENGLISH / 英语空间</p>
+            <h1>英语学习</h1>
+            <p class="header-subtitle">每天一点单词和阅读，稳稳向前。</p>
+          </div>
+        </div>
       </header>
 
       <section class="daily-focus" aria-labelledby="daily-focus-title">
-        <div>
-          <p class="focus-kicker">TODAY'S FOCUS · 今日重点</p>
-          <h2 id="daily-focus-title">{{ focusTitle }}</h2>
-          <p>{{ focusCopy }}</p>
+        <div class="focus-main">
+          <div class="focus-copy">
+            <p class="section-label"><span class="label-line" aria-hidden="true"></span> 今日重点</p>
+            <h2 id="daily-focus-title">{{ focusTitle }}</h2>
+            <p class="focus-description">{{ focusCopy }}</p>
+            <router-link to="/english/vocab/study" class="focus-action">
+              进入今日学习 <span aria-hidden="true">↗</span>
+            </router-link>
+          </div>
+          <div class="focus-illustration" aria-hidden="true">
+            <span class="study-card study-card-back"></span>
+            <span class="study-card study-card-front"><span>word</span><i></i><i></i></span>
+          </div>
         </div>
-        <router-link to="/english/vocab/study" class="focus-action">进入今日学习 <span aria-hidden="true">↗</span></router-link>
-      </section>
-
-      <section class="today-strip" aria-label="今日单词学习数据">
-        <div class="due-stat"><span>当前待复习</span><strong>{{ studyStats?.dueCount ?? '—' }}</strong><small>张卡片</small></div>
-        <div><span>今日已完成</span><strong>{{ studyStats?.todayReviewed ?? '—' }}</strong><small>次回忆</small></div>
-        <div><span>今日新词</span><strong>{{ studyStats?.todayNew ?? '—' }}</strong><small>个单词</small></div>
+        <div class="today-stats" aria-label="今日单词学习数据">
+          <div class="stat-item"><span>待复习</span><strong>{{ studyStats?.dueCount ?? '—' }}</strong><small>张</small></div>
+          <div class="stat-item"><span>已回忆</span><strong>{{ studyStats?.todayReviewed ?? '—' }}</strong><small>次</small></div>
+          <div class="stat-item"><span>新学单词</span><strong>{{ studyStats?.todayNew ?? '—' }}</strong><small>个</small></div>
+        </div>
       </section>
       <p v-if="statsError" class="stats-note" role="status">学习数据暂时无法读取，仍可继续学习。</p>
 
       <section class="learning-modules" aria-labelledby="modules-title">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">TWO WAYS TO GROW</p>
-            <h2 id="modules-title">从哪里开始？</h2>
+            <p class="eyebrow">EXPLORE / 自主学习</p>
+            <h2 id="modules-title">按你的节奏继续</h2>
           </div>
-          <p>选一个适合此刻的节奏。</p>
+          <p>选一个方向，随时开始。</p>
         </div>
         <div class="module-grid">
           <article class="module-card vocab-card">
-            <div class="module-top"><span>01 / WORDS</span><span class="module-mark" aria-hidden="true">Aa</span></div>
+            <div class="module-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none"><path d="M9 12.5A3.5 3.5 0 0 1 12.5 9H37v29H13a4 4 0 0 0-4 4V12.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 38a4 4 0 0 1 4-4h24M18 18h11M18 24h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
             <div class="module-body">
-              <h3>单词记忆</h3>
-              <p>先完成到期复习，再认识今天的新词。每次回忆都为下次见面做好准备。</p>
+              <h3>词书与计划</h3>
+              <p>选择词书，安排适合自己的单词学习。</p>
             </div>
-            <div class="module-actions">
-              <router-link class="module-secondary" to="/english/vocab">管理词书 <span aria-hidden="true">→</span></router-link>
-            </div>
+            <router-link class="module-link" to="/english/vocab">管理词书 <span aria-hidden="true">↗</span></router-link>
           </article>
           <article class="module-card article-card">
-            <div class="module-top"><span>02 / READING</span><span class="module-mark" aria-hidden="true">“</span></div>
+            <div class="module-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none"><path d="M24 39c-4.1-2.9-9-4.2-16-4.2V10c7 0 11.9 1.3 16 4.2 4.1-2.9 9-4.2 16-4.2v24.8c-7 0-11.9 1.3-16 4.2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M24 14.2V39M13 17h5M30 17h5M13 23h5M30 23h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
             <div class="module-body">
               <h3>英语阅读</h3>
-              <p>在完整语境里遇见词句。放慢一点，让阅读成为理解世界的另一种方式。</p>
+              <p>在文章中理解词句，积累真实语境。</p>
             </div>
-            <div class="module-actions">
-              <router-link class="module-secondary" to="/english/articles">浏览文章 <span aria-hidden="true">↗</span></router-link>
-            </div>
+            <router-link class="module-link" to="/english/articles">浏览文章 <span aria-hidden="true">↗</span></router-link>
           </article>
         </div>
       </section>
@@ -87,66 +99,81 @@ onMounted(async () => {
 
 <style scoped>
 .english-dashboard { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
-.dashboard-shell { max-width: 1180px; margin: auto; padding: 24px 30px 88px; }
-.dashboard-header { border-bottom: 1px solid var(--xl-border); padding-bottom: 38px; }
-.back-link { display: inline-block; color: var(--xl-brand); text-decoration: none; font-size: 13px; font-weight: 700; padding: 9px 0; }
-.back-link:hover { text-decoration: underline; }
-.eyebrow { color: #66816a; font-size: 11px; font-weight: 800; letter-spacing: .18em; }
-.dashboard-header .eyebrow { margin-top: 42px; }
-.dashboard-header h1 { margin: 12px 0 15px; font: 700 clamp(44px, 6vw, 76px)/1.08 var(--xl-font-display); letter-spacing: -.04em; }
-.title-dot { color: var(--xl-accent); }
-.header-subtitle { color: var(--xl-ink-soft); font-size: 16px; line-height: 1.75; }
-.daily-focus { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-top: 28px; padding: clamp(26px, 4vw, 42px); border-radius: var(--xl-radius-md); background: var(--xl-brand); color: #fffefa; }
-.focus-kicker { color: #c8d9c4; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
-.daily-focus h2 { margin: 12px 0 8px; font: 650 clamp(27px, 3vw, 39px)/1.2 var(--xl-font-display); }
-.daily-focus p:not(.focus-kicker) { color: #dfebdc; line-height: 1.6; }
-.focus-action { flex: none; display: inline-flex; justify-content: space-between; align-items: center; gap: 22px; padding: 13px 18px; border-radius: var(--xl-radius-sm); background: #edc982; color: #263d2d; font-size: 14px; font-weight: 800; text-decoration: none; }
-.focus-action:hover { background: #f7daa1; }
-.today-strip { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--xl-border); border-radius: var(--xl-radius-md); background: var(--xl-surface); }
-.today-strip > div { min-height: 92px; padding: 20px 24px; display: flex; align-items: baseline; gap: 8px; border-right: 1px solid var(--xl-border); }
-.today-strip > div:last-child { border-right: 0; }
-.today-strip span { display: block; align-self: flex-start; color: var(--xl-ink-soft); font-size: 12px; margin-right: auto; }
-.today-strip strong { font: 600 31px/1 var(--xl-font-display); }
-.today-strip .due-stat strong { color: var(--xl-brand); }
-.today-strip small { color: var(--xl-ink-soft); font-size: 12px; white-space: nowrap; }
+.dashboard-shell { max-width: 1060px; margin: auto; padding: 24px 30px 80px; }
+.back-link { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; color: var(--xl-brand); text-decoration: none; font-size: 13px; font-weight: 750; }
+.back-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.header-copy { display: flex; align-items: center; gap: 18px; margin: 26px 0 30px; }
+.header-icon { flex: none; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 16px; background: #e3ecdf; color: var(--xl-brand); font: 700 33px/1 var(--xl-font-display); letter-spacing: -.1em; }
+.header-icon span { align-self: center; margin: 11px 0 0 1px; font-size: 21px; }
+.eyebrow { color: #66816a; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.dashboard-header h1 { margin: 4px 0 3px; font: 700 clamp(27px, 3vw, 35px)/1.2 var(--xl-font-display); letter-spacing: -.025em; }
+.header-subtitle { color: var(--xl-ink-soft); font-size: 13px; line-height: 1.5; }
+.daily-focus { overflow: hidden; border: 1px solid #cad9c8; border-radius: var(--xl-radius-lg); background: #eaf1e7; }
+.focus-main { position: relative; min-height: 238px; display: flex; align-items: center; justify-content: space-between; padding: 34px 42px; overflow: hidden; }
+.focus-copy { position: relative; z-index: 1; flex: 1; min-width: 0; }
+.section-label { display: flex; align-items: center; gap: 9px; color: #4d7055; font-size: 12px; font-weight: 800; }
+.label-line { width: 18px; height: 2px; border-radius: 2px; background: var(--xl-brand); }
+.daily-focus h2 { max-width: 600px; margin: 14px 0 6px; font: 700 clamp(25px, 3vw, 34px)/1.3 var(--xl-font-display); letter-spacing: -.025em; }
+.focus-description { color: var(--xl-ink-soft); font-size: 14px; line-height: 1.6; }
+.focus-action { width: fit-content; min-height: 48px; display: inline-flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 24px; padding: 0 18px; border-radius: var(--xl-button-radius); background: var(--xl-brand); color: white; font-size: 14px; font-weight: 800; text-decoration: none; box-shadow: var(--xl-button-shadow); transition: background-color .18s, transform .18s, box-shadow .18s; }
+.focus-action:hover { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
+.focus-action:active { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
+.focus-illustration { position: relative; flex: none; width: 225px; height: 185px; margin: 0 28px; }
+.focus-illustration::before { content: ''; position: absolute; inset: -28px 6px -26px; border: 1px solid #c4d7c2; border-radius: 50%; }
+.study-card { position: absolute; width: 122px; height: 150px; border-radius: 12px; }
+.study-card-back { top: 18px; left: 68px; transform: rotate(15deg); background: #adc8aa; }
+.study-card-front { top: 17px; left: 43px; display: flex; flex-direction: column; gap: 13px; padding: 24px 16px; transform: rotate(-7deg); border: 1px solid #dce6d7; background: #fffefa; box-shadow: 0 12px 24px #315b4022; }
+.study-card-front span { color: var(--xl-brand); font: italic 24px/1 var(--xl-font-display); }
+.study-card-front i { display: block; width: 74px; height: 5px; border-radius: 4px; background: #d6e0d1; }
+.study-card-front i:last-child { width: 54px; }
+.today-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid #cad9c8; background: #f7f9f4; }
+.stat-item { min-width: 0; min-height: 82px; display: flex; align-items: baseline; gap: 5px; padding: 18px 25px; border-right: 1px solid #dbe5d9; }
+.stat-item:last-child { border-right: 0; }
+.stat-item span { margin-right: auto; color: var(--xl-ink-soft); font-size: 12px; }
+.stat-item strong { color: var(--xl-brand); font: 700 28px/1.2 var(--xl-font-display); font-variant-numeric: tabular-nums; }
+.stat-item small { color: var(--xl-ink-soft); font-size: 12px; }
 .stats-note { margin-top: 10px; color: #8b6430; font-size: 12px; }
 .learning-modules { margin-top: 48px; }
-.section-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 24px; }
-.section-heading h2 { margin-top: 8px; font: 650 34px/1.2 var(--xl-font-display); }
+.section-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 18px; }
+.section-heading h2 { margin-top: 6px; font: 700 clamp(22px, 2.4vw, 27px)/1.3 var(--xl-font-display); }
 .section-heading > p { color: var(--xl-ink-soft); font-size: 13px; }
-.module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-.module-card { min-height: 260px; display: flex; flex-direction: column; padding: 27px 30px 30px; border: 1px solid var(--xl-border); border-radius: var(--xl-radius-md); background: var(--xl-surface); transition: transform .2s, box-shadow .2s, border-color .2s; }
-.module-card:hover { transform: translateY(-3px); border-color: #a9bda7; box-shadow: var(--xl-shadow-card); }
-.module-top { display: flex; justify-content: space-between; align-items: start; color: #728d75; font-size: 10px; font-weight: 800; letter-spacing: .15em; }
-.module-mark { color: #a2b9a0; font: italic 68px/.9 var(--xl-font-display); letter-spacing: 0; }
-.article-card .module-mark { color: #c9af82; }
-.module-body { margin-top: auto; max-width: 400px; }
-.module-body h3 { margin: 0 0 12px; font: 650 30px/1.2 var(--xl-font-display); }
-.module-body p { color: var(--xl-ink-soft); font-size: 14px; line-height: 1.8; }
-.module-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; margin-top: 26px; }
-.module-secondary { color: var(--xl-brand); font-size: 14px; font-weight: 800; text-decoration: none; }
-.module-secondary:hover { text-decoration: underline; }
-.focus-action, .module-secondary { min-height: var(--xl-button-height); display: inline-flex; align-items: center; justify-content: space-between; gap: 18px; border-radius: var(--xl-button-radius); font-size: 14px; font-weight: 800; text-decoration: none; transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease; }
-.focus-action { padding: 0 20px; border: 1px solid #d7ae68; box-shadow: var(--xl-gold-shadow); }
-.focus-action:hover { transform: translateY(-2px); box-shadow: 0 4px 0 #b48543, 0 12px 20px rgba(20, 38, 27, 0.2); }
-.focus-action:active { transform: translateY(1px); box-shadow: 0 1px 0 #b48543; }
-.module-secondary { padding: 0 17px; background: var(--xl-surface); border: 1px solid #b8cbb9; box-shadow: var(--xl-outline-shadow); }
-.module-secondary:hover { background: #edf3e9; border-color: #8eae93; text-decoration: none; transform: translateY(-2px); box-shadow: 0 4px 0 #d7e2d5; }
-.module-secondary:active { transform: translateY(1px); box-shadow: none; }
+.module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.module-card { min-width: 0; min-height: 202px; display: grid; grid-template-columns: 56px 1fr; grid-template-rows: 1fr auto; column-gap: 18px; padding: 26px; border: 1px solid var(--xl-border); border-radius: var(--xl-radius-md); background: var(--xl-surface); transition: border-color .18s, box-shadow .18s; }
+.module-card:hover { border-color: #a9bda7; box-shadow: var(--xl-shadow-card); }
+.module-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 14px; background: #e7efe4; color: var(--xl-brand); }
+.module-icon svg { width: 34px; height: 34px; }
+.article-card .module-icon { background: #f5ead8; color: #936927; }
+.module-body h3 { margin: 2px 0 7px; font: 700 21px/1.25 var(--xl-font-display); }
+.module-body p { max-width: 310px; color: var(--xl-ink-soft); font-size: 13px; line-height: 1.6; }
+.module-link { grid-column: 2; display: inline-flex; align-items: center; justify-content: space-between; gap: 24px; width: fit-content; min-height: 42px; margin-top: 18px; padding: 0 14px; border: 1px solid #b8cbb9; border-radius: var(--xl-button-radius); color: var(--xl-brand); font-size: 13px; font-weight: 800; text-decoration: none; box-shadow: var(--xl-outline-shadow); transition: background-color .18s, border-color .18s; }
+.module-link:hover { background: #edf3e9; border-color: #8eae93; }
 @media (max-width: 760px) {
-  .dashboard-shell { padding: 16px 16px 60px; }
-  .dashboard-header .eyebrow { margin-top: 30px; }
-  .daily-focus { align-items: stretch; flex-direction: column; gap: 22px; }
-  .focus-action { align-self: flex-start; }
-  .today-strip > div { min-height: 96px; padding: 17px 12px; flex-wrap: wrap; gap: 4px; }
-  .today-strip span { flex-basis: 100%; }
-  .today-strip strong { font-size: 30px; }
-  .learning-modules { margin-top: 48px; }
-  .section-heading { display: block; }
-  .section-heading > p { margin-top: 9px; }
-  .module-grid { grid-template-columns: 1fr; }
-  .module-card { min-height: 230px; }
+  .dashboard-shell { padding: 12px 16px 56px; }
+  .header-copy { gap: 13px; margin: 17px 0 24px; }
+  .header-icon { width: 52px; height: 52px; border-radius: 13px; font-size: 27px; }
+  .header-icon span { margin-top: 8px; font-size: 17px; }
+  .header-subtitle { font-size: 12px; }
+  .focus-main { min-height: 0; padding: 26px 24px 28px; }
+  .focus-illustration { display: none; }
+  .daily-focus h2 { font-size: clamp(23px, 6vw, 29px); }
+  .today-stats .stat-item { min-height: 80px; flex-wrap: wrap; gap: 2px 4px; padding: 13px 14px; }
+  .stat-item span { flex-basis: 100%; }
+  .stat-item strong { font-size: 25px; }
+  .learning-modules { margin-top: 38px; }
+  .module-grid { grid-template-columns: 1fr; gap: 12px; }
+  .module-card { min-height: 0; padding: 20px; }
 }
-@media (max-width: 430px) { .today-strip strong { font-size: 25px; }.today-strip small { white-space: normal; } }
-@media (prefers-reduced-motion: reduce) { .module-card:hover, .focus-action:hover, .module-secondary:hover, .focus-action:active, .module-secondary:active { transform: none; } }
+@media (max-width: 420px) {
+  .dashboard-shell { padding-inline: 14px; }
+  .focus-main { padding: 24px 20px 26px; }
+  .focus-action { width: 100%; }
+  .section-heading > p { display: none; }
+  .today-stats .stat-item { padding-inline: 10px; }
+  .stat-item span, .stat-item small { font-size: 11px; }
+  .module-card { grid-template-columns: 48px 1fr; gap: 12px; padding: 18px; }
+  .module-icon { width: 44px; height: 44px; border-radius: 11px; }
+  .module-icon svg { width: 29px; height: 29px; }
+  .module-body h3 { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) { .focus-action:hover, .focus-action:active { transform: none; } }
 </style>
