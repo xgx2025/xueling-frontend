@@ -93,8 +93,27 @@ export interface TodayStudy {
   newRemaining: number
   todayReviewed: number
   todayNew: number
+  checkedIn: boolean
   nextDueAt?: string
   cards: StudyQueueCard[]
+}
+
+export interface StudyCalendarDay {
+  date: string
+  checkedIn: boolean
+  reviewCount: number
+  newWords: number
+  studyTimeMs: number
+}
+
+export interface StudyCalendar {
+  month: string
+  today: string
+  checkedInToday: boolean
+  currentStreak: number
+  longestStreak: number
+  totalCheckIns: number
+  days: StudyCalendarDay[]
 }
 
 export interface StudySettings {

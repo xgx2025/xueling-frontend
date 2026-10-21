@@ -4,6 +4,7 @@ import { getStudyHistory, getStudyReviewCounts } from '@/features/vocab/api'
 import type { StudyDayStats, StudyReviewCount } from '@/features/vocab/types'
 import PageHeading from '@/components/PageHeading.vue'
 import FamiliarityPanel from './FamiliarityPanel.vue'
+import StudyGrowthCalendar from './StudyGrowthCalendar.vue'
 
 const days = ref<7 | 30>(7)
 const rows = ref<StudyDayStats[]>([])
@@ -68,6 +69,8 @@ onMounted(() => {
         title="学习进度"
         description="看清哪些单词需要巩固，回顾每天的学习节奏。"
       />
+
+      <StudyGrowthCalendar />
 
       <FamiliarityPanel />
 

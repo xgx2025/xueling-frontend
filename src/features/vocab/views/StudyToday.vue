@@ -78,14 +78,15 @@
       </section>
 
       <section v-else class="state-panel complete-panel">
-        <div class="complete-mark">✓</div>
-        <h2>当前任务完成</h2>
+        <div class="complete-mark">{{ today?.checkedIn ? '✦' : '✓' }}</div>
+        <h2>{{ today?.checkedIn ? '今日已自动打卡' : '当前任务完成' }}</h2>
+        <p v-if="today?.checkedIn" class="check-in-note">成长日历又点亮了一天。每一次认真回忆，都在让记忆扎根。</p>
         <p v-if="today?.nextDueAt">下一张卡片预计在 {{ formatDue(today.nextDueAt) }} 到期。</p>
         <p v-else-if="today?.newRemaining && today.newRemaining > 0">当前启用的词书没有更多未学单词。</p>
         <p v-else>今天已完成 {{ today?.todayReviewed ?? 0 }} 次回忆，稍后回来看看新的到期卡片。</p>
         <div class="complete-actions">
           <button class="primary-button" type="button" @click="loadToday">检查新任务</button>
-          <button class="text-button" type="button" @click="router.push('/english/vocab/insights')">查看学习进度</button>
+          <button class="text-button" type="button" @click="router.push('/english/vocab/insights#growth-calendar')">查看成长日历</button>
           <button class="text-button" type="button" @click="router.push('/english/vocab')">管理词书</button>
         </div>
       </section>
@@ -304,6 +305,7 @@ button { cursor: pointer; font: inherit; }
 .answer { border-top: 1px solid #e5ebe1; padding-top: 20px; animation: reveal-in .25s ease both; }.answer-label { color: #759477; font-size: 12px; font-weight: 800; letter-spacing: .14em; }.meaning { font-size: 22px; line-height: 1.6; margin: 8px 0; white-space: pre-line; }.example { color: #6c7b70; border-left: 3px solid #d5e5d2; padding-left: 14px; line-height: 1.5; }.example p { margin: 5px 0; }
 .study-actions { text-align: center; padding: 24px 0; }.reveal-button, .primary-button { border: 0; color: #fff; background: #285a3e; border-radius: 14px; padding: 14px 27px; font-weight: 800; transition: transform .15s, background .15s; }.reveal-button { min-width: 235px; display: inline-flex; justify-content: space-between; }.reveal-button:hover, .primary-button:hover { transform: translateY(-2px); background: #1d492f; }.primary-button:disabled { opacity: .6; cursor: wait; }.rate-prompt { margin: 0 0 13px; font-weight: 700; }.rating-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }.rating-button { display: flex; flex-direction: column; gap: 4px; border: 1px solid #dce3d6; background: #fffef9; border-radius: 14px; padding: 14px 6px; color: #244330; transition: transform .15s, box-shadow .15s; }.rating-button:hover { transform: translateY(-3px); box-shadow: 0 10px 20px #37543d20; }.rating-button span { font-size: 12px; color: #869488; }.rating-button.again { border-color: #e8c7b9; background: #fff6f1; }.rating-button.easy { border-color: #bddbc7; background: #f3faf3; }.rating-note { font-size: 12px; color: #91a092; margin-top: 15px; }.save-error { color: #b34f36; }.state-panel { max-width: 800px; margin: 0 auto; text-align: center; background: #fffef9; border-radius: 26px; padding: 70px 25px; border: 1px solid #e2e5d9; }.state-panel h2 { font-family: Georgia, 'Songti SC', serif; font-size: 32px; margin: 10px 0; }.state-panel p { color: #738477; }.complete-mark { width: 64px; height: 64px; border-radius: 50%; background: #dbead9; color: #336c43; display: grid; place-items: center; font-size: 32px; margin: auto; }.complete-actions { display: flex; flex-wrap:wrap; justify-content: center; align-items: center; gap: 12px; margin-top: 26px; }
 .shortcut-note { color: #7d8e7d; font-size: 12px; margin-top: 12px; }
+.check-in-note { color: #3e744b !important; font-weight: 700; }
 .rating-button kbd { align-self: center; font: 700 11px Georgia, serif; color: #667e68; border: 1px solid #d2ddcf; border-radius: 4px; padding: 2px 6px; margin-top: 4px; }
 .rating-button strong { font-size: 16px; }
 .rating-button.hard { border-color: #dfca9d; background: #fffaf0; }

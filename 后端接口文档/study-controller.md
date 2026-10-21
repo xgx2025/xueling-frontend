@@ -2,6 +2,14 @@
 
 以下接口均需要登录，沿用项目统一的 `{ code, msg, data }` 响应格式。
 
+## 自动打卡与 GET `/study/calendar?month=2026-10`
+
+每次正式学习评分成功后，后端检查当前到期卡片和今日可学新词。若队列已清空，则在评分事务内按用户学习时区写入当天的唯一打卡记录。没有学习评分的空任务日不会自动打卡；自由练习不计入。打卡写入后，即使当天稍后又有卡片到期也保留记录。`GET /study/today` 增加 `checkedIn` 布尔字段。
+
+`month` 可省略，默认用户学习时区的当前月；格式为 `YYYY-MM`，可查看当前月及此前十年。返回 `month`、`today`、`checkedInToday`、`currentStreak`、`longestStreak`、`totalCheckIns` 与 `days`。`days` 包含当月每一天，字段为 `date`、`checkedIn`、`reviewCount`、`newWords`、`studyTimeMs`。连续天数截至今天；如果今天尚未打卡，则截至昨天。
+
+部署前先执行后端 `study_check_in_table.sql`。已有历史评分不会自动补成打卡，因为无法可靠重建当时的任务队列和学习设置。
+
 ## GET `/study/history?days=7`
 
 `days` 只接受 `7` 或 `30`，默认 `7`。返回按日期升序排列的每日记录，包含没有评分的日期。
