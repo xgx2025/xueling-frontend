@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { getStudyHistory, getStudyReviewCounts } from '@/features/vocab/api'
 import type { StudyDayStats, StudyReviewCount } from '@/features/vocab/types'
+import PageHeading from '@/components/PageHeading.vue'
 
-const router = useRouter()
 const days = ref<7 | 30>(7)
 const rows = ref<StudyDayStats[]>([])
 const loading = ref(false)
@@ -60,19 +59,20 @@ onMounted(() => {
 
 <template>
   <main class="insights-page">
-    <div class="insights-shell">
-      <header class="page-header">
-        <button type="button" class="back-link" @click="router.push('/english/vocab/study')">← 今日学习</button>
-      </header>
-      <section class="intro">
-        <p class="eyebrow">单词 / 学习记录</p>
-        <h1>学习记录</h1>
-        <div class="range-switch" role="group" aria-label="统计时间范围">
-          <button v-for="value in [7, 30] as const" :key="value" type="button"
-            :class="{ active: days === value }" :aria-pressed="days === value"
-            @click="loadHistory(value)">近 {{ value }} 天</button>
-        </div>
-      </section>
+    <div class="insights-shell xl-page-shell">
+      <PageHeading
+        :items="[{ label: '首页', to: '/' }, { label: '英语学习', to: '/english' }, { label: '今日学习', to: '/english/vocab/study' }, { label: '学习记录' }]"
+        title="学习记录"
+        description="回顾学习节奏，了解自己的到期回忆表现。"
+      >
+        <template #actions>
+          <div class="range-switch" role="group" aria-label="统计时间范围">
+            <button v-for="value in [7, 30] as const" :key="value" type="button"
+              :class="{ active: days === value }" :aria-pressed="days === value"
+              @click="loadHistory(value)">近 {{ value }} 天</button>
+          </div>
+        </template>
+      </PageHeading>
 
       <div v-if="loading" class="state-panel" role="status">正在整理学习记录…</div>
       <div v-else-if="error" class="state-panel" role="alert">
@@ -124,15 +124,8 @@ onMounted(() => {
 
 <style scoped>
 .insights-page { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
-.insights-shell { max-width: 1100px; margin: auto; padding: 26px 30px 80px; }
-.page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.back-link { min-height: 44px; padding: 0 12px; border: 1px solid var(--xl-border); border-radius: 10px; background: var(--xl-surface); color: var(--xl-brand); font-size: 13px; font-weight: 750; cursor: pointer; }
-.back-link:hover { background: #edf3e9; border-color: #a8bfa9; }
-.eyebrow { color: #6b846e; font-size: 11px; font-weight: 800; letter-spacing: .15em; }
-.intro { margin: 30px 0 24px; }
-.intro h1 { margin: 8px 0; font: 700 clamp(30px, 4vw, 40px)/1.2 var(--xl-font-display); }
-.intro > p:not(.eyebrow), .section-heading p { color: var(--xl-ink-soft); }
-.range-switch { display: inline-flex; gap: 6px; margin-top: 16px; padding: 5px; border: 1px solid var(--xl-border); border-radius: 12px; background: var(--xl-surface); }
+.section-heading p { color: var(--xl-ink-soft); }
+.range-switch { display: inline-flex; gap: 6px; padding: 5px; border: 1px solid var(--xl-border); border-radius: 12px; background: var(--xl-surface); }
 .range-switch button { border: 0; border-radius: 8px; padding: 9px 18px; background: transparent; color: var(--xl-ink-soft); cursor: pointer; }
 .range-switch button.active { background: var(--xl-brand); color: white; }
 .range-switch button { min-height: 40px; font-weight: 750; transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease; }
@@ -165,8 +158,6 @@ onMounted(() => {
 .state-panel button:hover { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
 .state-panel button:active { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
 @media (max-width: 850px) {
-  .insights-shell { padding: 18px 16px 60px; }
-  .intro { margin-top: 45px; }
   .summary { grid-template-columns: repeat(2, 1fr); }
   .distribution-grid { grid-template-columns: repeat(2, 1fr); }
   .summary > div:nth-child(2) { border-right: 0; }

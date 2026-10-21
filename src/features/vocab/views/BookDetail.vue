@@ -1,11 +1,12 @@
 <template>
   <main class="book-page">
-    <div class="page-shell">
-      <nav class="breadcrumb" aria-label="面包屑">
-        <button type="button" @click="router.push('/english/vocab')">← 返回我的词书</button>
-        <span aria-hidden="true">/</span>
-        <span aria-current="page">{{ bookName }}</span>
-      </nav>
+    <div class="page-shell xl-page-shell">
+      <PageBreadcrumb :items="[
+        { label: '首页', to: '/' },
+        { label: '英语学习', to: '/english' },
+        { label: '我的词书', to: '/english/vocab' },
+        { label: bookName }
+      ]" />
 
       <section class="book-hero" aria-labelledby="book-title">
         <div class="cover" aria-hidden="true">
@@ -184,6 +185,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { matchWords, getWordBookDetail, addWordsToBook, removeWordsFromBook, setStudyBookEnabled } from '@/features/vocab/api'
 import type { WordDictionary, WordVO } from '@/features/vocab/types'
 import { useReviewStore } from '@/features/vocab/reviewStore'
+import PageBreadcrumb from '@/components/PageBreadcrumb.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -411,16 +413,12 @@ async function deleteWord(word: WordVO) {
 
 <style scoped>
 .book-page { --ink: #243b2d; --muted: #667469; --line: #dce2d7; --green: #244b35; min-height: 100vh; background: #f5f5ee; color: var(--ink); font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif; }
-.page-shell { max-width: 1180px; margin: 0 auto; padding: 24px 30px 128px; }
+.page-shell { padding-bottom: 128px; }
 button { font: inherit; cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .5; }
 button:focus-visible, input:focus-visible { outline: 3px solid #bd914d; outline-offset: 3px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-.breadcrumb { display: flex; align-items: center; gap: 13px; padding-bottom: 22px; border-bottom: 1px solid var(--line); color: #829083; font-size: 13px; }
-.breadcrumb button { border: 0; background: transparent; color: #3f694a; padding: 8px 0; font-weight: 700; }
-.breadcrumb button:hover { text-decoration: underline; }
-.breadcrumb span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.book-hero { display: grid; grid-template-columns: minmax(230px, 310px) minmax(0, 1fr); gap: clamp(28px, 6vw, 84px); align-items: stretch; padding: 48px 0 65px; }
+.book-hero { display: grid; grid-template-columns: minmax(230px, 310px) minmax(0, 1fr); gap: clamp(28px, 6vw, 84px); align-items: stretch; padding: 36px 0 60px; }
 .cover { min-height: 350px; padding: 23px; box-sizing: border-box; border-radius: 8px 17px 17px 8px; color: #f6f0df; background: linear-gradient(145deg, #315e43, #244b35 64%, #163a2a); box-shadow: 9px 15px 0 #d6ddce, 20px 25px 35px #244b3524; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
 .cover::after { content: ''; position: absolute; width: 290px; height: 290px; border: 1px solid #ffffff32; border-radius: 50%; right: -95px; top: 23px; }
 .cover::before { content: ''; position: absolute; inset: 0 auto 0 9px; border-left: 1px solid #f6f0df40; }
@@ -532,9 +530,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid #bd914d; outline-
   .word-table-heading, .word-row { grid-template-columns: minmax(145px, 1fr) minmax(105px, .8fr) minmax(160px, 1.5fr) 105px; gap: 10px; }
 }
 @media (max-width: 640px) {
-  .page-shell { padding: 13px 16px 146px; }
-  .breadcrumb { padding-bottom: 11px; }
-  .book-hero { display: block; padding: 24px 0 36px; }
+  .page-shell { padding-bottom: 146px; }
+  .book-hero { display: block; padding: 20px 0 36px; }
   .cover { display: none; }
   .hero-content h1 { font-size: 40px; margin-top: 16px; }
   .hero-stats { margin-top: 12px; gap: 30px; }

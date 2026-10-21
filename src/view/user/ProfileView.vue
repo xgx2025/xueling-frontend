@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/user'
 import { getStudyStats } from '@/features/vocab/api'
 import type { StudyStats } from '@/features/vocab/types'
 import type { UserDTO, UserVO } from '@/types/auth'
+import PageHeading from '@/components/PageHeading.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -134,13 +135,12 @@ onMounted(async () => {
 
 <template>
   <main class="profile-page">
-    <div class="page-shell">
-      <header class="page-header">
-        <router-link to="/" class="back-link">← 返回首页</router-link>
-        <p class="eyebrow">YOUR SPACE / 个人中心</p>
-        <h1>个人中心<span>.</span></h1>
-        <p>管理个人资料，查看今天的学习进展。</p>
-      </header>
+    <div class="page-shell xl-page-shell">
+      <PageHeading
+        :items="[{ label: '首页', to: '/' }, { label: '个人中心' }]"
+        title="个人中心"
+        description="管理个人资料，查看今天的学习进展。"
+      />
 
       <div class="profile-layout">
         <aside class="identity-card" aria-label="账户信息">
@@ -209,16 +209,9 @@ onMounted(async () => {
 
 <style scoped>
 .profile-page { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
-.page-shell { max-width: 1180px; margin: auto; padding: 24px 30px 88px; }
-.page-header { border-bottom: 1px solid var(--xl-border); padding-bottom: 32px; }
-.back-link { display: inline-block; padding: 9px 0; color: var(--xl-brand); font-size: 13px; font-weight: 700; text-decoration: none; }
-.back-link:hover, .section-heading a:hover, .logout-link:hover { text-decoration: underline; }
+.section-heading a:hover, .logout-link:hover { text-decoration: underline; }
 .eyebrow { color: #66816a; font-size: 11px; font-weight: 800; letter-spacing: .16em; }
-.page-header .eyebrow { margin-top: 32px; }
-.page-header h1 { margin: 12px 0 14px; font: 700 clamp(44px, 6vw, 72px)/1.08 var(--xl-font-display); letter-spacing: -.04em; }
-.page-header h1 span { color: var(--xl-accent); }
-.page-header > p:last-child { color: var(--xl-ink-soft); line-height: 1.7; }
-.profile-layout { display: grid; grid-template-columns: minmax(230px, .72fr) minmax(0, 1.8fr); gap: 22px; align-items: start; margin-top: 28px; }
+.profile-layout { display: grid; grid-template-columns: minmax(230px, .72fr) minmax(0, 1.8fr); gap: 22px; align-items: start; }
 .identity-card, .overview-card, .settings-card { background: var(--xl-surface); border: 1px solid var(--xl-border); border-radius: var(--xl-radius-md); }
 .identity-card { padding: 30px 24px; text-align: center; }
 .avatar-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -256,7 +249,7 @@ onMounted(async () => {
 .logout-link:hover { background: #f8eee8; text-decoration: none; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 button:focus-visible, a:focus-visible { outline: 3px solid var(--xl-accent); outline-offset: 3px; }
-@media (max-width: 760px) { .page-shell { padding: 16px 16px 60px; }.profile-layout { grid-template-columns: 1fr; }.identity-card { text-align: left; }.avatar-area { align-items: start; }.profile-edit { max-width: 260px; }.section-heading { align-items: start; flex-direction: column; }.overview-card, .settings-card { padding: 24px 20px; } }
+@media (max-width: 760px) { .profile-layout { grid-template-columns: 1fr; }.identity-card { text-align: left; }.avatar-area { align-items: start; }.profile-edit { max-width: 260px; }.section-heading { align-items: start; flex-direction: column; }.overview-card, .settings-card { padding: 24px 20px; } }
 @media (max-width: 480px) { .profile-form { grid-template-columns: 1fr; }.overview-stats > div { padding: 16px 8px; }.overview-stats strong { font-size: 27px; }.overview-stats span, .overview-stats small { font-size: 11px; } }
 @media (prefers-reduced-motion: reduce) { .profile-edit, .study-link { transition: none; }.profile-edit:hover, .study-link:hover, .profile-edit:active, .study-link:active { transform: none; } }
 </style>

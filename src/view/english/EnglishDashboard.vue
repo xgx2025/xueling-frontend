@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { getStudyStats } from '@/features/vocab/api'
 import type { StudyStats } from '@/features/vocab/types'
+import PageHeading from '@/components/PageHeading.vue'
 
 const studyStats = ref<StudyStats | null>(null)
 const statsError = ref(false)
@@ -23,22 +24,14 @@ onMounted(async () => {
 
 <template>
   <main class="english-dashboard">
-    <div class="dashboard-shell">
-      <header class="dashboard-header">
-        <router-link to="/" class="back-link">
-          <span class="back-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M19 12H5m0 0 6-6m-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-          <span>返回首页</span>
-        </router-link>
-        <div class="header-copy">
-          <div class="header-icon" aria-hidden="true">A<span>a</span></div>
-          <div>
-            <p class="eyebrow">英语 / 学习概览</p>
-            <h1>英语学习</h1>
-          </div>
-        </div>
-      </header>
+    <div class="dashboard-shell xl-page-shell">
+      <PageHeading
+        :items="[{ label: '首页', to: '/' }, { label: '英语学习' }]"
+        title="英语学习"
+        description="从单词到阅读，按自己的节奏持续进步。"
+      >
+        <template #mark>Aa</template>
+      </PageHeading>
 
       <section class="daily-focus" aria-labelledby="daily-focus-title">
         <div class="focus-main">
@@ -92,18 +85,6 @@ onMounted(async () => {
 
 <style scoped>
 .english-dashboard { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
-.dashboard-shell { max-width: 1060px; margin: auto; padding: 24px 30px 80px; }
-.back-link { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 14px 4px 4px; border: 1px solid var(--xl-border); border-radius: 12px; background: var(--xl-surface); color: var(--xl-brand); text-decoration: none; font-size: 13px; font-weight: 750; box-shadow: 0 2px 0 #dce6d9; transition: background-color .18s, border-color .18s, box-shadow .18s, transform .18s; }
-.back-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; background: #e7efe4; }
-.back-icon svg { width: 18px; height: 18px; transition: transform .18s; }
-.back-link:hover { background: #f0f5ed; border-color: #a8bfa9; box-shadow: 0 3px 0 #c9d9c9; }
-.back-link:hover .back-icon svg { transform: translateX(-2px); }
-.back-link:active { transform: translateY(1px); box-shadow: none; }
-.header-copy { display: flex; align-items: center; gap: 18px; margin: 26px 0 30px; }
-.header-icon { flex: none; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 16px; background: #e3ecdf; color: var(--xl-brand); font: 700 33px/1 var(--xl-font-display); letter-spacing: -.1em; }
-.header-icon span { align-self: center; margin: 11px 0 0 1px; font-size: 21px; }
-.eyebrow { color: #66816a; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
-.dashboard-header h1 { margin: 4px 0 3px; font: 700 clamp(27px, 3vw, 35px)/1.2 var(--xl-font-display); letter-spacing: -.025em; }
 .daily-focus { overflow: hidden; border: 1px solid #cad9c8; border-radius: var(--xl-radius-lg); background: #eaf1e7; }
 .focus-main { position: relative; min-height: 214px; display: flex; align-items: center; justify-content: space-between; padding: 30px 42px; overflow: hidden; }
 .focus-copy { position: relative; z-index: 1; flex: 1; min-width: 0; }
@@ -140,10 +121,6 @@ onMounted(async () => {
 .module-link { grid-column: 2; display: inline-flex; align-items: center; justify-content: space-between; gap: 24px; width: fit-content; min-height: 42px; margin-top: 18px; padding: 0 14px; border: 1px solid #b8cbb9; border-radius: var(--xl-button-radius); color: var(--xl-brand); font-size: 13px; font-weight: 800; text-decoration: none; box-shadow: var(--xl-outline-shadow); transition: background-color .18s, border-color .18s; }
 .module-link:hover { background: #edf3e9; border-color: #8eae93; }
 @media (max-width: 760px) {
-  .dashboard-shell { padding: 12px 16px 56px; }
-  .header-copy { gap: 13px; margin: 17px 0 24px; }
-  .header-icon { width: 52px; height: 52px; border-radius: 13px; font-size: 27px; }
-  .header-icon span { margin-top: 8px; font-size: 17px; }
   .focus-main { min-height: 0; padding: 26px 24px 28px; }
   .focus-illustration { display: none; }
   .daily-focus h2 { font-size: clamp(23px, 6vw, 29px); }
@@ -155,7 +132,6 @@ onMounted(async () => {
   .module-card { min-height: 0; padding: 20px; }
 }
 @media (max-width: 420px) {
-  .dashboard-shell { padding-inline: 14px; }
   .focus-main { padding: 24px 20px 26px; }
   .focus-action { width: 100%; }
   .today-stats .stat-item { padding-inline: 10px; }
@@ -165,5 +141,5 @@ onMounted(async () => {
   .module-icon svg { width: 29px; height: 29px; }
   .module-body h3 { font-size: 19px; }
 }
-@media (prefers-reduced-motion: reduce) { .back-link:hover .back-icon svg, .back-link:active, .focus-action:hover, .focus-action:active { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .focus-action:hover, .focus-action:active { transform: none; } }
 </style>

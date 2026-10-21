@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { getArticleCategories, getArticlesByCategory } from '@/api/article'
 import type { ArticleCategory, ArticleVO } from '@/types/article'
+import PageHeading from '@/components/PageHeading.vue'
 
 const categories = ref<ArticleCategory[]>([])
 const articles = ref<ArticleVO[]>([])
@@ -67,12 +68,12 @@ onMounted(async () => {
 
 <template>
   <main class="article-list-page">
-    <div class="article-shell">
-      <header class="page-header">
-        <router-link to="/english" class="back-link">← 英语学习</router-link>
-        <p class="eyebrow">英语 / 阅读</p>
-        <h1>英语阅读</h1>
-      </header>
+    <div class="article-shell xl-page-shell">
+      <PageHeading
+        :items="[{ label: '首页', to: '/' }, { label: '英语学习', to: '/english' }, { label: '英语阅读' }]"
+        title="英语阅读"
+        description="选择一篇文章，在真实语境中积累表达。"
+      />
 
       <section class="article-section" aria-label="文章列表">
         <div class="section-topline">
@@ -119,13 +120,7 @@ onMounted(async () => {
 
 <style scoped>
 .article-list-page { min-height: 100vh; background: var(--xl-bg); color: var(--xl-ink); }
-.article-shell { max-width: 1100px; margin: auto; padding: 24px 30px 88px; }
-.page-header { padding-bottom: 24px; border-bottom: 1px solid var(--xl-border); }
-.back-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border: 1px solid var(--xl-border); border-radius: 10px; background: var(--xl-surface); color: var(--xl-brand); text-decoration: none; font-size: 13px; font-weight: 750; }
-.back-link:hover { background: #edf3e9; border-color: #a8bfa9; }
-.eyebrow { margin-top: 22px; color: #66816a; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
-.page-header h1 { margin: 8px 0 0; font: 700 clamp(30px, 4vw, 40px)/1.2 var(--xl-font-display); }
-.article-section { padding-top: 20px; }
+.article-section { padding-top: 0; }
 .section-topline { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; }
 .section-topline span { color: var(--xl-ink-soft); font-size: 12px; }
 .filters { display: flex; gap: 9px; flex-wrap: wrap; margin: 14px 0 22px; }
@@ -156,8 +151,6 @@ onMounted(async () => {
 .list-state button:hover { background: var(--xl-brand-hover); transform: translateY(-2px); box-shadow: var(--xl-button-shadow-hover); }
 .list-state button:active { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
 @media (max-width: 760px) {
-  .article-shell { padding: 16px 16px 60px; }
-  .eyebrow { margin-top: 18px; }
   .article-card { grid-template-columns: minmax(0, 1fr) 92px; gap: 16px; align-items: start; }
   .article-card h3 { margin-top: 10px; }
   .article-image { min-height: 92px; height: 92px; font-size: 28px; }

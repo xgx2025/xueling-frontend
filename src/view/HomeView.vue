@@ -52,14 +52,24 @@ async function handleCommand(command: string) {
 
     <main class="home-main">
       <header class="home-intro">
-        <p class="eyebrow">学灵 / 学习首页</p>
         <h1>今天学什么？</h1>
+        <p>从一个方向开始，保持每天的学习节奏。</p>
       </header>
       <section class="subjects" aria-label="学习方向">
+        <h2 class="section-heading">学习方向</h2>
         <router-link to="/english" class="subject-card">
-          <span class="subject-symbol" aria-hidden="true">Aa</span>
-          <span class="subject-copy"><strong>英语学习</strong><small>单词记忆 · 文章阅读</small></span>
-          <span class="card-arrow" aria-hidden="true">↗</span>
+          <span class="subject-content">
+            <span class="subject-symbol" aria-hidden="true">Aa</span>
+            <span class="subject-copy">
+              <strong>英语学习</strong>
+              <small>记住新词，在阅读中持续积累。</small>
+              <span class="subject-topics">单词记忆 <i aria-hidden="true"></i> 文章阅读</span>
+            </span>
+          </span>
+          <span class="subject-side" aria-hidden="true">
+            <span class="subject-art"><span class="art-card art-card-back"></span><span class="art-card art-card-front"><b>word</b><i></i><i></i></span></span>
+            <span class="subject-cta">进入英语学习 <span>↗</span></span>
+          </span>
         </router-link>
       </section>
     </main>
@@ -69,7 +79,7 @@ async function handleCommand(command: string) {
 <style scoped>
 .home-page { min-height: 100vh; background: var(--xl-bg); }
 .site-header { background: var(--xl-surface); border-bottom: 1px solid var(--xl-border); }
-.header-inner { width: min(100% - 48px, 1060px); min-height: 76px; margin: auto; display: flex; align-items: center; gap: 42px; }
+.header-inner { width: min(100% - 48px, var(--xl-content-width)); min-height: 70px; margin: auto; display: flex; align-items: center; gap: 24px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--xl-ink); text-decoration: none; font: 700 23px var(--xl-font-display); white-space: nowrap; }
 .logo { width: 36px; height: 36px; object-fit: contain; }
 .brand { margin-right: auto; }
@@ -77,29 +87,51 @@ async function handleCommand(command: string) {
 .avatar-wrapper:hover { background: var(--xl-surface-muted); }
 .user-avatar { background: var(--xl-brand); color: white; }
 .username { font-size: 13px; font-weight: 700; }
-.home-main { max-width: 1060px; margin: auto; padding: 76px 30px 90px; }
-.eyebrow { color: #66816a; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
-.home-intro h1 { margin: 10px 0 34px; font: 700 clamp(30px, 4vw, 43px)/1.2 var(--xl-font-display); }
-.subject-card { width: min(100%, 620px); min-height: 175px; display: flex; align-items: center; gap: 24px; padding: 30px 36px; border: 1px solid #cbd9c9; border-radius: var(--xl-radius-lg); background: #eaf1e7; color: var(--xl-ink); text-decoration: none; transition: border-color .18s, background-color .18s, box-shadow .18s; }
-.subject-card:hover { border-color: #95b096; background: #e3eddf; box-shadow: var(--xl-shadow-card); }
-.subject-symbol { flex: none; width: 88px; height: 88px; display: grid; place-items: center; border-radius: 18px; background: var(--xl-surface); color: var(--xl-brand); font: italic 45px/1 var(--xl-font-display); }
-.subject-copy { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
-.subject-copy strong { font: 700 25px/1.2 var(--xl-font-display); }
-.subject-copy small { color: var(--xl-ink-soft); font-size: 13px; }
-.card-arrow { margin-left: auto; align-self: flex-end; color: var(--xl-brand); font-size: 25px; }
+.home-main { width: min(100% - 48px, var(--xl-content-width)); margin: auto; padding: 48px 0 88px; }
+.home-intro { margin-bottom: 42px; }
+.home-intro h1 { font: 700 clamp(34px, 4vw, 46px)/1.18 var(--xl-font-display); letter-spacing: -.035em; }
+.home-intro p { margin-top: 12px; color: var(--xl-ink-soft); font-size: 15px; line-height: 1.7; }
+.section-heading { margin-bottom: 16px; color: var(--xl-ink-soft); font-size: 13px; font-weight: 700; letter-spacing: .04em; }
+.subject-card { position: relative; isolation: isolate; width: 100%; min-height: 238px; display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 34px 40px; overflow: hidden; border: 1px solid #cbd9c9; border-radius: var(--xl-radius-lg); background: #eaf1e7; color: var(--xl-ink); text-decoration: none; transition: border-color .18s, background-color .18s, box-shadow .18s, transform .18s; }
+.subject-card:hover { border-color: #95b096; background: #e5eee2; box-shadow: var(--xl-shadow-card); transform: translateY(-2px); }
+.subject-content { display: flex; align-items: center; gap: 26px; min-width: 0; }
+.subject-symbol { flex: none; width: 92px; height: 92px; display: grid; place-items: center; border: 1px solid #e2e9dd; border-radius: 18px; background: var(--xl-surface); color: var(--xl-brand); font: italic 47px/1 var(--xl-font-display); }
+.subject-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
+.subject-copy strong { font: 700 clamp(25px, 3vw, 31px)/1.2 var(--xl-font-display); letter-spacing: -.025em; }
+.subject-copy small { color: var(--xl-ink-soft); font-size: 14px; line-height: 1.5; }
+.subject-topics { margin-top: 4px; color: #54745a; font-size: 12px; font-weight: 700; }
+.subject-topics i { display: inline-block; width: 3px; height: 3px; margin: 0 7px 3px; border-radius: 50%; background: currentColor; }
+.subject-side { position: relative; align-self: stretch; flex: 0 0 236px; display: flex; align-items: flex-end; justify-content: flex-end; }
+.subject-art { position: absolute; top: -22px; right: 12px; width: 190px; height: 170px; opacity: .9; }
+.art-card { position: absolute; width: 105px; height: 132px; border-radius: 12px; }
+.art-card-back { top: 21px; left: 68px; transform: rotate(14deg); background: #b5ceb0; }
+.art-card-front { top: 17px; left: 43px; display: flex; flex-direction: column; gap: 12px; padding: 23px 14px; transform: rotate(-8deg); border: 1px solid #dce6d7; background: #fffefa; box-shadow: 0 12px 22px #315b401c; }
+.art-card-front b { color: var(--xl-brand); font: italic 23px/1 var(--xl-font-display); }
+.art-card-front i { width: 68px; height: 5px; border-radius: 4px; background: #d6e0d1; }
+.art-card-front i:last-child { width: 48px; }
+.subject-cta { z-index: 1; display: inline-flex; align-items: center; gap: 18px; color: var(--xl-brand); font-size: 14px; font-weight: 800; }
+.subject-cta span { font-size: 21px; transition: transform .18s; }
+.subject-card:hover .subject-cta span { transform: translate(2px, -2px); }
 @media (max-width: 760px) {
-  .header-inner { width: min(100% - 28px, 1060px); min-height: 66px; gap: 20px; }
+  .header-inner { width: min(100% - 32px, var(--xl-content-width)); min-height: 62px; }
   .username { display: none; }
-  .home-main { padding: 50px 16px 60px; }
-  .home-intro h1 { margin-bottom: 24px; }
-  .subject-card { min-height: 145px; gap: 18px; padding: 22px; }
-  .subject-symbol { width: 65px; height: 65px; border-radius: 13px; font-size: 34px; }
-  .subject-copy strong { font-size: 21px; }
+  .home-main { width: min(100% - 32px, var(--xl-content-width)); padding: 36px 0 60px; }
+  .home-intro { margin-bottom: 34px; }
+  .home-intro p { font-size: 14px; }
+  .subject-card { min-height: 206px; padding: 25px; }
+  .subject-content { gap: 18px; }
+  .subject-symbol { width: 68px; height: 68px; border-radius: 14px; font-size: 35px; }
+  .subject-side { flex-basis: 140px; }
+  .subject-art { display: none; }
 }
-@media (max-width: 360px) {
-  .subject-card { gap: 12px; padding: 18px; }
-  .subject-symbol { width: 54px; height: 54px; font-size: 28px; }
-  .subject-copy small { font-size: 11px; }
+@media (max-width: 520px) {
+  .subject-card { min-height: 220px; flex-direction: column; align-items: stretch; gap: 28px; padding: 24px; }
+  .subject-content { align-items: flex-start; gap: 16px; }
+  .subject-symbol { width: 58px; height: 58px; font-size: 30px; }
+  .subject-copy { gap: 7px; }
+  .subject-copy strong { font-size: 24px; }
+  .subject-copy small { font-size: 13px; }
+  .subject-side { flex: none; align-self: flex-start; }
 }
-@media (prefers-reduced-motion: reduce) { .subject-card { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .subject-card, .subject-cta span { transition: none; }.subject-card:hover, .subject-card:hover .subject-cta span { transform: none; } }
 </style>

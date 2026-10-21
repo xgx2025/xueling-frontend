@@ -22,6 +22,7 @@
   --xl-gold-shadow: 0 2px 0 #b48543, 0 8px 16px rgba(20, 38, 27, 0.16);
   --xl-font-body: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
   --xl-font-display: Georgia, 'Songti SC', serif;
+  --xl-content-width: 1060px;
 
   --el-color-primary: #315b40;
   --el-color-primary-light-3: #64836e;
@@ -44,6 +45,19 @@ body {
   background: var(--xl-bg);
   color: var(--xl-ink);
   font-family: var(--xl-font-body);
+}
+
+.xl-page-shell {
+  width: min(100% - 48px, var(--xl-content-width));
+  margin-inline: auto;
+  padding-block: 32px 88px;
+}
+
+@media (max-width: 760px) {
+  .xl-page-shell {
+    width: min(100% - 32px, var(--xl-content-width));
+    padding-block: 20px 60px;
+  }
 }
 
 button,

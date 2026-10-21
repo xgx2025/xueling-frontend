@@ -12,8 +12,10 @@ const focusedRoutes = new Set([
   'english-vocab-study',
   'english-vocab-insights',
   'english-vocab-review',
+  'english-vocab-book',
   'english-articles',
   'english-article-detail',
+  'user-profile',
 ])
 const showUtilities = computed(() => !focusedRoutes.has(String(route.name)))
 </script>

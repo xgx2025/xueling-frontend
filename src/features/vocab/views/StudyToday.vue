@@ -2,7 +2,7 @@
   <main class="study-page">
     <div class="study-shell">
       <header class="study-header">
-        <button class="back-link" type="button" @click="router.push('/english')">← 英语学习</button>
+        <PageBreadcrumb :items="[{ label: '首页', to: '/' }, { label: '英语学习', to: '/english' }, { label: '今日学习' }]" />
         <div class="header-actions">
           <button class="settings-link" type="button" @click="router.push('/english/vocab/insights')">学习记录</button>
           <button class="settings-link" type="button" @click="openSettings">设置</button>
@@ -11,8 +11,8 @@
 
       <section class="intro">
         <div>
-          <p class="section-kicker">单词 / 每日计划</p>
           <h1>今日学习</h1>
+          <p class="study-subtitle">先回忆，再揭晓答案，按自己的节奏完成计划。</p>
         </div>
         <div class="today-date">{{ dateLabel }}</div>
       </section>
@@ -119,6 +119,7 @@ import type { StudyQueueCard, StudySettings, SubmitStudyReview, TodayStudy } fro
 import { clearPendingReview, persistPendingReview, restorePendingReview } from '@/features/vocab/pendingReview'
 import { createReviewRequestId } from '@/features/vocab/requestId'
 import { useUserStore } from '@/stores/user'
+import PageBreadcrumb from '@/components/PageBreadcrumb.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -282,13 +283,11 @@ onUnmounted(() => {
 .study-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid #d9dfd5; padding-bottom: 18px; }
 .header-actions { display: flex; align-items: center; gap: 18px; }
 button { cursor: pointer; font: inherit; }
-.back-link, .settings-link, .text-button { border: 0; background: transparent; color: #315c49; font-weight: 700; }
-.back-link { min-height: 44px; padding: 0 12px; border: 1px solid #d9dfd5; border-radius: 10px; background: #fffef9; font-size: 13px; }
-.back-link:hover { background: #edf3e9; border-color: #a8bfa9; }
+.settings-link, .text-button { border: 0; background: transparent; color: #315c49; font-weight: 700; }
 .settings-link:hover, .text-button:hover { text-decoration: underline; }
-.eyebrow, .section-kicker { letter-spacing: .19em; font-size: 12px; font-weight: 800; color: #6d8f75; }
 .intro { display: flex; justify-content: space-between; align-items: end; padding: 28px 0 24px; }
 .intro h1 { font-family: Georgia, 'Songti SC', serif; font-size: clamp(40px, 6vw, 60px); line-height: 1.05; margin: 8px 0 12px; font-weight: 700; }
+.study-subtitle { color: var(--xl-ink-soft); font-size: 14px; line-height: 1.5; }
 .today-date { color: #7b8b7e; font-size: 14px; white-space: nowrap; }
 .metrics { max-width: 800px; display: grid; grid-template-columns: repeat(3, 1fr); background: #e7ebe0; border: 1px solid #dce3d6; border-radius: 16px; margin: 30px auto 0; overflow: hidden; }
 .metric { display: flex; flex-direction: column; gap: 6px; padding: 15px 24px; border-right: 1px solid #d2dcce; }
@@ -363,6 +362,6 @@ button { cursor: pointer; font: inherit; }
 .rating-note { color: #667b6b; line-height: 1.5; }
 button:focus-visible { outline: 3px solid #d6a24d; outline-offset: 3px; }
 @keyframes reveal-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 640px) { .study-page { padding: 14px 14px 60px; }.eyebrow { display: none; }.intro { align-items: start; flex-direction: column; gap: 6px; padding: 18px 0; }.metrics { margin-top: 22px; }.metric { padding: 16px 10px; text-align: center; }.metric strong { font-size: 23px; }.flashcard { min-height: 270px; padding: 20px 18px; }.rating-grid { grid-template-columns: repeat(2, 1fr); }.meaning { font-size: 21px; }.word-content h2 { margin: 20px 0; }.session-meta { font-size: 12px; } }
+@media (max-width: 640px) { .study-page { padding: 14px 14px 60px; }.study-header { align-items: flex-start; flex-direction: column; gap: 4px; }.intro { align-items: start; flex-direction: column; gap: 6px; padding: 18px 0; }.study-subtitle { font-size: 13px; }.metrics { margin-top: 22px; }.metric { padding: 16px 10px; text-align: center; }.metric strong { font-size: 23px; }.flashcard { min-height: 270px; padding: 20px 18px; }.rating-grid { grid-template-columns: repeat(2, 1fr); }.meaning { font-size: 21px; }.word-content h2 { margin: 20px 0; }.session-meta { font-size: 12px; } }
 @media (prefers-reduced-motion: reduce) { .answer { animation: none; }.reveal-button, .primary-button, .text-button, .audio-button, .rating-button { transition: none; }.reveal-button:hover, .primary-button:hover, .text-button:hover, .rating-button:hover, .reveal-button:active, .primary-button:active, .text-button:active, .rating-button:active { transform: none; } }
 </style>

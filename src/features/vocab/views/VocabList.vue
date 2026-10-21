@@ -1,15 +1,15 @@
 <template>
   <main class="vocab-page">
-    <div class="vocab-shell">
-      <header class="page-header">
-        <button class="back-link" type="button" @click="router.push('/english')">← 英语学习</button>
-        <button class="header-create" type="button" @click="dialogVisible = true">＋ 新建词书</button>
-      </header>
-
-      <header class="page-intro">
-        <p class="eyebrow">英语 / 词书管理</p>
-        <h1>我的词书 <span>{{ wordBooks.length }}</span></h1>
-      </header>
+    <div class="vocab-shell xl-page-shell">
+      <PageHeading
+        :items="[{ label: '首页', to: '/' }, { label: '英语学习', to: '/english' }, { label: '我的词书' }]"
+        title="我的词书"
+        :description="loadingBooks ? '选择词书，安排每天的学习。' : `共 ${wordBooks.length} 本词书，安排每天的学习。`"
+      >
+        <template #actions>
+          <button class="header-create" type="button" @click="dialogVisible = true">＋ 新建词书</button>
+        </template>
+      </PageHeading>
 
       <section class="collection" aria-label="词书列表">
 
@@ -87,6 +87,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import PageHeading from '@/components/PageHeading.vue'
 import { createWordBook, getWordBooks, setStudyBookEnabled } from '@/features/vocab/api'
 import type { WordBookVo } from '@/features/vocab/types'
 
@@ -168,17 +169,9 @@ onMounted(() => { void fetchWordBooks() })
 
 <style scoped>
 .vocab-page { --ink: #243b2d; --muted: #667469; --line: #dce2d7; min-height: 100vh; background: #f5f5ee; color: var(--ink); font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif; }
-.vocab-shell { max-width: 1180px; margin: 0 auto; padding: 24px 30px 88px; }
 button { font: inherit; cursor: pointer; }
-.page-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
-.back-link { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--xl-surface); color: var(--xl-brand); font-size: 13px; font-weight: 750; }
-.back-link:hover { background: #edf3e9; border-color: #a8bfa9; }
 .header-create { border: 1px solid #315b3f; color: #315b3f; background: transparent; border-radius: 9px; padding: 10px 16px; font-weight: 700; }
 .header-create:hover, .header-create:focus-visible { background: #e8efe6; }
-.page-intro { padding: 38px 4px 25px; }
-.eyebrow { font-size: 11px; letter-spacing: .12em; font-weight: 800; color: #66816a; }
-.page-intro h1 { font-family: Georgia, 'Songti SC', serif; font-size: clamp(30px, 4vw, 40px); line-height: 1.2; margin: 8px 0 0; }
-.page-intro h1 span { color: #78917b; font: 500 17px Georgia, serif; vertical-align: top; margin-left: 6px; }
 .collection { margin-top: 0; }
 .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 20px; }.book-card { background: #fffefa; border: 1px solid #e4e8dc; border-radius: 13px; overflow: hidden; transition: transform .2s, box-shadow .2s; }.book-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px #29463113; }
 .book-cover { height: 116px; display: grid; place-items: center; color: white; position: relative; }.book-cover::after { content: ''; position: absolute; width: 185px; height: 185px; border: 1px solid #ffffff55; border-radius: 50%; right: -28px; top: -65px; }.book-icon { z-index: 1; font-size: 42px; line-height: 1; filter: drop-shadow(0 5px 10px #0003); }
@@ -193,7 +186,6 @@ button { font: inherit; cursor: pointer; }
 .header-create:active, .book-actions button:active:not(:disabled), .collection-state button:active { transform: translateY(1px); box-shadow: none; }
 .book-actions button:disabled { box-shadow: none; transform: none; }
 button:focus-visible { outline: 3px solid #dbaa53; outline-offset: 3px; }
-@media (max-width: 760px) { .vocab-shell { padding: 16px 16px 60px; }.page-intro { padding: 28px 0 22px; } }
 @media (max-width: 440px) { .header-create { padding: 9px 10px; font-size: 12px; }.book-grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .book-card, .header-create, .book-actions button, .collection-state button { transition: none; }.book-card:hover, .header-create:hover, .book-actions button:hover, .book-actions button:active, .collection-state button:hover { transform: none; }.book-skeleton { animation: none; } }
 </style>
