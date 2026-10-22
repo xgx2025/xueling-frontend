@@ -12,11 +12,11 @@ import type { UserDTO } from '@/types/auth'
 export const useUserStore = defineStore(
   'user',
   () => {
-    // 从 localStorage 恢复用户信息
-    const storedUserInfo = localStorage.getItem('user_info')
-    const userInfo = ref<UserInfo | null>(
-      storedUserInfo ? JSON.parse(storedUserInfo) : null
-    )
+    // 用户资料由后端恢复，避免跨会话留下个人信息或过期的会员状态。
+    localStorage.removeItem('user_info')
+    localStorage.removeItem('user_vo')
+    const userInfo = ref<UserInfo | null>(null)
+    const userVO = ref<UserVO | null>(null)
 
     // 计算属性：判断用户是否已登录
     const isLoggedIn = computed(() => userInfo.value !== null)
@@ -33,8 +33,6 @@ export const useUserStore = defineStore(
      */
     const setUserInfo = (info: UserInfo) => {
       userInfo.value = info
-      // 持久化到 localStorage
-      localStorage.setItem('user_info', JSON.stringify(info))
     }
 
     /**
@@ -42,7 +40,7 @@ export const useUserStore = defineStore(
      */
     const clearUserInfo = () => {
       userInfo.value = null
-      localStorage.removeItem('user_info')
+      userVO.value = null
     }
 
     /**
@@ -50,25 +48,22 @@ export const useUserStore = defineStore(
      */
     const fetchUserInfo = async () => {
       try {
-        console.log('fetchUserInfo: 开始获取用户信息')
         const response = await getUserInfo()
-        console.log('fetchUserInfo: 收到响应', response)
         if (response.code === 0 && response.data) {
-          const userVO: UserVO = response.data
+          const profile: UserVO = response.data
           // 转换为 UserInfo 格式并存储
           const info: UserInfo = {
             // 后端已统一返回字符串 id，这里再做一次兜底转换
-            id: String(userVO.id),
-            email: userVO.email,
-            username: userVO.username,
-            avatar: userVO.avatarUrl,
-            vipLevel: userVO.vipLevel,
+            id: String(profile.id),
+            email: profile.email,
+            username: profile.username,
+            avatar: profile.avatarUrl,
+            vipLevel: profile.vipLevel,
           }
           setUserInfo(info)
-          // 同时存储完整的用户信息
-          localStorage.setItem('user_vo', JSON.stringify(userVO))
-          console.log('fetchUserInfo: 用户信息已存储', userVO)
-          return userVO
+          // 完整资料只在当前页面内存中使用。
+          userVO.value = profile
+          return profile
         }
         throw new Error(response.msg || '获取用户信息失败')
       } catch (error: any) {
@@ -99,7 +94,6 @@ export const useUserStore = defineStore(
       } finally {
         // 清除用户信息
         clearUserInfo()
-        localStorage.removeItem('user_vo')
         
         // 清除令牌
         tokenStore.removeToken()
@@ -123,15 +117,9 @@ export const useUserStore = defineStore(
           // 更新本地用户信息中的头像
           if (userInfo.value) {
             userInfo.value.avatar = newAvatarUrl
-            localStorage.setItem('user_info', JSON.stringify(userInfo.value))
           }
-          
-          // 更新 user_vo 中的头像
-          const storedUserVO = localStorage.getItem('user_vo')
-          if (storedUserVO) {
-            const userVO = JSON.parse(storedUserVO)
-            userVO.avatarUrl = newAvatarUrl
-            localStorage.setItem('user_vo', JSON.stringify(userVO))
+          if (userVO.value) {
+            userVO.value.avatarUrl = newAvatarUrl
           }
           
           console.log('updateAvatar: 头像更新成功', newAvatarUrl)
@@ -180,6 +168,7 @@ export const useUserStore = defineStore(
 
     return {
       userInfo,
+      userVO,
       isLoggedIn,
       username,
       avatar,

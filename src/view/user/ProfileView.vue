@@ -30,9 +30,7 @@ const form = reactive({
 const original = ref({ ...form })
 
 function loadUserProfile() {
-  let saved: Partial<UserVO> = {}
-  try { saved = JSON.parse(localStorage.getItem('user_vo') || '{}') as Partial<UserVO> }
-  catch { saved = {} }
+  const saved: Partial<UserVO> = userStore.userVO || {}
   form.username = saved.username || userStore.username || ''
   form.email = saved.email || userStore.userInfo?.email || ''
   form.phone = saved.phone || ''

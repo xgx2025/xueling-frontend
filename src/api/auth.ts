@@ -46,7 +46,6 @@ export const sendVerificationCode = (email: string): Promise<ApiResponse> => {
  * @returns Promise<ApiResponse<UserVO>> 返回用户详细信息
  */
 export const getUserInfo = (): Promise<ApiResponse<UserVO>> => {
-  console.log('API: 调用 getUserInfo 接口')
   return request.get('/users/info')
 }
 

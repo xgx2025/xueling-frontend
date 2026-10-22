@@ -27,6 +27,8 @@ describe('account preferences', () => {
     expect(preferencesStore.preferences.wordLookupEnabled).toBe(false)
 
     setActivePinia(createPinia())
+    useUserStore().setUserInfo({ id: 'user-1', email: 'one@example.com' })
+    await nextTick()
     expect(usePreferencesStore().preferences.wordLookupEnabled).toBe(false)
   })
 })

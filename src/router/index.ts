@@ -104,9 +104,11 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   const tokenStore = useTokenStore()
   const userStore = useUserStore()
+  await tokenStore.restoreSession()
   
   // 检查是否有有效的 token
   const hasToken = tokenStore.accessToken && tokenStore.accessToken.trim() !== ''
+  if (!hasToken) userStore.clearUserInfo()
 
   if (to.name === 'home' && !hasToken) {
     next({ name: 'welcome' })
