@@ -16,6 +16,10 @@ async function handleCommand(command: string) {
     await router.push('/settings')
     return
   }
+  if (command === 'feedback') {
+    await router.push({ path: '/feedback', query: { from: '/' } })
+    return
+  }
   if (command !== 'logout') return
   try {
     await userStore.logout()
@@ -48,6 +52,7 @@ async function handleCommand(command: string) {
             <el-dropdown-menu>
               <el-dropdown-item command="profile">个人中心</el-dropdown-item>
               <el-dropdown-item command="settings">设置</el-dropdown-item>
+              <el-dropdown-item command="feedback">意见反馈</el-dropdown-item>
               <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>

@@ -294,11 +294,13 @@
             </el-tag>
           </div>
         </el-form-item>
-        <el-form-item label="详情描述">
+        <el-form-item label="详情描述（至少 5 字）">
           <el-input
             v-model="feedbackForm.content"
             type="textarea"
             :rows="4"
+            :maxlength="2000"
+            show-word-limit
             placeholder="请描述具体问题，帮助我们要改进..."
             resize="none"
           />
@@ -310,7 +312,7 @@
           type="primary"
           @click="submitFeedback"
           :loading="submittingFeedback"
-          :disabled="!feedbackForm.type"
+            :disabled="!feedbackForm.type || feedbackForm.content.trim().length < 5"
         >
           提交反馈
         </el-button>
@@ -342,8 +344,12 @@ import { getWordBooks } from '@/features/vocab/api'
 import { matchWords, addWordsToBook, removeWordsFromBook } from '@/features/vocab/api'
 import type { WordBookVo } from '@/features/vocab/types'
 import { useTokenStore } from '@/stores/token'
+import { useRoute } from 'vue-router'
+import { createFeedback } from '@/features/feedback/api'
+import { createRequestId } from '@/utils/requestId'
 
 const tokenStore = useTokenStore()
+const route = useRoute()
 const isOpen = ref(false)
 const inputText = ref('')
 
@@ -351,6 +357,7 @@ const inputText = ref('')
 const feedbackVisible = ref(false)
 const submittingFeedback = ref(false)
 const feedbackForm = reactive({
+  requestId: createRequestId(),
   type: '',
   content: ''
 })
@@ -409,26 +416,42 @@ const playPronunciation = () => {
 
 // 错误反馈
 const handleFeedback = () => {
+  feedbackForm.requestId = createRequestId()
   feedbackForm.type = ''
   feedbackForm.content = ''
   feedbackVisible.value = true
 }
 
 // 提交反馈
-const submitFeedback = () => {
+const submitFeedback = async () => {
   if (!feedbackForm.type) {
     ElMessage.warning('请选择反馈类型')
     return
   }
   
+  if (feedbackForm.content.trim().length < 5) {
+    ElMessage.warning('请至少填写 5 个字的问题描述')
+    return
+  }
+  if (submittingFeedback.value) return
   submittingFeedback.value = true
-  
-  // 模拟提交过程
-  setTimeout(() => {
+  try {
+    const result = await createFeedback({
+      requestId: feedbackForm.requestId,
+      category: 'TRANSLATION',
+      subcategory: feedbackForm.type,
+      content: feedbackForm.content.trim(),
+      sourcePage: route.path,
+      contextWord: currentResult.value?.word,
+    })
     submittingFeedback.value = false
     feedbackVisible.value = false
-    ElMessage.success('感谢您的反馈，我们会尽快处理！')
-  }, 800)
+    ElMessage.success(`反馈已收到，编号 #${result.data.id}`)
+  } catch (error: any) {
+    ElMessage.error(error?.msg || error?.response?.data?.msg || '反馈未送达，请稍后重试')
+  } finally {
+    submittingFeedback.value = false
+  }
 }
 
 // 复制结果

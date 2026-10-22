@@ -76,6 +76,13 @@ const sections = [
               </span>
               <span class="link-arrow" aria-hidden="true">↗</span>
             </router-link>
+            <router-link class="account-link feedback-link" :to="{ path: '/feedback', query: { from: '/settings' } }">
+              <span>
+                <strong>意见反馈</strong>
+                <small>报告问题，分享想法，也能查看处理进度</small>
+              </span>
+              <span class="link-arrow" aria-hidden="true">↗</span>
+            </router-link>
           </section>
         </div>
       </div>
@@ -110,6 +117,7 @@ const sections = [
 .setting-state { display: inline-block; margin-top: 9px; color: var(--xl-brand); font-size: 11px; font-weight: 750; }
 .section-footnote { padding-top: 17px; border-top: 1px solid var(--xl-border); color: var(--xl-ink-soft); font-size: 12px; line-height: 1.6; }
 .account-link { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 84px; color: var(--xl-ink); text-decoration: none; }
+.feedback-link { border-top: 1px solid var(--xl-border); }
 .account-link > span:first-child { display: grid; gap: 6px; }
 .account-link strong { font-size: 15px; }
 .account-link small { color: var(--xl-ink-soft); font-size: 13px; }

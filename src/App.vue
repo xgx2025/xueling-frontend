@@ -19,6 +19,7 @@ const focusedRoutes = new Set([
   'english-article-detail',
   'user-profile',
   'settings',
+  'feedback',
 ])
 const showUtilities = computed(() => !focusedRoutes.has(String(route.name)))
 const showWordLookup = computed(() => route.meta.requiresAuth === true && preferencesStore.preferences.wordLookupEnabled)
