@@ -154,6 +154,7 @@ onMounted(async () => {
           <h2>{{ userStore.username || '未设置昵称' }}</h2>
           <p class="account-email">{{ userStore.userInfo?.email }}</p>
           <button type="button" class="profile-edit" @click="startEditing">编辑个人资料 <span aria-hidden="true">↗</span></button>
+          <router-link class="profile-settings" to="/settings">偏好设置 <span aria-hidden="true">↗</span></router-link>
           <button type="button" class="logout-link" @click="handleLogout">退出登录</button>
         </aside>
 
@@ -222,6 +223,8 @@ onMounted(async () => {
 .account-email { color: var(--xl-ink-soft); font-size: 13px; overflow-wrap: anywhere; }
 .profile-edit { width: 100%; display: flex; justify-content: space-between; margin-top: 30px; padding: 13px 16px; background: var(--xl-brand); border: 0; border-radius: var(--xl-radius-sm); color: white; font-weight: 750; cursor: pointer; }
 .profile-edit:hover, .study-link:hover { background: var(--xl-brand-hover); }
+.profile-settings { display: flex; align-items: center; justify-content: space-between; min-height: 42px; margin-top: 10px; padding: 0 18px; border: 1px solid #b8cbb9; border-radius: var(--xl-button-radius); color: var(--xl-brand); font-size: 14px; font-weight: 750; text-decoration: none; box-shadow: var(--xl-outline-shadow); }
+.profile-settings:hover { background: #edf3e9; }
 .logout-link { margin-top: 20px; color: #7a5646; }
 .profile-main { display: grid; gap: 22px; }
 .overview-card, .settings-card { padding: 28px 30px; }

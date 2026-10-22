@@ -3,8 +3,10 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AIAssistant from '@/components/AIAssistant.vue'
 import TranslateDrawer from '@/components/TranslateDrawer.vue'
+import { usePreferencesStore } from '@/stores/preferences'
 
 const route = useRoute()
+const preferencesStore = usePreferencesStore()
 const focusedRoutes = new Set([
   'home',
   'english',
@@ -16,15 +18,17 @@ const focusedRoutes = new Set([
   'english-articles',
   'english-article-detail',
   'user-profile',
+  'settings',
 ])
 const showUtilities = computed(() => !focusedRoutes.has(String(route.name)))
+const showWordLookup = computed(() => route.meta.requiresAuth === true && preferencesStore.preferences.wordLookupEnabled)
 </script>
 
 <template>
   <div id="app-container">
     <router-view />
     <AIAssistant v-if="showUtilities" />
-    <TranslateDrawer v-if="showUtilities" />
+    <TranslateDrawer v-if="showWordLookup" :class="{ 'is-solo': !showUtilities }" />
   </div>
 </template>
 

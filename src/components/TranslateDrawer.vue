@@ -704,6 +704,10 @@ onMounted(() => {
   user-select: none;
 }
 
+.translate-drawer-container.is-solo .translate-fab {
+  right: 22px;
+}
+
 .translate-fab:hover {
   transform: translateY(-2px);
   background: var(--xl-surface-muted);
@@ -1130,6 +1134,7 @@ onMounted(() => {
     width: 52px;
     height: 52px;
   }
+
 }
 
 /* 滚动条样式 */

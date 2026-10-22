@@ -12,6 +12,10 @@ async function handleCommand(command: string) {
     await router.push('/user/profile')
     return
   }
+  if (command === 'settings') {
+    await router.push('/settings')
+    return
+  }
   if (command !== 'logout') return
   try {
     await userStore.logout()
@@ -43,6 +47,7 @@ async function handleCommand(command: string) {
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+              <el-dropdown-item command="settings">设置</el-dropdown-item>
               <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
