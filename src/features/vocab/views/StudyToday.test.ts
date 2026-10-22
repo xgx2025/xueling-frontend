@@ -5,6 +5,7 @@ import StudyToday from './StudyToday.vue'
 
 const api = vi.hoisted(() => ({
   getTodayStudy: vi.fn(),
+  getWordBooks: vi.fn(),
   getStudySettings: vi.fn(),
   submitStudyReview: vi.fn(),
   updateStudySettings: vi.fn()
@@ -38,6 +39,20 @@ describe('today study review recovery', () => {
     api.getStudySettings.mockResolvedValue({ code: 0, data: {
       timeZone: 'Asia/Shanghai', dailyNewLimit: 15, desiredRetention: 0.9
     } })
+    api.getWordBooks.mockResolvedValue({ code: 0, data: [] })
+  })
+
+  it('guides a new learner to choose a book instead of reporting a completed task', async () => {
+    api.getTodayStudy.mockResolvedValueOnce({ code: 0, data: {
+      dueCount: 0, newRemaining: 0, todayReviewed: 0, todayNew: 0, checkedIn: false, cards: []
+    } })
+    const wrapper = mountStudy()
+    await flushPromises()
+
+    expect(wrapper.find('.setup-panel h2').text()).toBe('先选一本词书')
+    expect(wrapper.text()).toContain('将词书加入学习计划后')
+    expect(wrapper.find('.complete-panel').exists()).toBe(false)
+    wrapper.unmount()
   })
 
   it('keeps pronunciation and examples behind the answer until recall is attempted', async () => {

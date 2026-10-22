@@ -68,6 +68,7 @@
             立即注册
           </el-link>
         </div>
+        <router-link class="about-link" to="/welcome">先了解学灵能做什么 ↗</router-link>
       </el-form>
     </div>
     </div>
@@ -129,10 +130,10 @@ const loginRules: FormRules = {
 const handleLogin = async () => {
   if (!loginFormRef.value) return
 
-  try {
-    // 验证表单
-    await loginFormRef.value.validate()
+  const isValid = await loginFormRef.value.validate().catch(() => false)
+  if (!isValid) return
 
+  try {
     loading.value = true
 
     // 准备登录数据
@@ -167,11 +168,6 @@ const handleLogin = async () => {
   } catch (error: any) {
     console.error('登录失败:', error)
     
-    // 处理验证错误
-    if (error.msg && error.msg.includes('validation')) {
-      return
-    }
-
     // 处理 API 错误
     // HTTP 错误的响应数据在 error.response.data 中
     const errorData = error.response?.data
@@ -754,5 +750,7 @@ const navigateToRegister = () => {
 .login-button:active:not(.is-disabled) { transform: translateY(1px); box-shadow: var(--xl-button-shadow-pressed); }
 .login-button.is-disabled { box-shadow: none; }
 .login-footer { border-color: var(--xl-border); }
+.about-link { display: block; width: fit-content; margin: 18px auto 0; color: var(--xl-brand); font-size: 13px; font-weight: 700; text-decoration: none; }
+.about-link:hover { text-decoration: underline; }
 .auth-footer { color: var(--xl-ink-soft); }
 </style>

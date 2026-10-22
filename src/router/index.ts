@@ -8,6 +8,12 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: '/welcome',
+      name: 'welcome',
+      component: () => import('@/view/WelcomeView.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
       path: '/login',
       name: 'login',
       component: LoginView,
@@ -95,6 +101,16 @@ router.beforeEach(async (to, _from, next) => {
   
   // 检查是否有有效的 token
   const hasToken = tokenStore.accessToken && tokenStore.accessToken.trim() !== ''
+
+  if (to.name === 'home' && !hasToken) {
+    next({ name: 'welcome' })
+    return
+  }
+
+  if (to.name === 'welcome' && hasToken) {
+    next({ name: 'home' })
+    return
+  }
 
   // 如果路由需要认证且用户未登录，跳转到登录页
   if (to.meta.requiresAuth && !hasToken) {

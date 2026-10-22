@@ -77,11 +77,22 @@
         </div>
       </section>
 
+      <section v-else-if="planState === 'none'" class="state-panel setup-panel">
+        <div class="complete-mark">＋</div>
+        <h2>先选一本词书</h2>
+        <p>将词书加入学习计划后，这里才会出现今天要学的单词。</p>
+        <div class="complete-actions">
+          <button class="primary-button" type="button" @click="router.push('/english/vocab')">选择词书</button>
+          <button class="text-button" type="button" @click="router.push('/english/articles')">先浏览英语文章</button>
+        </div>
+      </section>
+
       <section v-else class="state-panel complete-panel">
         <div class="complete-mark">{{ today?.checkedIn ? '✦' : '✓' }}</div>
-        <h2>{{ today?.checkedIn ? '今日已自动打卡' : '当前任务完成' }}</h2>
+        <h2>{{ today?.checkedIn ? '今日已自动打卡' : today?.todayReviewed ? '当前任务完成' : '暂时没有学习任务' }}</h2>
         <p v-if="today?.checkedIn" class="check-in-note">成长日历又点亮了一天。每一次认真回忆，都在让记忆扎根。</p>
         <p v-if="today?.nextDueAt">下一张卡片预计在 {{ formatDue(today.nextDueAt) }} 到期。</p>
+        <p v-else-if="planState === 'unknown' && !today?.todayReviewed">尚未找到可学的单词，请检查词书计划或稍后重试。</p>
         <p v-else-if="today?.newRemaining && today.newRemaining > 0">当前启用的词书没有更多未学单词。</p>
         <p v-else>今天已完成 {{ today?.todayReviewed ?? 0 }} 次回忆，稍后回来看看新的到期卡片。</p>
         <div class="complete-actions">
@@ -91,7 +102,7 @@
         </div>
       </section>
 
-      <section v-if="today && !loading && !loadError && !currentCard && !pendingReview" class="metrics" aria-label="今日学习概览">
+      <section v-if="today && !loading && !loadError && !currentCard && !pendingReview && planState !== 'none'" class="metrics" aria-label="今日学习概览">
         <div class="metric"><span>待复习</span><strong>{{ today.dueCount }}</strong></div>
         <div class="metric"><span>可学新词</span><strong>{{ today.newRemaining }}</strong></div>
         <div class="metric"><span>今日已完成</span><strong>{{ today.todayReviewed }}</strong></div>
@@ -116,7 +127,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getStudySettings, getTodayStudy, submitStudyReview, updateStudySettings } from '@/features/vocab/api'
+import { getStudySettings, getTodayStudy, getWordBooks, submitStudyReview, updateStudySettings } from '@/features/vocab/api'
 import type { StudyQueueCard, StudySettings, SubmitStudyReview, TodayStudy } from '@/features/vocab/types'
 import { clearPendingReview, persistPendingReview, restorePendingReview } from '@/features/vocab/pendingReview'
 import { createReviewRequestId } from '@/features/vocab/requestId'
@@ -126,6 +137,7 @@ import PageBreadcrumb from '@/components/PageBreadcrumb.vue'
 const router = useRouter()
 const userStore = useUserStore()
 const today = ref<TodayStudy | null>(null)
+const planState = ref<'unknown' | 'none' | 'ready'>('unknown')
 const loading = ref(true)
 const loadError = ref('')
 const revealed = ref(false)
@@ -156,9 +168,20 @@ const ratingOptions = [
 async function loadToday() {
   loading.value = true
   loadError.value = ''
+  planState.value = 'unknown'
   try {
     const response = await getTodayStudy()
     today.value = response.data
+    if (response.data.cards.length === 0) {
+      try {
+        const books = (await getWordBooks()).data
+        planState.value = books.some(book => book.studyEnabled) ? 'ready' : 'none'
+      } catch (error) {
+        console.error('读取词书计划失败', error)
+      }
+    } else {
+      planState.value = 'ready'
+    }
     revealed.value = false
     shownAt.value = Date.now()
   } catch (error: any) {

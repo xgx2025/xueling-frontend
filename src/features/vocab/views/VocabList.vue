@@ -54,6 +54,7 @@
                   {{ busyBookId === book.id ? '更新中…' : book.studyEnabled ? '✓ 已加入计划' : '＋ 加入计划' }}
                 </button>
               </div>
+              <router-link v-if="book.studyEnabled" class="start-study-link" to="/english/vocab/study">开始今日学习 <span aria-hidden="true">↗</span></router-link>
             </div>
           </article>
         </div>
@@ -139,7 +140,7 @@ async function toggleBook(book: DisplayBook) {
   try {
     await setStudyBookEnabled(book.id, !book.studyEnabled)
     book.studyEnabled = !book.studyEnabled
-    ElMessage.success(book.studyEnabled ? '已加入学习计划' : '已移出学习计划')
+    ElMessage.success(book.studyEnabled ? '已加入学习计划，现在可以开始今日学习' : '已移出学习计划')
   } catch (error: any) {
     ElMessage.error(error?.msg || '更新学习计划失败')
   } finally {
@@ -181,6 +182,9 @@ button { font: inherit; cursor: pointer; }
 .header-create { border: 1px solid #315b3f; color: #315b3f; background: transparent; border-radius: 9px; padding: 10px 16px; font-weight: 700; }
 .header-create:hover, .header-create:focus-visible { background: #e8efe6; }
 .collection { margin-top: 0; }
+.start-study-link { display: inline-flex; align-items: center; gap: 10px; margin-top: 14px; color: var(--xl-brand); font-size: 13px; font-weight: 800; text-decoration: none; }
+.start-study-link:hover { text-decoration: underline; }
+.start-study-link:focus-visible { outline: 3px solid var(--xl-accent); outline-offset: 3px; }
 .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 20px; }.book-card { background: #fffefa; border: 1px solid #e4e8dc; border-radius: 13px; overflow: hidden; transition: transform .2s, box-shadow .2s; }.book-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px #29463113; }
 .book-cover { height: 116px; display: grid; place-items: center; color: white; position: relative; }.book-cover::after { content: ''; position: absolute; width: 185px; height: 185px; border: 1px solid #ffffff55; border-radius: 50%; right: -28px; top: -65px; }.book-icon { z-index: 1; font-size: 42px; line-height: 1; filter: drop-shadow(0 5px 10px #0003); }
 .book-body { padding: 19px; }.book-title-row { display: flex; align-items: start; justify-content: space-between; gap: 8px; min-height: 42px; }.book-title-row h3 { font-size: 17px; line-height: 1.45; overflow-wrap: anywhere; }.book-count { white-space: nowrap; font-size: 12px; color: #607360; background: #eaf0e8; border-radius: 5px; padding: 5px 7px; }.plan-status { display: inline-block; margin: 0 0 10px; color: #315b40; font-size: 12px; font-weight: 750; }.progress-label { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin: 4px 0 10px; }.progress-label strong { color: var(--ink); }.progress-track { background: #e8ede5; height: 6px; border-radius: 99px; overflow: hidden; }.progress-track span { display: block; background: #638c69; height: 100%; border-radius: inherit; }.book-actions { display: flex; gap: 8px; margin-top: 19px; }.book-actions button { min-height: 42px; border-radius: 7px; font-size: 12px; font-weight: 750; }.open-book { flex: 1; border: 0; background: #315b40; color: white; text-align: left; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; }.open-book:hover { background: #224a32; }.open-book.quiet { flex: 0 0 auto; border: 1px solid #c8d5c8; background: transparent; color: #315b40; gap: 8px; }.open-book.quiet:hover { background: #eaf1e8; }.plan-toggle { border: 1px solid #315b40; background: #315b40; color: white; padding: 0 12px; }.plan-toggle:not(.enabled) { order: -1; flex: 1; }.plan-toggle.enabled { background: #eaf1e8; border-color: #c8d5c8; color: #3a6346; }.plan-toggle:not(.enabled):hover { background: #224a32; }.plan-toggle.enabled:hover { background: #deebdc; }.plan-toggle:disabled { opacity: .55; cursor: wait; }

@@ -106,6 +106,7 @@
             立即登录
           </el-link>
         </div>
+        <router-link class="about-link" to="/welcome">先看看学习方式 ↗</router-link>
       </el-form>
     </div>
     </div>
@@ -295,10 +296,10 @@ const startCountdown = () => {
 const handleRegister = async () => {
   if (!registerFormRef.value) return
 
-  try {
-    // 验证表单
-    await registerFormRef.value.validate()
+  const isValid = await registerFormRef.value.validate().catch(() => false)
+  if (!isValid) return
 
+  try {
     loading.value = true
 
     // 准备注册数据
@@ -332,11 +333,6 @@ const handleRegister = async () => {
   } catch (error: any) {
     console.error('注册失败:', error)
     
-    // 处理验证错误
-    if (error.msg && error.msg.includes('validation')) {
-      return
-    }
-
     // 处理 API 错误
     // HTTP 错误的响应数据在 error.response.data 中
     const errorData = error.response?.data
@@ -937,5 +933,7 @@ onUnmounted(() => {
 .code-button { min-height: 42px; border-radius: var(--xl-button-radius); box-shadow: var(--xl-outline-shadow); font-weight: 750; }
 .code-button:hover:not(.is-disabled) { transform: translateY(-1px); box-shadow: 0 3px 0 #d7e2d5; }
 .register-footer { border-color: var(--xl-border); }
+.about-link { display: block; width: fit-content; margin: 18px auto 0; color: var(--xl-brand); font-size: 13px; font-weight: 700; text-decoration: none; }
+.about-link:hover { text-decoration: underline; }
 .auth-footer { color: var(--xl-ink-soft); }
 </style>

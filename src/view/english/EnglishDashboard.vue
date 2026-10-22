@@ -1,29 +1,38 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { getStudyStats } from '@/features/vocab/api'
-import type { StudyStats } from '@/features/vocab/types'
+import { getStudyStats, getWordBooks } from '@/features/vocab/api'
+import type { StudyStats, WordBookVo } from '@/features/vocab/types'
 import PageHeading from '@/components/PageHeading.vue'
 
 const studyStats = ref<StudyStats | null>(null)
+const wordBooks = ref<WordBookVo[] | null>(null)
 const statsError = ref(false)
+const needsPlan = computed(() => wordBooks.value !== null && !wordBooks.value.some(book => book.studyEnabled))
+const focusActionTo = computed(() => needsPlan.value ? '/english/vocab' : '/english/vocab/study')
+const focusActionLabel = computed(() => needsPlan.value ? '选择词书开始' : '开始学习')
 const focusTitle = computed(() => {
+  if (needsPlan.value) return '先选择一本词书'
   if (!studyStats.value) return '今日单词'
   if (studyStats.value.dueCount > 0) return '先完成到期复习'
   return studyStats.value.todayReviewed > 0 ? '复习已完成' : '今日单词'
 })
 const focusDescription = computed(() => {
+  if (needsPlan.value) return '把想学的词书加入计划，今天的单词就会从这里开始。'
   if (!studyStats.value) return '先回忆，再揭晓答案，按计划稳步积累。'
   if (studyStats.value.dueCount > 0) return `有 ${studyStats.value.dueCount} 个词已到期，先巩固再学习新词。`
   return studyStats.value.todayReviewed > 0 ? '当前到期任务已完成，稍后再来看看。' : '现在没有到期单词，可以从新词开始。'
 })
 
 onMounted(async () => {
-  try {
-    studyStats.value = (await getStudyStats()).data
-  } catch (error) {
-    statsError.value = true
-    console.error('读取学习统计失败', error)
-  }
+  await Promise.all([
+    getStudyStats().then(response => { studyStats.value = response.data }).catch(error => {
+      statsError.value = true
+      console.error('读取学习统计失败', error)
+    }),
+    getWordBooks().then(response => { wordBooks.value = response.data }).catch(error => {
+      console.error('读取词书计划失败', error)
+    })
+  ])
 })
 </script>
 
@@ -45,8 +54,8 @@ onMounted(async () => {
             <h2 id="daily-focus-title">{{ focusTitle }}</h2>
             <p class="focus-description">{{ focusDescription }}</p>
             <div class="focus-actions">
-              <router-link to="/english/vocab/study" class="focus-action">
-                开始学习 <span aria-hidden="true">↗</span>
+              <router-link :to="focusActionTo" class="focus-action">
+                {{ focusActionLabel }} <span aria-hidden="true">↗</span>
               </router-link>
               <router-link to="/english/vocab/insights" class="progress-action">
                 查看学习进度 <span aria-hidden="true">↗</span>
