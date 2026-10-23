@@ -5,11 +5,11 @@ import { useRoute } from 'vue-router'
 import PageHeading from '@/components/PageHeading.vue'
 import { useUserStore } from '@/stores/user'
 import { createRequestId } from '@/utils/requestId'
-import { createFeedback, getAdminFeedback, getFeedbackAdminAccess, getMyFeedback, updateFeedback } from '../api'
+import { createFeedback, getMyFeedback } from '../api'
 import { categoryLabels, statusLabels } from '../types'
-import type { CreateFeedback, Feedback, FeedbackCategory, FeedbackStatus } from '../types'
+import type { CreateFeedback, Feedback, FeedbackCategory } from '../types'
 
-type Tab = 'write' | 'mine' | 'manage'
+type Tab = 'write' | 'mine'
 const userStore = useUserStore()
 const route = useRoute()
 const tab = ref<Tab>('write')
@@ -41,15 +41,6 @@ const minePage = ref(1)
 const mineHasMore = ref(false)
 const mineLoading = ref(false)
 const mineLoaded = ref(false)
-const adminAccess = ref(false)
-const adminItems = ref<Feedback[]>([])
-const adminPage = ref(1)
-const adminHasMore = ref(false)
-const adminLoading = ref(false)
-const adminStatus = ref<FeedbackStatus | ''>('')
-const activeAdminId = ref<string | null>(null)
-const adminForm = reactive<{ status: FeedbackStatus; adminReply: string }>({ status: 'PROCESSING', adminReply: '' })
-const adminSaving = ref(false)
 
 watch(form, () => {
   if (submitting.value || receipt.value) return
@@ -74,17 +65,11 @@ onMounted(async () => {
   }
   const from = route.query.from
   if (!form.sourcePage && typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')) form.sourcePage = from
-  try {
-    adminAccess.value = (await getFeedbackAdminAccess()).data === true
-  } catch {
-    adminAccess.value = false
-  }
 })
 
 async function changeTab(next: Tab) {
   tab.value = next
   if (next === 'mine' && !mineLoaded.value) await loadMine(true)
-  if (next === 'manage' && adminAccess.value && adminItems.value.length === 0) await loadAdmin(true)
 }
 
 async function submit() {
@@ -133,50 +118,6 @@ async function loadMine(reset = false) {
   }
 }
 
-async function loadAdmin(reset = false) {
-  if (adminLoading.value) return
-  adminLoading.value = true
-  const page = reset ? 1 : adminPage.value
-  try {
-    const items = (await getAdminFeedback(page, adminStatus.value || undefined)).data
-    adminItems.value = reset ? items : [...adminItems.value, ...items]
-    adminPage.value = page + 1
-    adminHasMore.value = items.length === 20
-  } catch (error: any) {
-    ElMessage.error(error?.msg || '处理列表加载失败')
-  } finally {
-    adminLoading.value = false
-  }
-}
-
-function openAdmin(item: Feedback) {
-  activeAdminId.value = item.id
-  adminForm.status = item.status
-  adminForm.adminReply = item.adminReply ?? ''
-}
-
-async function saveAdmin() {
-  if (!activeAdminId.value) return
-  if (adminForm.status === 'REPLIED' && !adminForm.adminReply.trim()) {
-    return ElMessage.warning('回复用户时请填写处理说明')
-  }
-  adminSaving.value = true
-  try {
-    const updated = (await updateFeedback(activeAdminId.value, {
-      status: adminForm.status,
-      adminReply: adminForm.adminReply.trim() || undefined,
-    })).data
-    const index = adminItems.value.findIndex(item => item.id === updated.id)
-    if (index >= 0) adminItems.value[index] = updated
-    activeAdminId.value = null
-    ElMessage.success('处理结果已保存')
-  } catch (error: any) {
-    ElMessage.error(error?.msg || error?.response?.data?.msg || '保存失败')
-  } finally {
-    adminSaving.value = false
-  }
-}
-
 function newFeedback() {
   receipt.value = null
   tab.value = 'write'
@@ -207,7 +148,6 @@ function formatDate(value: string) {
           <div class="tabs" role="tablist" aria-label="反馈分类">
             <button type="button" role="tab" :aria-selected="tab === 'write'" :class="{ active: tab === 'write' }" @click="changeTab('write')">写反馈</button>
             <button type="button" role="tab" :aria-selected="tab === 'mine'" :class="{ active: tab === 'mine' }" @click="changeTab('mine')">我的反馈</button>
-            <button v-if="adminAccess" type="button" role="tab" :aria-selected="tab === 'manage'" :class="{ active: tab === 'manage' }" @click="changeTab('manage')">处理反馈</button>
           </div>
 
           <div v-if="tab === 'write'" class="panel">
@@ -253,33 +193,10 @@ function formatDate(value: string) {
             <el-button v-if="mineHasMore" :loading="mineLoading" @click="loadMine()">加载更多</el-button>
           </div>
 
-          <div v-else-if="tab === 'manage' && adminAccess" class="panel list-panel">
-            <div class="panel-heading"><span class="step">INBOX</span><h2>处理反馈</h2></div>
-            <div class="filter-row"><label for="status-filter">筛选状态</label><select id="status-filter" v-model="adminStatus" @change="loadAdmin(true)"><option value="">全部</option><option v-for="(label, value) in statusLabels" :key="value" :value="value">{{ label }}</option></select></div>
-            <p v-if="adminLoading && !adminItems.length" class="empty-note">正在加载反馈…</p>
-            <p v-else-if="!adminItems.length" class="empty-note">当前筛选下没有反馈。</p>
-            <article v-for="item in adminItems" :key="item.id" class="feedback-item">
-              <div class="item-meta"><span>{{ categoryLabels[item.category] }} · 用户 {{ item.userId }}</span><time>{{ formatDate(item.createTime) }}</time></div>
-              <p>{{ item.content }}</p>
-              <div class="context-details">
-                <small v-if="item.contextWord">关联单词：{{ item.contextWord }}<span v-if="item.subcategory">（{{ item.subcategory }}）</span></small>
-                <small v-if="item.sourcePage">来源：{{ item.sourcePage }}</small>
-                <small v-if="item.contact">联系方式：{{ item.contact }}</small>
-              </div>
-              <div v-if="item.adminReply" class="reply"><strong>已发送的回复</strong><p>{{ item.adminReply }}</p></div>
-              <div class="item-bottom"><span class="status" :class="item.status.toLowerCase()">{{ statusLabels[item.status] }}</span><button type="button" class="text-action" @click="openAdmin(item)">处理 ↗</button></div>
-            </article>
-            <el-button v-if="adminHasMore" :loading="adminLoading" @click="loadAdmin()">加载更多</el-button>
-          </div>
         </section>
       </div>
     </div>
 
-    <el-dialog :model-value="!!activeAdminId" title="处理反馈" width="min(92vw, 520px)" @close="activeAdminId = null">
-      <div class="admin-editor"><label for="admin-status">处理状态</label><select id="admin-status" v-model="adminForm.status"><option v-for="(label, value) in statusLabels" :key="value" :value="value">{{ label }}</option></select>
-        <label for="admin-reply">给用户的回复</label><textarea id="admin-reply" v-model="adminForm.adminReply" rows="5" maxlength="2000" placeholder="说明处理结果或下一步安排" /></div>
-      <template #footer><el-button @click="activeAdminId = null">取消</el-button><el-button type="primary" :loading="adminSaving" @click="saveAdmin">保存</el-button></template>
-    </el-dialog>
   </main>
 </template>
 
