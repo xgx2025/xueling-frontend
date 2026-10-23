@@ -8,15 +8,7 @@ export interface ArticleCategory {
   name: string
 }
 
-// 文章列表项
-export interface ArticleListItem {
-  id: number
-  author: string
-  title: string
-  chineseTitle: string
-  content: string
-  articleInsights: string
-}
+export type { ArticleListItem } from './article'
 
 // 阅读测试题请求参数
 export interface GetTestQuestionsRequest {

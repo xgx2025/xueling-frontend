@@ -3,6 +3,11 @@
     <!-- 加载状态 -->
     <el-skeleton v-if="loading" :rows="20" animated />
 
+    <div v-else-if="errorMessage" class="article-error" role="alert">
+      <p>{{ errorMessage }}</p>
+      <router-link to="/english/articles">返回文章列表</router-link>
+    </div>
+
     <!-- 使用新的ArticleReader组件 -->
     <ArticleReader v-if="article && !loading" :article="article" :readingStatus="readingStatus" @reading-complete="handleReadingComplete" />
   </div>
@@ -12,10 +17,10 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useArticleStore } from '@/stores/article'
-import { ElMessage } from 'element-plus'
+import axios from 'axios'
 import ArticleReader from '@/components/ArticleReader.vue'
-import type { ArticleVO } from '@/types/article'
-import { getArticlesByCategory, getArticleReadingStatus } from '@/api/article'
+import type { ArticleHighlights } from '@/types/article'
+import { getArticleById, getArticleReadingStatus } from '@/api/article'
 
 /**
  * 获取有效的图片URL
@@ -48,6 +53,7 @@ const articleStore = useArticleStore()
 
 // 状态
 const loading = ref(false)
+const errorMessage = ref('')
 const readingStatus = ref<number | undefined>(undefined)
 
 // 计算属性
@@ -61,62 +67,39 @@ const articleId = computed(() => {
   return raw ? parseInt(raw, 10) : 0
 })
 
-const categoryId = computed(() => {
-  const raw = Array.isArray(route.query.categoryId) ? route.query.categoryId[0] : route.query.categoryId
-  const parsed = Number(raw)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
-})
-
 /**
  * 初始化页面 - 获取文章详情
  */
 const initArticle = async () => {
+  loading.value = true
+  errorMessage.value = ''
+  articleStore.clearCurrentArticle()
   try {
-    console.log('初始化文章详情页面, 文章ID:', articleId.value)
-    loading.value = true
-
-    // 从 API 获取文章列表
-    const response = await getArticlesByCategory(categoryId.value)
-    console.log('API响应状态码:', response.code)
-    console.log('API响应数据:', response.data)
-    
-    if (response.code === 0 && response.data) {
-      console.log('获取到的文章列表数量:', response.data.length)
-      
-      // 在文章列表中查找指定ID的文章
-      const articleData = response.data.find((a: any) => a.id === articleId.value)
-      console.log('找到的文章数据:', articleData)
-      
-      if (articleData) {
-        console.log('原始图片URL:', articleData.imageUrl)
-        console.log('处理后的图片URL:', getValidImageUrl(articleData.imageUrl))
-        
-        // 设置文章数据到store，保留 highlights 数据
-        articleStore.currentArticle = {
-          ...articleData,
-          chineseMeaning: articleData.chineseMeaning || '',
-          vocabularyPhrasesSummary: articleData.vocabularyPhrasesSummary || '',
-          articleInsights: articleData.articleInsights || '',
-          // 修复图片URL处理：确保使用有效的图片URL
-          imageUrl: getValidImageUrl(articleData.imageUrl),
-          // 解析 highlights 字段，因为它从 API 返回时是 JSON 字符串
-          highlights: articleData.highlights && typeof articleData.highlights === 'string' 
-            ? JSON.parse(articleData.highlights) 
-            : articleData.highlights
-        }
-        
-        console.log('最终存储的文章数据:', articleStore.currentArticle)
-      } else {
-        console.error('未找到文章ID:', articleId.value, '在文章列表中')
-        console.error('可用的文章ID:', response.data.map((a: any) => a.id))
-        throw new Error(`文章ID ${articleId.value} 不存在`)
-      }
-    } else {
-      throw new Error('获取文章列表失败')
+    if (!articleId.value) throw new Error('文章编号无效')
+    const response = await getArticleById(articleId.value)
+    const articleData = response.data
+    if (!articleData) throw new Error('文章不存在或暂未发布')
+    let highlights: ArticleHighlights = { highlights: [] }
+    if (articleData.highlights) {
+      try {
+        highlights = typeof articleData.highlights === 'string'
+          ? JSON.parse(articleData.highlights) as ArticleHighlights
+          : articleData.highlights
+      } catch { /* 无法解析的旧数据按无高亮展示 */ }
     }
+    articleStore.currentArticle = {
+      ...articleData,
+      chineseMeaning: articleData.chineseMeaning || '',
+      imageUrl: getValidImageUrl(articleData.imageUrl),
+      highlights,
+    }
+    await getReadingStatus()
   } catch (err) {
-    console.error('加载文章失败:', err)
-    ElMessage.error('加载文章失败，请检查网络或文章ID是否正确')
+    errorMessage.value = axios.isAxiosError(err)
+      ? err.response?.data?.msg || '文章加载失败，请稍后重试'
+      : err && typeof err === 'object' && 'msg' in err
+        ? String(err.msg)
+        : err instanceof Error ? err.message : '文章加载失败，请稍后重试'
   } finally {
     loading.value = false
   }
@@ -160,11 +143,14 @@ const handleReadingComplete = async () => {
 // 生命周期
 onMounted(() => {
   initArticle()
-  // 获取文章阅读状态
-  getReadingStatus()
 })
 
 onUnmounted(() => {
   articleStore.clearCurrentArticle()
 })
 </script>
+
+<style scoped>
+.article-error { max-width: 600px; margin: 80px auto; padding: 32px; text-align: center; }
+.article-error p { margin-bottom: 20px; }
+</style>

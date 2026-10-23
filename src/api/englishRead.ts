@@ -27,7 +27,7 @@ export const getArticleCategories = (): Promise<ApiResponse<ArticleCategory[]>> 
  * @returns 文章列表
  */
 export const getArticlesByCategory = (categoryId: number): Promise<ApiResponse<ArticleListItem[]>> => {
-  return request.get('/read/articles', { params: { categoryId } })
+  return request.get('/read/article-summaries', { params: { categoryId } })
 }
 
 /**

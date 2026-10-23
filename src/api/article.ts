@@ -6,6 +6,7 @@
 import request from '@/utils/request'
 import type {
   ArticleVO,
+  ArticleListItem,
   ApiResponse,
   ArticleCategory,
   ArticleReadingStatusVO,
@@ -22,8 +23,12 @@ export const getArticleCategories = (): Promise<ApiResponse<ArticleCategory[]>> 
  * 根据分类ID获取文章列表
  * @param categoryId 文章分类ID
  */
-export const getArticlesByCategory = (categoryId: number): Promise<ApiResponse<ArticleVO[]>> => {
-  return request.get('/read/articles', { params: { categoryId } })
+export const getArticlesByCategory = (categoryId: number): Promise<ApiResponse<ArticleListItem[]>> => {
+  return request.get('/read/article-summaries', { params: { categoryId } })
+}
+
+export const getArticleById = (articleId: number): Promise<ApiResponse<ArticleVO>> => {
+  return request.get(`/read/articles/${articleId}`)
 }
 
 /**

@@ -35,7 +35,7 @@ export interface ArticleVO {
   vocabularyPhrasesSummary?: string  // 词汇短语总结
   articleInsights?: string        // 文章感悟（金句）
   imageUrl?: string               // 图片URL
-  isFree: number                  // 是否免费（0：否，1：是）
+  isFree: boolean                 // 是否免费
   createTime: string
   updateTime: string
 }
@@ -45,10 +45,11 @@ export interface ArticleListItem {
   id: number
   title: string
   chineseTitle: string
+  categoryId: number
   author: string
   imageUrl?: string
   tag?: string
-  isFree: number
+  isFree: boolean
   createTime: string
 }
 

@@ -54,9 +54,9 @@ curl -X GET "http://localhost:8080/read/categories" \
 
 ### 2. 根据分类ID获取文章列表
 
-**接口地址：** `GET /read/articles`
+**接口地址：** `GET /read/article-summaries`
 
-**功能描述：** 根据分类ID获取该分类下的文章列表
+**功能描述：** 根据分类ID获取已发布文章的展示信息。列表不返回正文，会员文章也可在列表中展示标题。
 
 **请求参数：**
 | 参数名     | 类型 | 必填 | 说明       |
@@ -66,8 +66,8 @@ curl -X GET "http://localhost:8080/read/categories" \
 **响应数据：**
 ```json
 {
-  "code": 200,
-  "message": "根据分类ID获取阅读文章列表成功",
+  "code": 0,
+  "msg": "根据分类ID获取阅读文章列表成功",
   "data": [
     {
       "id": 1,
@@ -75,10 +75,10 @@ curl -X GET "http://localhost:8080/read/categories" \
       "author": "作者名",
       "title": "英文标题",
       "chineseTitle": "中文标题",
-      "content": "文章内容",
       "imageUrl": "图片URL",
-      "highlights": "重点高亮内容",
-      "articleInsights": "文章感悟"
+      "tag": "阅读",
+      "isFree": false,
+      "createTime": "2026-10-23 12:00:00"
     }
   ]
 }
@@ -90,10 +90,16 @@ curl -X GET "http://localhost:8080/read/categories" \
 - `author`: 作者名
 - `title`: 英文标题
 - `chineseTitle`: 中文标题
-- `content`: 文章内容（格式：每个小标题前加`##`，段落之间用`\n`分隔，句子之间用`&`分隔）
 - `imageUrl`: 文章配图URL地址
-- `highlights`: 文章重点单词和短语的高亮分析
-- `articleInsights`: 文章感悟和学习要点
+- `isFree`: `true` 为免费文章，`false` 为会员文章
+
+### 2.1 按 ID 获取文章详情
+
+**接口地址：** `GET /read/articles/{articleId}`
+
+只返回已发布文章。免费文章可由已登录用户读取；会员文章要求当前用户拥有有效会员资格，否则返回 HTTP 403。详情返回正文、中文翻译、分类、封面、作者等阅读字段。草稿或下线文章不能从用户接口读取。
+
+过渡期间保留 `GET /read/articles?categoryId=...` 供旧版用户前端使用：它返回已发布且当前用户有权阅读的文章正文；非会员不会从该接口获得会员文章。
 
 ---
 

@@ -1,29 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { getArticleCategories, getArticlesByCategory } from '@/api/article'
-import type { ArticleCategory, ArticleVO } from '@/types/article'
+import type { ArticleCategory, ArticleListItem } from '@/types/article'
 import PageHeading from '@/components/PageHeading.vue'
 
 const categories = ref<ArticleCategory[]>([])
-const articles = ref<ArticleVO[]>([])
+const articles = ref<ArticleListItem[]>([])
 const selectedCategory = ref<number | null>(null)
 const loading = ref(true)
 const errorMessage = ref('')
 const brokenImageIds = ref(new Set<number>())
-
-function getSummary(content: string): string {
-  if (!content) return ''
-  let text = content
-  try {
-    const parsed = JSON.parse(content) as { blocks?: { sentences?: unknown[] }[] }
-    const sentence = parsed.blocks?.[0]?.sentences?.[0]
-    if (typeof sentence === 'string') text = sentence
-  } catch {
-    // 旧文章使用 ##、换行和 & 分隔内容。
-  }
-  const normalized = text.replace(/##/g, ' ').replace(/&/g, ' ').replace(/\s+/g, ' ').trim()
-  return normalized.length > 76 ? `${normalized.slice(0, 76)}…` : normalized
-}
 
 function formatDate(value: string): string {
   return value?.split(/[ T]/)[0] || ''
@@ -38,7 +24,7 @@ async function loadArticles(categoryId: number | null = selectedCategory.value) 
     const responses = await Promise.all(ids.map((id) => getArticlesByCategory(id)))
     const failed = responses.find((response) => response.code !== 0)
     if (failed) throw new Error(failed.msg || '文章加载失败')
-    const byId = new Map<number, ArticleVO>()
+    const byId = new Map<number, ArticleListItem>()
     for (const response of responses) {
       for (const article of response.data || []) byId.set(article.id, article)
     }
@@ -99,12 +85,13 @@ onMounted(async () => {
         </div>
         <div v-else class="article-grid">
           <router-link v-for="article in articles" :key="article.id" class="article-card"
-            :to="{ name: 'english-article-detail', params: { id: article.id }, query: { categoryId: article.categoryId } }">
+            :to="{ name: 'english-article-detail', params: { id: article.id } }">
             <div class="article-text">
               <p class="article-meta"><span>{{ formatDate(article.createTime) }}</span><span v-if="article.author">{{ article.author }}</span></p>
               <h3>{{ article.title }}</h3>
               <p v-if="article.chineseTitle" class="chinese-title">{{ article.chineseTitle }}</p>
-              <p v-if="getSummary(article.content)" class="summary">{{ getSummary(article.content) }}</p>
+              <p v-if="article.tag" class="summary">{{ article.tag }}</p>
+              <p v-if="!article.isFree" class="summary">会员文章</p>
               <span class="read-link">阅读 <span aria-hidden="true">↗</span></span>
             </div>
             <div class="article-image" aria-hidden="true">
